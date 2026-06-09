@@ -6,24 +6,28 @@
 <title>SZL Agent Body v3 — Living Anatomy</title>
 <meta name="description" content="The SZL Agent Body v3 — a genuine anatomical organism. Two bodies (a11oy + killinchu) sharing one circulatory (YAWAR receipt bus) + nervous (span lineage) mesh, with proven formulas flowing through the organs and the Λ heart beating at the center." />
 <style>
-  /* ============ DESIGN TOKENS — premium dark scientific ============ */
+  /* ============ DESIGN TOKENS — cinematic dark scientific ============ */
   :root{
-    --bg:#05070d; --bg2:#0a0e1a;
-    --surface:rgba(16,21,38,0.78); --surface-2:rgba(22,28,48,0.9);
-    --border:rgba(120,150,210,0.18); --border-strong:rgba(150,180,240,0.34);
-    --text:#eaf0ff; --text-muted:#94a3c8; --text-dim:#5d6a8f;
+    --bg:#04060c; --bg2:#0a0e1a;
+    --surface:rgba(13,18,33,0.72); --surface-2:rgba(20,26,46,0.92);
+    --border:rgba(120,150,210,0.16); --border-strong:rgba(150,180,240,0.32);
+    --text:#eef2ff; --text-muted:#9aa8cc; --text-dim:#5d6a8f;
     --heart:#ff5d8f; --blood:#ff3b5c; --brain:#7c5cff; --nerve:#5ad1ff;
     --skel:#ffd166; --audit:#9ef0c0;
     --a11oy:#3fe0c5; --killinchu:#ffb13f;
     --warn:#ff7eb6; --ok:#5ad1ff; --gate:#ffd166;
-    --radius:14px; --blur:16px;
-    --font-d:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    --font-m:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --radius:16px; --blur:20px;
+    --font-d:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,"Helvetica Neue",sans-serif;
+    --font-m:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 18px 60px rgba(0,0,0,0.55);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-d);-webkit-font-smoothing:antialiased}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-d);-webkit-font-smoothing:antialiased;letter-spacing:0.005em}
   #scene{position:fixed;inset:0;z-index:0;display:block;touch-action:none}
   canvas{display:block}
+  /* cinematic vignette + subtle grain over the canvas */
+  #vignette{position:fixed;inset:0;z-index:10;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 42%,transparent 48%,rgba(2,4,9,0.55) 100%)}
 
   /* ============ loading ============ */
   #loader{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -38,68 +42,84 @@
   .hud .card{pointer-events:auto}
 
   /* top-left title */
-  #title{top:18px;left:18px;max-width:min(420px,72vw)}
-  #title h1{font-size:19px;font-weight:700;letter-spacing:.01em;line-height:1.15}
-  #title h1 .v3{color:var(--heart)}
-  #title .sub{font-family:var(--font-m);font-size:11px;color:var(--text-muted);margin-top:5px;letter-spacing:.04em}
-  #title .bodies{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-  .body-tag{font-family:var(--font-m);font-size:10.5px;letter-spacing:.05em;padding:4px 9px;border-radius:99px;border:1px solid var(--border);background:var(--surface)}
+  #title{top:22px;left:24px;max-width:min(440px,72vw)}
+  #title .eyebrow{font-family:var(--font-m);font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px}
+  #title h1{font-size:21px;font-weight:600;letter-spacing:-.01em;line-height:1.12}
+  #title h1 .v3{color:var(--heart);font-weight:700}
+  #title .sub{font-size:12px;color:var(--text-muted);margin-top:7px;letter-spacing:.01em;line-height:1.45;max-width:38ch}
+  #title .bodies{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .body-tag{font-family:var(--font-m);font-size:10.5px;letter-spacing:.04em;padding:5px 11px;border-radius:99px;border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(var(--blur))}
   .body-tag.a{color:var(--a11oy);border-color:rgba(63,224,197,.4)}
   .body-tag.k{color:var(--killinchu);border-color:rgba(255,177,63,.4)}
 
   /* honesty strip */
-  #honesty{top:18px;right:18px;max-width:min(340px,82vw)}
-  #honesty .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
-  #honesty .row{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.35;color:var(--text-muted);margin-bottom:6px}
+  #honesty{top:22px;right:24px;max-width:min(360px,82vw)}
+  #honesty .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
+  #honesty .hdr{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+  #honesty .row{display:flex;gap:9px;align-items:flex-start;font-size:11px;line-height:1.42;color:var(--text-muted);margin-bottom:9px}
   #honesty .row:last-child{margin-bottom:0}
-  #honesty .dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;margin-top:4px}
+  #honesty .dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;margin-top:4px;box-shadow:0 0 8px currentColor}
   #honesty b{color:var(--text);font-weight:600}
-  .chip{display:inline-block;font-family:var(--font-m);font-size:9.5px;letter-spacing:.03em;padding:2px 6px;border-radius:6px;border:1px solid currentColor;white-space:nowrap}
+  #honesty .gpd-row{cursor:pointer;border-top:1px solid var(--border);padding-top:10px;margin-top:11px;transition:opacity .15s}
+  #honesty .gpd-row:hover{opacity:.82}
+  .chip{display:inline-block;font-family:var(--font-m);font-size:9.5px;letter-spacing:.03em;padding:2px 7px;border-radius:7px;border:1px solid currentColor;white-space:nowrap}
 
   /* systems legend bottom-left */
-  #legend{bottom:18px;left:18px;max-width:min(340px,82vw)}
-  #legend .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
-  #legend h3{font-family:var(--font-m);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
-  .sys-row{display:flex;gap:9px;align-items:baseline;margin-bottom:8px;cursor:pointer;transition:opacity .15s}
+  #legend{bottom:24px;left:24px;max-width:min(360px,82vw)}
+  #legend .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
+  #legend h3{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px}
+  .sys-row{display:flex;gap:11px;align-items:baseline;margin-bottom:11px;cursor:pointer;transition:opacity .15s,transform .15s}
   .sys-row:last-child{margin-bottom:0}
-  .sys-row:hover{opacity:.78}
-  .sys-row .sw{flex:0 0 auto;width:10px;height:10px;border-radius:3px;margin-top:3px}
-  .sys-row .nm{font-size:12px;font-weight:600}
+  .sys-row:hover{opacity:.85;transform:translateX(2px)}
+  .sys-row .sw{flex:0 0 auto;width:11px;height:11px;border-radius:4px;margin-top:3px;box-shadow:0 0 10px currentColor}
+  .sys-row .nm{font-size:12.5px;font-weight:600}
   .sys-row .qn{font-family:var(--font-m);font-size:10px;color:var(--text-muted)}
-  .sys-row .fnx{font-size:10.5px;color:var(--text-dim);display:block;line-height:1.3;margin-top:1px}
+  .sys-row .fnx{font-size:10.5px;color:var(--text-dim);display:block;line-height:1.4;margin-top:2px}
 
   /* controls bottom-center */
-  #controls{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  .btn{pointer-events:auto;font-family:var(--font-m);font-size:11px;letter-spacing:.04em;color:var(--text);background:var(--surface);
-    backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:99px;padding:8px 14px;cursor:pointer;transition:all .15s;user-select:none}
-  .btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
-  .btn.active{color:var(--heart);border-color:rgba(255,93,143,.5)}
+  #controls{bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+  .btn{pointer-events:auto;font-family:var(--font-m);font-size:11px;letter-spacing:.03em;color:var(--text-muted);background:var(--surface);
+    backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:99px;padding:9px 15px;cursor:pointer;transition:all .18s;user-select:none;box-shadow:var(--shadow)}
+  .btn:hover{border-color:var(--border-strong);background:var(--surface-2);color:var(--text);transform:translateY(-1px)}
+  .btn.active{color:var(--heart);border-color:rgba(255,93,143,.5);background:rgba(255,93,143,.08)}
 
   /* hint */
-  #hint{bottom:64px;left:50%;transform:translateX(-50%);font-family:var(--font-m);font-size:10.5px;color:var(--text-dim);letter-spacing:.05em;text-align:center}
+  #hint{bottom:72px;left:50%;transform:translateX(-50%);font-family:var(--font-m);font-size:10.5px;color:var(--text-dim);letter-spacing:.06em;text-align:center}
 
   /* ============ ORGAN PANEL ============ */
-  #panel{position:fixed;z-index:40;top:0;right:0;height:100%;width:min(440px,92vw);
-    background:linear-gradient(180deg,var(--surface-2),rgba(10,14,26,.96));backdrop-filter:blur(22px);
-    border-left:1px solid var(--border-strong);transform:translateX(102%);transition:transform .42s cubic-bezier(.16,1,.3,1);
-    overflow-y:auto;overscroll-behavior:contain;box-shadow:-30px 0 80px rgba(0,0,0,.5)}
+  #panel{position:fixed;z-index:40;top:0;right:0;height:100%;width:min(460px,94vw);
+    background:linear-gradient(180deg,var(--surface-2),rgba(8,11,22,.97));backdrop-filter:blur(26px);
+    border-left:1px solid var(--border-strong);transform:translateX(102%);transition:transform .46s cubic-bezier(.16,1,.3,1);
+    overflow-y:auto;overscroll-behavior:contain;box-shadow:-40px 0 100px rgba(0,0,0,.6)}
   #panel.open{transform:translateX(0)}
-  #panel .ph{position:sticky;top:0;z-index:2;padding:20px 22px 14px;background:linear-gradient(180deg,rgba(14,18,34,.98),rgba(14,18,34,.86));border-bottom:1px solid var(--border)}
-  #panel .ph .sys-pill{font-family:var(--font-m);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)}
-  #panel .ph .quechua{font-size:26px;font-weight:700;line-height:1.05;margin-top:4px}
-  #panel .ph .fn{font-size:13px;color:var(--text-muted);margin-top:3px;line-height:1.3}
-  #panel .pb{padding:18px 22px 90px}
-  #panel .blurb{font-size:13px;line-height:1.55;color:var(--text);opacity:.92}
-  #panel .axes{font-family:var(--font-m);font-size:10.5px;line-height:1.7;color:var(--text-muted);background:rgba(255,93,143,.06);border:1px solid rgba(255,93,143,.2);border-radius:10px;padding:11px 12px;margin-top:14px}
-  .sec-h{font-family:var(--font-m);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);margin:20px 0 10px}
-  .formula{border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:11px;background:var(--surface)}
+  #panel .ph{position:sticky;top:0;z-index:2;padding:24px 26px 16px;background:linear-gradient(180deg,rgba(13,17,32,.99),rgba(13,17,32,.84));border-bottom:1px solid var(--border)}
+  #panel .ph .sys-pill{font-family:var(--font-m);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim)}
+  #panel .ph .quechua{font-size:29px;font-weight:700;line-height:1.04;margin-top:6px;letter-spacing:-.01em}
+  #panel .ph .fn{font-size:13px;color:var(--text-muted);margin-top:5px;line-height:1.4}
+  #panel .pb{padding:20px 26px 100px}
+  #panel .blurb{font-size:13.5px;line-height:1.62;color:var(--text);opacity:.94}
+  #panel .axes{font-family:var(--font-m);font-size:10.5px;line-height:1.75;color:var(--text-muted);background:rgba(255,93,143,.06);border:1px solid rgba(255,93,143,.2);border-radius:12px;padding:13px 14px;margin-top:16px}
+  .sec-h{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .formula{border:1px solid var(--border);border-left:3px solid var(--border-strong);border-radius:12px;padding:14px 15px;margin-bottom:12px;background:var(--surface);transition:border-color .15s,transform .15s}
+  .formula:hover{border-color:var(--border-strong);transform:translateY(-1px)}
   .formula .ftop{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-  .formula .fid{font-family:var(--font-m);font-size:11px;font-weight:700;letter-spacing:.04em}
-  .formula .fname{font-size:13px;font-weight:600;margin-top:1px}
-  .formula .math{font-family:var(--font-m);font-size:13px;line-height:1.6;color:#dfe7ff;background:rgba(8,11,22,.7);border-radius:8px;padding:9px 11px;margin:9px 0;overflow-x:auto;white-space:pre-wrap}
-  .formula .fplain{font-size:11.5px;line-height:1.5;color:var(--text-muted)}
-  .formula .fax{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);margin-top:8px;line-height:1.45;word-break:break-word}
-  .formula .fref{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);margin-top:3px}
+  .formula .fid{font-family:var(--font-m);font-size:11.5px;font-weight:700;letter-spacing:.04em}
+  .formula .fname{font-size:13.5px;font-weight:600;margin-top:3px}
+  .formula .math{font-family:var(--font-m);font-size:13px;line-height:1.65;color:#e3ebff;background:rgba(6,9,18,.8);border:1px solid rgba(120,150,210,.10);border-radius:9px;padding:10px 12px;margin:10px 0;overflow-x:auto;white-space:pre-wrap}
+  .formula .fplain{font-size:11.5px;line-height:1.55;color:var(--text-muted)}
+  .formula .fax{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);margin-top:9px;line-height:1.5;word-break:break-word}
+  .formula .fref{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);margin-top:4px}
+  /* GPD lens presentation */
+  .gpd-grid{display:grid;gap:9px;margin-top:16px}
+  .gpd-cell{border:1px solid var(--border);border-radius:11px;padding:11px 13px;background:var(--surface)}
+  .gpd-cell .gpd-k{display:block;font-family:var(--font-m);font-size:10.5px;letter-spacing:.04em;color:var(--brain);font-weight:700}
+  .gpd-cell .gpd-v{display:block;font-size:12px;line-height:1.5;color:var(--text-muted);margin-top:4px}
+  .gpd-dois{display:grid;gap:7px}
+  .gpd-dois .doi{display:flex;justify-content:space-between;gap:10px;align-items:baseline;text-decoration:none;
+    border:1px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--surface);transition:border-color .15s}
+  .gpd-dois .doi:hover{border-color:var(--border-strong)}
+  .gpd-dois .doi{font-size:12px;color:var(--text)}
+  .gpd-dois .doi span{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);white-space:nowrap}
   .lambda-honesty{border:1px solid var(--warn);border-radius:12px;padding:13px 14px;margin:14px 0;background:rgba(255,126,182,.08)}
   .lambda-honesty .lh-h{font-family:var(--font-m);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);margin-bottom:7px}
   .lambda-honesty p{font-size:12px;line-height:1.5;color:var(--text)}
@@ -159,6 +179,7 @@
   <div id="loader"><div class="pulse-ring"></div><div class="lt">Assembling the body…</div></div>
 
   <canvas id="scene"></canvas>
+  <div id="vignette"></div>
 
   <!-- ============================================================
   STATIC VERIFICATION BLOCK (no-JS fallback + curl-discoverable).
@@ -188,6 +209,12 @@
       <code>Lutar.Round13.lambda_unique_of_separable</code> proves Λ uniqueness as a theorem <strong>CONDITIONAL</strong> on slice-multiplicativity (separability) under A1,A2,A3,A5 — <strong>with no new axiom</strong>. This gets Λ off bare conjecture (conditionally); the UNCONDITIONAL claim stays Conjecture 1.
     </div>
   </header>
+    <section class="vf-organ" data-organ="GPD">
+      <h3>Governed Post-Determinism (GPD) — SZL’s own lens <span class="vf-sys">[participant-general model]</span></h3>
+      <p class="vf-plain">The five organs ARE the participant-general governed-AI model. The unit of agreement shifts from identical output to <b>certified semantic admissibility</b>: the BRAIN/YACHAY reasons (divergent paths OK), the HEART/YUYAY 13-axis gate certifies admissibility (deny-by-default), the SKELETON/Khipu BFT quorum = Semantic Quorum Assurance (Wave23 conditional safety theorem; unconditional = Conjecture 2), the CIRCULATORY/YAWAR append-only receipt bus = Epistemic State Replication + Verifiable Semantic Rollback (receipts/replay live; full ESR = roadmap), and the NERVOUS/OTel spans carry provenance.</p>
+      <p class="vf-ax">Honest scope: locked-proven stays EXACTLY 5; Λ = Conjecture 1; Khipu BFT safety = Conjecture 2 (Wave23 conditional only). Grounded entirely in SZL’s own DOI-stamped prior art — NO external paper is the source of GPD.</p>
+      <p class="vf-ref">SZL Zenodo prior art: 10.5281/zenodo.19867281 · .19934129 · .20020846 · .20020845 · .20020841 · .20174600</p>
+    </section>
     <section class="vf-organ" data-organ="YUYAY">
       <h3>YUYAY — 13-axis CONJUNCTIVE truth gate <span class="vf-sys">[heart]</span></h3>
       <div class="vf-lambda">
@@ -561,8 +588,9 @@
 
   <!-- HUD -->
   <div class="hud" id="title">
-    <h1>SZL Agent Body <span class="v3">v3</span> — Living Anatomy</h1>
-    <div class="sub">two bodies · one circulatory + nervous mesh · proven formulas flowing through the organs</div>
+    <div class="eyebrow">SZL Holdings · Living Anatomy</div>
+    <h1>SZL Agent Body <span class="v3">v3</span> — the governed-AI organ substrate</h1>
+    <div class="sub">Two bodies · one circulatory + nervous mesh · proven formulas instilled in the organs · the Λ heart at the center.</div>
     <div class="bodies">
       <span class="body-tag a">a11oy · governed-AI decision body</span>
       <span class="body-tag k">killinchu · maritime / drone C2 body</span>
@@ -570,7 +598,10 @@
   </div>
 
   <div class="hud" id="honesty">
-    <div class="card" id="honesty-card"></div>
+    <div class="card">
+      <div class="hdr">Absolute Honesty Doctrine</div>
+      <div id="honesty-card"></div>
+    </div>
   </div>
 
   <div class="hud" id="legend">
@@ -587,6 +618,7 @@
     <button class="btn active" id="btn-pulse">⟿ pulses</button>
     <button class="btn" id="btn-mesh">⇆ focus mesh</button>
     <button class="btn" id="btn-reset">⟲ reset view</button>
+    <button class="btn" id="btn-gpd">◆ GPD lens</button>
     <button class="btn" id="btn-formulas">≣ formulas (text)</button>
   </div>
 
