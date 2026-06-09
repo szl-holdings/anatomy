@@ -61,3 +61,5 @@ Vendored **Three.js r160** at `/lib/three.min.js`. No runtime CDN; offline-capab
 Part of the **SZL Holdings** lab: [a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) (orchestration platform) · [killinchu](https://huggingface.co/spaces/SZLHOLDINGS/killinchu) (counter-UAS C2) · [cathedral](https://huggingface.co/spaces/SZLHOLDINGS/cathedral) (org landing) · the `lutar-lean` formal spine.
 
 Single source of truth: `team/PROVEN_STATE_CANONICAL.md`. ORCID 0009-0001-0110-4173 · CC-BY-4.0.
+
+<!-- static-republish bump 2026-06-09T06:52Z (CTO final sweep): force CDN re-publish; index.html present but root was 404 -->
