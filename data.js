@@ -426,5 +426,36 @@
     appendicular: ['szl-brain (YACHAY cortex+QM)','szl-overwatch (R0513)','szl-wires (YAWAR↔OTel)','szl-rimay (NL filter)','szl-sentra (egress)','szl-tupu-t7 (receipt-token)','szl-chakana (21-edge lattice)','szl-terra (BodyGraph)','szl-brand (assets)','szl-musquy (K-sim)']
   };
 
-  root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS };
+
+  /* =====================================================================
+     PUTNAM 2025 — honest doctrine-v11 kernel verdict (additive)
+     Locked-5 {F1,F11,F12,F18,F19} + Λ = Conjecture 1 are UNCHANGED by this block.
+     Numbers match the CI kernel run on lutar-lean main exactly.
+     ===================================================================== */
+  const PUTNAM_2025 = {
+    competition:'86th William Lowell Putnam Mathematical Competition (Dec 6 2025)',
+    source:'lutar-lean main', kernel_sha:'b7c3e382d56f6548945d93895c9d78c6411c40f8', kernel_sha_short:'b7c3e38', computed:'2026-06-09', doctrine:'v11',
+    headline:'0 REAL / 11 DEMO / 1 OPEN',
+    tally:{ REAL:0, DEMO:11, OPEN:1 },
+    labels:{ REAL:'Lean-kernel checked, no sorry, no extra axioms beyond declared', DEMO:'compiles but uses sorry/unproven lemmas', OPEN:'statement only' },
+    bridge:'We are not doing "drones solve Putnam." We are doing: Intelligence → Structure → Conjecture → Certificate. killinchu supplies intelligence (tracking, fusion, ROE decisions, signed receipts). We extract mathematical structure (graphs, constraints, optimization instances). We pose Putnam-grade + SZL-native problems. We ship certificates (Lean-verified REAL theorems, reproducible benchmarks, provenance).',
+    problems:[
+      {id:'A1',file:'Lutar/Putnam/P_A1.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'A2',file:'Lutar/Putnam/P_A2.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'A3',file:'Lutar/Putnam/P_A3.lean',status:'OPEN',note:'statement only (True-shell); official answer withheld pending a real proof'},
+      {id:'A4',file:'Lutar/Putnam/P_A4.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'A5',file:'Lutar/Putnam/P_A5.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'A6',file:'Lutar/Putnam/P_A6.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B1',file:'Lutar/Putnam/P_B1.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B2',file:'Lutar/Putnam/P_B2.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B3',file:'Lutar/Putnam/P_B3.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B4',file:'Lutar/Putnam/P_B4.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B5',file:'Lutar/Putnam/P_B5.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'},
+      {id:'B6',file:'Lutar/Putnam/P_B6.lean',status:'DEMO',note:'formalized statement; proof uses sorry/unproven lemmas'}
+    ],
+    szl_native:{ ids:['SZL-12A','SZL-12B'], status:'PENDING', note:'SZL-native originals — pending upstream kernel work; not yet on lutar-lean main' },
+    note:'A3 is OPEN (statement-only True-shell); the official 2025 A3 answer is intentionally withheld here until a REAL proof exists. No problem is currently REAL: each DEMO file formalizes the statement but discharges the proof with sorry or unproven lemmas.'
+  };
+
+  root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS, PUTNAM_2025 };
 })(window);
