@@ -24,6 +24,15 @@ NERVOUS · OTel/VSP · SKELETON · 12 service repos.
 Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE); conditional Λ axiom-free PROVEN ·
 Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
-~190 experimental CI-green · SLSA L1 honest / L2 roadmap · trust never 100% · no AGI.
+~190 experimental CI-green · trust never 100% · no AGI.
 
-Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space).
+**Supply-chain posture:** this Space is a static visualization (`sdk: static`) — SLSA L1 honest.
+The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
+(container provenance via attest-build-provenance, Sigstore keyless, Rekor-anchored; L3 roadmap) —
+see [szl-uds-deployment](https://github.com/szl-holdings/szl-uds-deployment).
+
+> **Non-affiliation.** SZL Holdings' use of "UDS" references Defense Unicorns' Unified Defense
+> Stack (USPTO Serial 99831122); SZL Holdings is not affiliated with Defense Unicorns. No
+> production ATO is claimed.
+
+Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a11oy.net](https://a11oy.net)**
