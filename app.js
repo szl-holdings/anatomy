@@ -1,8 +1,23 @@
 /* =====================================================================
-   SZL AGENT BODY v4 — LIVING ANATOMY · WebGL engine
-   (EVOLVES v3 — additive dissection upgrade, NOT a rewrite. The whole
-    v3 engine below is preserved verbatim; v4 features are layered ON TOP
-    in a clearly-marked block near the end. v3 lineage stays visible.)
+   SZL AGENT BODY v4 (DEEPEN) — LIVING ANATOMY · WebGL engine
+   (EVOLVES v3 → v4 → v4-deepen — ADDITIVE ONLY, NOT a rewrite. The whole
+    v3 engine below is preserved verbatim; v4 dissection features are
+    layered ON TOP in a clearly-marked block; the v4-DEEPEN block (v5)
+    is layered on top of that. v3/v4 lineage stays fully visible.)
+   v4-DEEPEN ADDS (all additive, same scene + SAME render loop):
+     A. Formula Atlas — EVERY formula in data.js, grouped by maturity
+        tier, searchable, tier-filterable, live count badges.
+     B. Per-organ formula→Lean drill-down (expandable axioms + lutar-lean
+        link) and hover organ↔formula 3D highlight.
+     C. More real 3D — leader-line organ labels, breathing Λ-heart idle
+        synced to the receipt pulse, smoother per-organ framing, a
+        pausable guided-tour mode. Respects prefers-reduced-motion.
+     D. HONEST forecast overlay — a transparency timeline/sparkline of
+        proof maturity driven ONLY by data.js / KERNEL strings; every
+        not-yet-achieved item labeled ROADMAP / PROJECTED.
+     E. Mobile/tablet parity via the existing bottom-sheet pattern.
+   Honesty preserved: data.js is the single source of truth; nothing is
+   fabricated; CONJECTURE/EXPERIMENTAL/AXIOM_GATED are never relabeled.
    Sovereign: vendored THREE r160 (global), ZERO runtime CDN, offline.
    Two organisms (a11oy / killinchu) rendered as human-like silhouettes
    sharing ONE circulatory (YAWAR receipt bus) + nervous (span lineage)
@@ -405,6 +420,7 @@
     if(om&&om.grp.userData.glow) om.grp.userData.glow.material.opacity=0.7;
     selectedOM = om || null;
     if(V4 && V4.applyFocus) V4.applyFocus();   // v4 focus-mode hook (no-op until v4 inits)
+    if(V5 && V5.onOrganOpen) V5.onOrganOpen(o); // v5 deepen hook: per-formula Lean drill-down + organ↔formula highlight
   }
   function closePanel(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
     organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
@@ -416,6 +432,7 @@
   let tween=null;
   let selectedOM=null;   // v4: currently-open organ (for focus mode)
   let V4=null;           // v4: dissection module handle (set after init)
+  let V5=null;           // v5: deepen module handle (atlas, forecast, tour, labels, drill-down)
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -577,6 +594,8 @@
     });
     // v4: per-frame dissection updates (explode easing, clip plane, HUD tick)
     if(V4 && V4.tick) V4.tick(dt,t);
+    // v5: per-frame deepen updates (label projection, breathing heart idle, tour fly)
+    if(V5 && V5.tick) V5.tick(dt,t,beat);
     renderer.render(scene,camera);
     if(!_loaderHidden){ _loaderHidden=true; var ld=$('loader'); if(ld) ld.classList.add('hidden'); }
   }
@@ -853,6 +872,464 @@
   })();
   /* ==========================  /v4  =================================== */
 
+  /* =====================================================================
+     ===========================  v4-DEEPEN (v5)  ========================
+     DEEPENING UPGRADE — additive module. Reuses the v3/v4 scene, camera,
+     organMeshes/vessels registries, the SAME render loop (via V5.tick),
+     openOrgan/flyTo/closePanel, mathToUnicode, and reads EVERYTHING from
+     window.SZL_ANATOMY (D). Nothing in v3/v4 above is replaced.
+     ===================================================================== */
+  V5 = (function(){
+    const el = id=>document.getElementById(id);
+    const D = window.SZL_ANATOMY;
+    const M = D.MATURITY, F = D.FORMULAS, K = D.KERNEL;
+
+    /* ---- tier order + honest descriptions (straight from D.MATURITY) ---- */
+    const TIER_ORDER = ['LOCKED','CONDITIONAL','AXIOM_GATED','EXPERIMENTAL','CONJECTURE'];
+    function tierColor(t){ return (M[t]||{}).color || '#9aa8cc'; }
+    function tierLabel(t){ return (M[t]||{}).label || t; }
+    function tierDesc(t){ return (M[t]||{}).desc || ''; }
+
+    // live counts straight from data.js — never hardcoded
+    function countByTier(){
+      const c={}; TIER_ORDER.forEach(t=>c[t]=0);
+      Object.keys(F).forEach(k=>{ const m=F[k].maturity; c[m]=(c[m]||0)+1; });
+      return c;
+    }
+
+    /* ---- honest "view in lutar-lean" link derived from the ref string.
+       We NEVER invent a precise permalink: PR refs -> /pull/N; otherwise
+       we link to a repo code-search for the .lean file / declaration so the
+       reader lands on the real source. lutar-lean is the kernel repo. ---- */
+    const LEAN_REPO = 'https://github.com/szl-holdings/lutar-lean';
+    function leanLink(f){
+      const ref = f.ref || '';
+      const pr = ref.match(/(?:lutar-lean\s*)?(?:PR\s*)?#(\d+)/);
+      // a *.lean file mentioned in the ref (best-effort, honest)
+      const file = ref.match(/([A-Za-z0-9_\/]+\.lean)/);
+      let href, kind;
+      if(pr && /lutar-lean/i.test(ref)){ href = LEAN_REPO + '/pull/' + pr[1]; kind='PR #'+pr[1]; }
+      else if(file){ href = LEAN_REPO + '/search?q=' + encodeURIComponent(file[1].split('/').pop()) + '&type=code'; kind=file[1].split('/').pop(); }
+      else if(pr){ href = LEAN_REPO + '/pulls?q=' + encodeURIComponent('#'+pr[1]); kind='PR #'+pr[1]; }
+      else { href = LEAN_REPO + '/search?q=' + encodeURIComponent((f.id||'')+' '+f.name) + '&type=code'; kind='lutar-lean'; }
+      return {href, kind};
+    }
+
+    /* ---- shared drill-down detail block (axioms + lutar-lean link) ----
+       Returned as an HTML <details> so it is keyboard-accessible & additive
+       to any formula card. Used by both the Atlas and the organ panel. ---- */
+    function drillHTML(f){
+      const ll = leanLink(f);
+      return `<details class="fdrill"><summary>axioms &amp; Lean source</summary>`+
+        `<div class="fdd">`+
+        `<div class="fax2">#print axioms: ${esc(f.axioms)}</div>`+
+        `<div class="fax2" style="margin-top:6px;color:var(--text-muted)">ref: ${esc(f.ref)}</div>`+
+        `<a class="lean-link" href="${ll.href}" target="_blank" rel="noopener">↗ view in lutar-lean · ${esc(ll.kind)}</a>`+
+        `</div></details>`;
+    }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    /* =====================================================================
+       (B) PER-ORGAN DRILL-DOWN + organ↔formula 3D highlight
+       After openOrgan() renders its v3 formula cards, we enhance each card
+       in place: tag it with its formula id, append the drill-down details,
+       and wire hover so hovering a card lights up the owning organ in 3D
+       (and vice-versa). Purely additive DOM enhancement. ===================== */
+    function organByFormula(fid){ return D.ORGANS.find(o=>(o.formulas||[]).includes(fid)); }
+    function omByOrgan(o){ return organMeshes.find(m=>m.organ===o); }
+    function litOM(om,on){
+      if(!om) return;
+      if(om.grp.userData.halo) om.grp.userData.halo.material.opacity = on?0.34:0.0;
+      if(om.grp.userData.glow) om.grp.userData.glow.material.opacity = on?0.7:om.glowBase;
+    }
+    function onOrganOpen(o){
+      const body = el('p-body'); if(!body) return;
+      const cards = body.querySelectorAll('.formula');
+      // the v3 cards render in the order of o.formulas — map by index, robust.
+      const ids = (o.formulas||[]);
+      cards.forEach((card,i)=>{
+        const fid = ids[i]; const f = fid && F[fid]; if(!f) return;
+        card.setAttribute('data-fid', fid);
+        // avoid double-injecting if openOrgan is called twice
+        if(!card.querySelector('.fdrill')){
+          const tmp=document.createElement('div'); tmp.innerHTML=drillHTML(f);
+          card.appendChild(tmp.firstChild);
+        }
+        const om = omByOrgan(o); // this organ
+        card.onmouseenter = ()=>litOM(om,true);
+        card.onmouseleave = ()=>{ if(!panel.classList.contains('open')||selectedOM!==om) litOM(om,false); else litOM(om,false); };
+      });
+    }
+
+    /* =====================================================================
+       (A) FORMULA ATLAS — every formula in data.js, tier-grouped
+       ===================================================================== */
+    const atlas = el('atlas');
+    let atlasFilter = 'ALL';
+    let atlasQuery = '';
+
+    function atlasFormulaCard(fid){
+      const f = F[fid]; if(!f) return '';
+      const col = tierColor(f.maturity);
+      return `<div class="formula" data-fid="${fid}" data-maturity="${f.maturity}" style="border-left-color:${col}">`+
+        `<div class="ftop"><span class="fid" style="color:${col}">${esc(f.id)}</span>`+
+        `<span class="chip" style="color:${col}">${esc(tierLabel(f.maturity))}</span></div>`+
+        `<div class="fname">${esc(f.name)}</div>`+
+        `<div class="math">${mathToUnicode(f.latex)}</div>`+
+        `<div class="fplain">${esc(f.plain)}</div>`+
+        drillHTML(f)+
+        `</div>`;
+    }
+
+    function buildAtlasFilters(){
+      const wrap = el('atlas-filters'); if(!wrap) return;
+      const counts = countByTier();
+      const total = Object.keys(F).length;
+      let html = `<button class="at-pill" data-tier="ALL" aria-pressed="true">ALL <span class="ct">${total}</span></button>`;
+      TIER_ORDER.forEach(t=>{
+        if(!counts[t]) return; // only show tiers that actually exist in data.js
+        html += `<button class="at-pill" data-tier="${t}" aria-pressed="false" style="color:${tierColor(t)}">`+
+                `${t.replace('_',' ')} <span class="ct">${counts[t]}</span></button>`;
+      });
+      wrap.innerHTML = html;
+      wrap.querySelectorAll('.at-pill').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          atlasFilter = b.getAttribute('data-tier');
+          wrap.querySelectorAll('.at-pill').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+          renderAtlas();
+        });
+      });
+    }
+
+    function renderAtlas(){
+      const body = el('atlas-body'); if(!body) return;
+      const counts = countByTier();
+      const total = Object.keys(F).length;
+      const note = el('atlas-note');
+      if(note) note.innerHTML = `Every formula instilled across the body — <b>${total}</b> total, read live from <code>data.js</code>. `+
+        `Locked-proven = exactly <b>${counts.LOCKED||0}</b> {${K.locked_proven.join(', ')}}. CONJECTURE / EXPERIMENTAL / AXIOM-GATED are NEVER relabeled as LOCKED.`;
+      const q = atlasQuery.trim().toLowerCase();
+      let html = '';
+      const tiers = TIER_ORDER.filter(t=> counts[t] && (atlasFilter==='ALL' || atlasFilter===t));
+      tiers.forEach(t=>{
+        const ids = Object.keys(F).filter(k=>F[k].maturity===t).filter(k=>{
+          if(!q) return true;
+          const f=F[k];
+          return (f.id+' '+f.name+' '+f.plain+' '+f.axioms+' '+f.latex+' '+f.ref).toLowerCase().includes(q);
+        });
+        if(!ids.length && q) return; // hide empty tiers while searching
+        html += `<div class="at-tier"><div class="at-tier-h" style="color:${tierColor(t)}">`+
+          `<span class="tn">${t.replace('_',' ')}</span>`+
+          `<span class="tc">${ids.length} / ${counts[t]}</span>`+
+          `<span class="td">${esc(tierDesc(t))}</span></div>`;
+        if(ids.length){ ids.forEach(id=>{ html += atlasFormulaCard(id); }); }
+        else { html += `<div class="at-empty">no match in this tier</div>`; }
+        html += `</div>`;
+      });
+      if(!html) html = `<div class="at-empty">No formula matches “${esc(atlasQuery)}”.</div>`;
+      body.innerHTML = html;
+      // wire card hover -> 3D organ highlight (organ↔formula traceability)
+      body.querySelectorAll('.formula').forEach(card=>{
+        const fid = card.getAttribute('data-fid');
+        const o = organByFormula(fid); const om = o && omByOrgan(o);
+        card.onmouseenter = ()=>{ litOM(om,true); card.classList.add('lit'); };
+        card.onmouseleave = ()=>{ litOM(om,false); card.classList.remove('lit'); };
+      });
+    }
+
+    function openAtlas(){
+      closeForecast();
+      buildAtlasFilters(); renderAtlas();
+      atlas.classList.add('open'); atlas.setAttribute('aria-hidden','false');
+      const b=el('btn-atlas'); if(b){ b.classList.add('active'); b.setAttribute('aria-expanded','true'); }
+    }
+    function closeAtlas(){
+      atlas.classList.remove('open'); atlas.setAttribute('aria-hidden','true');
+      const b=el('btn-atlas'); if(b){ b.classList.remove('active'); b.setAttribute('aria-expanded','false'); }
+    }
+    (function wireAtlas(){
+      const b=el('btn-atlas'); if(b) b.addEventListener('click', ()=> atlas.classList.contains('open')?closeAtlas():openAtlas());
+      const c=el('atlas-close'); if(c) c.addEventListener('click', closeAtlas);
+      const q=el('atlas-q'); if(q) q.addEventListener('input', ()=>{ atlasQuery=q.value; renderAtlas(); });
+      window.addEventListener('keydown', e=>{ if(e.key==='Escape' && atlas.classList.contains('open')) closeAtlas(); });
+    })();
+
+    /* =====================================================================
+       (D) HONEST FORECAST OVERLAY — proof-maturity transparency timeline
+       Driven ONLY by data.js / KERNEL strings. Achieved facts come from the
+       kernel posture; everything not-yet-done is explicitly ROADMAP/PROJECTED
+       and pulled verbatim from KERNEL / FORMULA strings. No invented metric.
+       ===================================================================== */
+    // Achieved (DONE) — every value here exists in D.KERNEL / D.MATURITY.
+    function forecastDoneEvents(){
+      const counts = countByTier();
+      const ev = [];
+      // The single dated transition we can honestly assert from data.js:
+      // KERNEL.gpd states "locked-proven = exactly 8 ... F4/F7/F22 joined the original 5 on 2026-06-10".
+      ev.push({ when:'pre 2026-06-10', what:`<b>5 LOCKED-proven.</b> Original locked set before the 2026-06-10 upgrade (the 8 minus F4/F7/F22).` , tag:'done'});
+      ev.push({ when:'2026-06-10', what:`<b>LOCKED 5 → ${K.locked_proven.length}.</b> F4 (Khipu DAG acyclicity), F7 (Chaski FIFO), F22 (Khipu emit monotonicity) upgraded to genuine kernel-verified proofs. Locked set now {${K.locked_proven.join(', ')}} @ <code>${K.locked_sha}</code>. (Source: KERNEL.gpd / KERNEL.locked_proven.)`, tag:'done'});
+      ev.push({ when:'waves 5–23', what:`<b>${counts.EXPERIMENTAL||0} EXPERIMENTAL · CI-green</b> cards instilled (${esc(K.waves_merged)}), main @ <code>${K.main_sha}</code> — additive, NEVER folded into the locked ${K.locked_proven.length}.`, tag:'done'});
+      ev.push({ when:'Wave12', what:`<b>CUT-2 conditional Λ uniqueness.</b> ${esc(K.cut2)}`, tag:'done'});
+      ev.push({ when:'Wave23', what:`<b>Khipu BFT conditional safety.</b> ${esc(K.bft_conditional)}`, tag:'done'});
+      return ev;
+    }
+    // ROADMAP / PROJECTED — pulled ONLY from text that data.js already states
+    // as an open gap / roadmap. Nothing here is claimed as achieved.
+    function forecastRoadmapEvents(){
+      const rm = [];
+      // CUT-1 open gap (verbatim from FORMULAS.CUT1)
+      if(F.CUT1) rm.push({ when:'ROADMAP', what:`<b>CUT-1 full unconditional Λ.</b> Open gap <code>dyadic_image_dense</code> (dense-domain step, n-adic recursive construction). Multi-week roadmap — Λ unconditional uniqueness stays <b>Conjecture 1</b>. (Source: FORMULAS.CUT1.)`, tag:'proj'});
+      // Khipu unconditional BFT (Conjecture 2) — from B2 / KERNEL.bft_conditional
+      rm.push({ when:'ROADMAP', what:`<b>Unconditional Khipu BFT safety.</b> Stays <b>Conjecture 2</b> at the sharp boundary; only the n≥3f+1 + honest-non-equivocation conditional theorem (B2 / Wave23) is proven. (Source: KERNEL.bft_conditional.)`, tag:'proj'});
+      // Per-formula honest ROADMAP notes mined from FORMULA plain/axioms strings
+      Object.keys(F).forEach(k=>{
+        const f=F[k]; const blob=(f.plain+' '+f.axioms);
+        if(/ROADMAP/i.test(blob)){
+          // surface the formula's own roadmap caveat (verbatim-ish, trimmed)
+          rm.push({ when:'ROADMAP', what:`<b>${esc(f.id)} — ${esc(f.name)}.</b> ${roadmapSnippet(f)}`, tag:'proj'});
+        }
+      });
+      // SLSA ladder (verbatim from KERNEL.slsa)
+      rm.push({ when:'ROADMAP', what:`<b>SLSA L3.</b> Static space is SLSA <b>L1 honest</b>; product images L2 build-attested; <b>L3 is roadmap</b>. (Source: KERNEL.slsa.)`, tag:'proj'});
+      return rm;
+    }
+    function roadmapSnippet(f){
+      // extract the sentence/parenthetical that mentions ROADMAP, honestly
+      const txt=f.plain+' '+f.axioms;
+      const m=txt.match(/\(?([^.()]*ROADMAP[^.()]*)\)?/i);
+      let s = m? m[1].trim() : 'roadmap (see lutar-lean)';
+      return esc(s) + ' <span style="color:var(--text-dim)">— roadmap (see lutar-lean).</span>';
+    }
+
+    // sparkline of locked-proven growth (only points we can honestly assert)
+    function forecastSpark(){
+      const counts = countByTier();
+      // honest two-point locked trajectory from data.js + the live total today
+      const series = [
+        { label:'pre 6-10', v:5,  proj:false },
+        { label:'2026-06-10', v:K.locked_proven.length, proj:false }
+      ];
+      const W=460, H=92, pad=22, maxV=Math.max(8, K.locked_proven.length, 10);
+      const n=series.length;
+      const xOf=i=> pad + (W-2*pad) * (n===1?0.5:(i/(n-1)));
+      const yOf=v=> (H-18) - ((H-30) * (v/maxV));
+      let path='', dots='';
+      series.forEach((p,i)=>{
+        const x=xOf(i), y=yOf(p.v);
+        path += (i===0?'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+        dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="${p.proj?'var(--brain)':'var(--skel)'}"></circle>`+
+                `<text x="${x.toFixed(1)}" y="${(y-9).toFixed(1)}" fill="${p.proj?'var(--brain)':'var(--skel)'}" font-family="ui-monospace,monospace" font-size="11" text-anchor="middle">${p.v}</text>`+
+                `<text x="${x.toFixed(1)}" y="${(H-3).toFixed(1)}" fill="var(--text-dim)" font-family="ui-monospace,monospace" font-size="8.5" text-anchor="middle">${p.label}</text>`;
+      });
+      // a dashed PROJECTED continuation toward the roadmap (clearly not achieved)
+      const lastX=xOf(n-1), lastY=yOf(series[n-1].v);
+      const projX=W-pad, projY=yOf(series[n-1].v); // flat — we do NOT predict a number
+      const projLine = `<path d="M${lastX.toFixed(1)} ${lastY.toFixed(1)} L${projX.toFixed(1)} ${projY.toFixed(1)}" stroke="var(--brain)" stroke-width="2" stroke-dasharray="4 4" fill="none" opacity="0.7"></path>`+
+        `<text x="${projX.toFixed(1)}" y="${(projY-9).toFixed(1)}" fill="var(--brain)" font-family="ui-monospace,monospace" font-size="8.5" text-anchor="end">ROADMAP (no number claimed)</text>`;
+      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Locked-proven count: 5 then ${K.locked_proven.length}; future is roadmap, no number claimed">`+
+        projLine+
+        `<path d="${path.trim()}" stroke="var(--skel)" stroke-width="2.4" fill="none"></path>`+
+        dots+`</svg>`;
+    }
+
+    function renderForecast(){
+      const body=el('forecast-body'); if(!body) return;
+      const counts=countByTier();
+      const note=el('forecast-note');
+      if(note) note.innerHTML = `A transparency forecast of <b>proof maturity</b>, driven only by <code>data.js</code> / KERNEL strings — <b>not a fabricated metric</b>. Achieved facts are marked <span style="color:var(--skel)">DONE</span>; everything not-yet-achieved is <span style="color:var(--brain)">ROADMAP / PROJECTED</span>. We never predict a future locked count.`;
+      let html='';
+      html += `<div class="fc-spark"><div class="sp-h">locked-proven trajectory (kernel-verified)</div>${forecastSpark()}`+
+        `<div class="fc-legend"><span><i style="background:var(--skel)"></i> DONE · kernel-verified</span>`+
+        `<span><i style="background:var(--brain)"></i> ROADMAP · projected (no number claimed)</span></div></div>`;
+      // live tier snapshot (counts straight from data.js)
+      html += `<div class="fc-sec-h">live tier snapshot (data.js)</div>`;
+      TIER_ORDER.filter(t=>counts[t]).forEach(t=>{
+        html += `<div class="fc-event"><span class="ev-when" style="color:${tierColor(t)}">${counts[t]}×</span>`+
+          `<span class="ev-what"><b>${t.replace('_',' ')}</b> — ${esc(tierDesc(t))}</span></div>`;
+      });
+      html += `<div class="fc-sec-h">achieved milestones <span class="fc-tag done">DONE</span></div>`;
+      forecastDoneEvents().forEach(e=>{ html += `<div class="fc-event"><span class="ev-when">${esc(e.when)}</span><span class="ev-what">${e.what}</span></div>`; });
+      html += `<div class="fc-sec-h">roadmap / projected <span class="fc-tag proj">NOT YET ACHIEVED</span></div>`;
+      forecastRoadmapEvents().forEach(e=>{ html += `<div class="fc-event roadmap"><span class="ev-when">${esc(e.when)}</span><span class="ev-what">${e.what}</span></div>`; });
+      html += `<div class="fc-disc"><b>Honesty.</b> This panel forecasts only <i>maturity transparency</i>, never capability. Λ = Conjecture 1; Khipu BFT = Conjecture 2; SLSA L1 honest. No EXPERIMENTAL / CONDITIONAL / AXIOM-GATED / CONJECTURE item is relabeled LOCKED, and no future proof count is invented. Where a field is missing we surface what exists and label the rest roadmap (see lutar-lean).</div>`;
+      body.innerHTML = html;
+    }
+    function openForecast(){
+      closeAtlas();
+      renderForecast();
+      el('forecast').classList.add('open'); el('forecast').setAttribute('aria-hidden','false');
+      const b=el('btn-forecast'); if(b){ b.classList.add('active'); b.setAttribute('aria-expanded','true'); }
+    }
+    function closeForecast(){
+      const fc=el('forecast'); if(!fc) return;
+      fc.classList.remove('open'); fc.setAttribute('aria-hidden','true');
+      const b=el('btn-forecast'); if(b){ b.classList.remove('active'); b.setAttribute('aria-expanded','false'); }
+    }
+    (function wireForecast(){
+      const b=el('btn-forecast'); if(b) b.addEventListener('click', ()=> el('forecast').classList.contains('open')?closeForecast():openForecast());
+      const c=el('forecast-close'); if(c) c.addEventListener('click', closeForecast);
+      window.addEventListener('keydown', e=>{ if(e.key==='Escape' && el('forecast').classList.contains('open')) closeForecast(); });
+    })();
+
+    /* =====================================================================
+       (C) MORE REAL 3D — leader-line organ labels
+       A thin 3D leader line from each organ outward to a tag anchor, plus an
+       HTML label projected to screen each frame. Reuses root + the SAME loop.
+       ===================================================================== */
+    const labelLayer = el('labels');
+    const labels = []; // {om, div, anchorWorld, line}
+    let labelsOn = true;
+    function buildLabels(){
+      organMeshes.forEach(om=>{
+        const o=om.organ;
+        // leader anchor: push outward along +x of the body and slightly up
+        const side = o.shared?0:(om.bodyKey==='killinchu'?1:-1);
+        const base = om.basePos ? om.basePos.clone() : om.grp.position.clone();
+        const outX = side===0 ? (o.pos[0]>=0?1:-1) : side;
+        const anchor = base.clone().add(new THREE.Vector3(outX*(0.55+o.scale*0.6), 0.35+o.scale*0.4, 0));
+        // 3D leader line (additive, faint)
+        const geo=new THREE.BufferGeometry().setFromPoints([base, anchor]);
+        const line=new THREE.Line(geo, new THREE.LineBasicMaterial({color:o.color,transparent:true,opacity:0.34,blending:THREE.AdditiveBlending,depthWrite:false}));
+        root.add(line);
+        // HTML label
+        const div=document.createElement('div'); div.className='olabel';
+        div.style.color = o.color;
+        div.innerHTML = `${esc(o.quechua)}<span class="od">${esc((D.SYSTEMS.find(s=>s.key===o.system)||{}).name||o.system)}</span>`;
+        div.addEventListener('click', ()=>openOrgan(o));
+        div.style.pointerEvents='auto'; div.style.cursor='pointer';
+        labelLayer.appendChild(div);
+        labels.push({om, div, anchor, line});
+      });
+    }
+    const _projV = new THREE.Vector3();
+    function updateLabels(){
+      if(!labelsOn){ return; }
+      const w=innerWidth, h=innerHeight;
+      labels.forEach(L=>{
+        _projV.copy(L.anchor).project(camera);
+        const behind = _projV.z>1;
+        const x=( _projV.x*0.5+0.5)*w, y=(-_projV.y*0.5+0.5)*h;
+        if(behind || x<-50 || x>w+50 || y<-50 || y>h+50){ L.div.classList.remove('show'); }
+        else { L.div.style.left=x+'px'; L.div.style.top=y+'px'; L.div.classList.add('show'); }
+      });
+    }
+    function setLabels(on){
+      labelsOn=on;
+      labelLayer.classList.toggle('off', !on);
+      labels.forEach(L=>{ L.line.material.opacity = on?0.34:0.0; L.line.visible=on; });
+      const b=el('btn-labels'); if(b){ b.classList.toggle('active',on); b.setAttribute('aria-pressed',String(on)); }
+      if(!on) labels.forEach(L=>L.div.classList.remove('show'));
+    }
+    (function wireLabels(){ const b=el('btn-labels'); if(b) b.addEventListener('click', ()=>setLabels(!labelsOn)); })();
+
+    /* ---- breathing Λ-heart idle synced to the receipt pulse ----
+       Additive secondary modulation on top of the v3 lub-dub: a slow
+       "breath" on the halo + a gentle scale wobble, gated by reduced-motion. ---- */
+    let breathPhase=0;
+    function breatheHeart(dt, beat){
+      if(REDUCED_MOTION) return;
+      breathPhase += dt*0.55; // ~5.5s breath cycle
+      const breath = 0.5 + 0.5*Math.sin(breathPhase); // 0..1
+      if(heartHalo){ heartHalo.material.opacity = clamp(heartHalo.material.opacity + breath*0.04, 0, 0.45); }
+      if(heartGlow){ heartGlow.material.opacity = clamp(heartGlow.material.opacity + breath*0.05, 0, 0.95); }
+      if(heartGroup){
+        // tiny breath layered onto the v3 beat scale (never overrides it)
+        const s = heartGroup.scale.x * (1 + breath*0.012);
+        heartGroup.scale.setScalar(s);
+      }
+    }
+
+    /* =====================================================================
+       (C) GUIDED TOUR — fly organ-to-organ, narrate, auto-advance, pausable
+       ===================================================================== */
+    // tour route: a sensible anatomical walk through the distinct organs
+    const TOUR = ['yuyay','amaru','yawar','ruway','sentra','huklla','vsp','hatun','overwatch','tukuy','musquy']
+      .map(k=>D.ORGANS.find(o=>o.key===k)).filter(Boolean);
+    const tourEl=el('tour');
+    let tour = { on:false, i:0, paused:false, t:0, dwell: (REDUCED_MOTION?7.0:6.0) };
+    function tourShow(o){
+      const sys=(D.SYSTEMS.find(s=>s.key===o.system)||{}).name||o.system;
+      el('tr-step').textContent = 'organ';
+      el('tr-name').textContent = o.quechua;
+      el('tr-prog').textContent = (tour.i+1)+' / '+TOUR.length;
+      const fcount=(o.formulas||[]).length;
+      el('tr-body').innerHTML = `<b style="color:${o.color}">${esc(sys)}</b> · ${esc(o.fn)}. `+
+        `${esc(o.blurb).slice(0,180)}${o.blurb.length>180?'…':''} `+
+        `<span style="color:var(--text-dim)">(${fcount} formula${fcount===1?'':'s'} instilled — open to inspect each.)</span>`;
+      el('tr-bar-i').style.width='0%';
+    }
+    function tourGo(i){
+      if(!TOUR.length) return;
+      tour.i = (i+TOUR.length)%TOUR.length;
+      tour.t = 0;
+      const o=TOUR[tour.i];
+      tourShow(o);
+      openOrgan(o); // reuses v3 smooth framing + panel
+    }
+    function startTour(){
+      if(!TOUR.length) return;
+      tour.on=true; tour.paused=false;
+      autoRotate=false; const rb=el('btn-rotate'); if(rb) rb.classList.remove('active');
+      tourEl.classList.add('show');
+      const b=el('btn-tour'); if(b){ b.classList.add('active'); b.setAttribute('aria-pressed','true'); }
+      el('tr-pause').textContent='⏸ pause';
+      tourGo(0);
+    }
+    function stopTour(){
+      tour.on=false;
+      tourEl.classList.remove('show');
+      const b=el('btn-tour'); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); }
+      closePanel();
+    }
+    function togglePause(){
+      tour.paused=!tour.paused;
+      el('tr-pause').textContent = tour.paused?'▶ resume':'⏸ pause';
+    }
+    function tourTick(dt){
+      if(!tour.on || tour.paused) return;
+      tour.t += dt;
+      const frac = clamp(tour.t/tour.dwell,0,1);
+      el('tr-bar-i').style.width = (frac*100).toFixed(0)+'%';
+      if(tour.t>=tour.dwell){ tourGo(tour.i+1); }
+    }
+    (function wireTour(){
+      const b=el('btn-tour'); if(b) b.addEventListener('click', ()=> tour.on?stopTour():startTour());
+      el('tr-next').addEventListener('click', ()=>{ tour.t=0; tourGo(tour.i+1); });
+      el('tr-prev').addEventListener('click', ()=>{ tour.t=0; tourGo(tour.i-1); });
+      el('tr-pause').addEventListener('click', togglePause);
+      el('tr-stop').addEventListener('click', stopTour);
+    })();
+
+    /* ---- build the 3D extras now that v4 has captured basePos ---- */
+    buildLabels();
+    setLabels(true);
+
+    /* ---- per-frame tick, called from the SINGLE v3 render loop ---- */
+    function tick(dt,t,beat){
+      updateLabels();
+      breatheHeart(dt, beat);
+      tourTick(dt);
+    }
+
+    return {
+      tick, onOrganOpen,
+      openAtlas, closeAtlas, openForecast, closeForecast,
+      startTour, stopTour, setLabels,
+      atlasCounts: countByTier,
+      _tour: tour,
+      api: {
+        atlasOpen:()=>atlas.classList.contains('open'),
+        forecastOpen:()=>el('forecast').classList.contains('open'),
+        tourOn:()=>tour.on,
+        labels:()=>labels.length,
+        tierCounts:()=>countByTier(),
+        searchAtlas:(term)=>{ atlasQuery=term; if(!atlas.classList.contains('open'))openAtlas(); else renderAtlas(); return el('atlas-body').querySelectorAll('.formula').length; },
+        filterAtlas:(tier)=>{ atlasFilter=tier; if(!atlas.classList.contains('open'))openAtlas(); else renderAtlas(); return el('atlas-body').querySelectorAll('.formula').length; }
+      }
+    };
+  })();
+  /* =========================  /v4-DEEPEN (v5)  ======================== */
+
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
     organs: organMeshes.length,
@@ -864,6 +1341,9 @@
     openGPD: ()=>{ openGPD(); return true; },
     panelOpen: ()=>panel.classList.contains('open'),
     rev: (window.THREE&&THREE.REVISION)||null,
-    v4: V4   // v4 dissection module handle (layers, clip, explode, search, hud, focus)
+    v4: V4,  // v4 dissection module handle (layers, clip, explode, search, hud, focus)
+    v5: V5,  // v4-deepen module handle (atlas, forecast, tour, labels, drill-down)
+    formulas: Object.keys(D.FORMULAS).length,
+    tierCounts: (V5&&V5.api)?V5.api.tierCounts():null
   };
 })();
