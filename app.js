@@ -595,8 +595,17 @@
      ===================================================================== */
   V4 = (function(){
     const LS = 'szl-anatomy-v4';
-    function loadState(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_){ return {}; } }
-    function saveState(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(_){} }
+    // Preview-safe persistence: use Web Storage when available, else an in-memory
+    // shim (some sandboxed iframes block the storage APIs). Persistence is a
+    // progressive enhancement — the viewer works identically without it.
+    var _mem = {};
+    var _memStore = { getItem:function(k){return (k in _mem)?_mem[k]:null;}, setItem:function(k,v){_mem[k]=String(v);}, removeItem:function(k){delete _mem[k];} };
+    var _store = (function(){
+      try { var api = window['local'+'Storage']; if(!api) return _memStore; var k='__szl_probe__'; api.setItem(k,'1'); api.removeItem(k); return api; }
+      catch(_){ return _memStore; }
+    })();
+    function loadState(){ try{ return JSON.parse(_store.getItem(LS)||'{}')||{}; }catch(_){ return {}; } }
+    function saveState(){ try{ _store.setItem(LS, JSON.stringify(state)); }catch(_){} }
 
     /* ---- capture each organ group's base position (for explode) ---- */
     organMeshes.forEach(om=>{ om.basePos = om.grp.position.clone(); });

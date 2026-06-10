@@ -200,7 +200,7 @@
      All controls keyboard-reachable, ARIA-labeled, non-overlapping.
      ============================================================ */
   /* dissection dock — top-left, below the title, never over #controls */
-  #dissect{top:150px;left:24px;max-width:min(290px,76vw);z-index:22}
+  #dissect{top:188px;left:24px;width:min(290px,76vw);max-height:calc(100vh - 430px);overflow-y:auto;z-index:22}
   #dissect .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);
     border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   #dissect .dz-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
