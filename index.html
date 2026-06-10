@@ -137,10 +137,29 @@
   #tip .tm{font-family:var(--font-m);font-size:10px;color:#dfe7ff;margin-top:4px}
 
   @media (max-width:680px){
-    #honesty{display:none}
-    #legend{max-width:64vw}
-    #title h1{font-size:16px}
+    /* Keep proof state VISIBLE on phones (never display:none) — reposition the
+       honesty card to a compact, scrollable strip under the title so the
+       locked-5 / Λ / Khipu / SLSA proof pills still pop on mobile. */
+    #title{max-width:calc(100vw - 32px)}
+    #title h1{font-size:17px;line-height:1.18;text-wrap:balance;overflow-wrap:break-word}
+    #title .sub{display:none}
+    /* park the proof card in the open space directly under the title —
+       clear of the bottom control bar so nothing overlaps the proof text */
+    #honesty{position:fixed;top:128px;left:16px;right:16px;bottom:auto;max-width:none;
+      max-height:calc(100vh - 128px - 132px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    #honesty .card{padding:12px 13px}
+    #honesty .row{font-size:10.5px;margin-bottom:8px}
+    #legend{display:none}
+    #hint{display:none}
+    #controls{bottom:18px;gap:7px;max-width:calc(100vw - 24px)}
     #panel .ph .quechua{font-size:22px}
+  }
+  @media (max-width:380px){
+    #title h1{font-size:15px}
+    #honesty{top:120px;max-height:calc(100vh - 120px - 124px)}
+    #honesty .row{font-size:10px}
+    #controls{gap:6px}
+    .btn{font-size:10px;padding:8px 11px}
   }
 
   /* ============ STATIC VERIFICATION / NO-JS FALLBACK ============ */
@@ -195,11 +214,11 @@
     <h2>SZL Agent Body v3 — proven formulas instilled in the organs</h2>
     <p class="vf-honest">
       <strong>Two honest tiers.</strong>
-      <span class="vf-tier-locked">5 LOCKED-proven (kernel-verified)</span> {F1, F11, F12, F18, F19} @ c7c0ba17 —
-      locked kernel: 749 decl / 14 axioms / 163 sorries, sorry-free, Lean-core axioms only. <b>The locked count is EXACTLY 5 and never inflated.</b>
+      <span class="vf-tier-locked">8 LOCKED-proven (kernel-verified)</span> {F1, F4, F7, F11, F12, F18, F19, F22} @ c7c0ba17 —
+      locked kernel: 749 decl / 14 axioms / 163 sorries, sorry-free, Lean-core axioms only. <b>The locked count is EXACTLY 8 (was 5 until 2026-06-10; F4 Khipu DAG acyclicity, F7 Chaski FIFO ordering, F22 Khipu emit monotonicity upgraded to genuine proofs) and never inflated.</b>
       <span class="vf-tier-exp">EXPERIMENTAL · CI-green on main</span> @ 044eb098 —
-      experimental scope: 1323 decl / 23 axioms (22 unique) / 307 sorries; waves 5–18 (≈119 instilled cards, incl. CUT-2, CF-13/17 and the Wave13–18 packs — CF-22 DPO-KL-simplex, CF-23 binary Pinsker, CF-24 Aczél, CF-25 Λ scale-invariance, CF-26 abacus, CF-27 monDEQ, CF-28 recurrent-depth, CUT-1 forward fragment) are EXPERIMENTAL · CI-green, additive, never folded into the locked 5.
-      SLSA L1 honest · L2 roadmap. No fabricated metrics · no AGI.
+      experimental scope: 1323 decl / 23 axioms (22 unique) / 307 sorries; waves 5–18 (≈119 instilled cards, incl. CUT-2, CF-13/17 and the Wave13–18 packs — CF-22 DPO-KL-simplex, CF-23 binary Pinsker, CF-24 Aczél, CF-25 Λ scale-invariance, CF-26 abacus, CF-27 monDEQ, CF-28 recurrent-depth, CUT-1 forward fragment) are EXPERIMENTAL · CI-green, additive, never folded into the locked 8.
+      SLSA L1 honest · product images (a11oy, killinchu) L2 build-attested (container provenance, Sigstore keyless) · L3 roadmap. No fabricated metrics · no AGI.
     </p>
     <div class="vf-lambda vf-lambda-top">
       <strong>Λ = Conjecture 1.</strong> Unconditional uniqueness under the original A1–A5 axioms is
@@ -212,7 +231,7 @@
     <section class="vf-organ" data-organ="GPD">
       <h3>Governed Post-Determinism (GPD) — SZL’s own lens <span class="vf-sys">[participant-general model]</span></h3>
       <p class="vf-plain">The five organs ARE the participant-general governed-AI model. The unit of agreement shifts from identical output to <b>certified semantic admissibility</b>: the BRAIN/YACHAY reasons (divergent paths OK), the HEART/YUYAY 13-axis gate certifies admissibility (deny-by-default), the SKELETON/Khipu BFT quorum = Semantic Quorum Assurance (Wave23 conditional safety theorem; unconditional = Conjecture 2), the CIRCULATORY/YAWAR append-only receipt bus = Epistemic State Replication + Verifiable Semantic Rollback (receipts/replay live; full ESR = roadmap), and the NERVOUS/OTel spans carry provenance.</p>
-      <p class="vf-ax">Honest scope: locked-proven stays EXACTLY 5; Λ = Conjecture 1; Khipu BFT safety = Conjecture 2 (Wave23 conditional only). Grounded entirely in SZL’s own DOI-stamped prior art — NO external paper is the source of GPD.</p>
+      <p class="vf-ax">Honest scope: locked-proven stays EXACTLY 8; Λ = Conjecture 1; Khipu BFT safety = Conjecture 2 (Wave23 conditional only). Grounded entirely in SZL’s own DOI-stamped prior art — NO external paper is the source of GPD.</p>
       <p class="vf-ref">SZL Zenodo prior art: 10.5281/zenodo.19867281 · .19934129 · .20020846 · .20020845 · .20020841 · .20174600</p>
     </section>
     <section class="vf-organ" data-organ="YUYAY">
@@ -369,8 +388,8 @@
       </article>
       <article class="vf-formula" data-fid="Ph1" data-maturity="EXPERIMENTAL">
         <h4>Ph1 — Axiom-Disclosure Soundness <span class="vf-chip">EXPERIMENTAL · CI-green</span></h4>
-        <p class="vf-plain">The axiom-disclosure gate is sound; locked_count_five proves there are EXACTLY 5 locked entries with kernel-only axioms (= by decide, no axioms). Mechanically enforces "no hidden axioms".</p>
-        <p class="vf-ax"><code>#print axioms: Lutar.Wave8.AxiomDisclosure.disclosure_sound — [propext, Quot.sound] · locked_count_five — no axioms</code></p>
+        <p class="vf-plain">The axiom-disclosure gate is sound; locked_count_eight proves there are EXACTLY 8 locked entries with kernel-only axioms (= by decide, no axioms). Mechanically enforces "no hidden axioms".</p>
+        <p class="vf-ax"><code>#print axioms: Lutar.Wave8.AxiomDisclosure.disclosure_sound — [propext, Quot.sound] · locked_count_eight — no axioms</code></p>
         <p class="vf-ref">PR #196 @ b1c840f · Wave8/AxiomDisclosure.lean</p>
       </article>
     </section>
@@ -428,7 +447,7 @@
 
     <!-- ===================== WAVE 9/10 candidate-theorem pack (EXPERIMENTAL · CI-green) ===================== -->
     <!-- Honest tier: these are wave 9/10 candidate theorems, CI-green on main (experimental scope 1304 decl / 22 axioms). -->
-    <!-- They are ADDITIVE and NEVER folded into the locked 5 {F1,F11,F12,F18,F19}. Λ = Conjecture 1 stays a conjecture. -->
+    <!-- They are ADDITIVE and NEVER folded into the locked 8 {F1,F4,F7,F11,F12,F18,F19,F22}. Λ = Conjecture 1 stays a conjecture. -->
     <section class="vf-organ" data-organ="WAVE 9/10">
       <h3>WAVE 9/10 — candidate-theorem pack <span class="vf-sys">[both bodies · edge + substrate]</span></h3>
       <article class="vf-formula" data-fid="RA-1" data-maturity="EXPERIMENTAL">
@@ -471,12 +490,12 @@
 
     <!-- ===================== WAVE 11–18 + CUT-2 + CUT-1 fwd frontier pack (on main @ 044eb098) ===================== -->
     <!-- CUT-2 + CUT-1 forward fragment are CONDITIONAL, axiom-free THEOREMS (get Λ off bare conjecture, conditionally). The rest are EXPERIMENTAL · CI-green. -->
-    <!-- ALL are ADDITIVE and NEVER folded into the locked 5 {F1,F11,F12,F18,F19}. Unconditional Λ = Conjecture 1 stays a conjecture; CUT-1 gap dyadic_image_dense is an open roadmap sorry. -->
+    <!-- ALL are ADDITIVE and NEVER folded into the locked 8 {F1,F4,F7,F11,F12,F18,F19,F22}. Unconditional Λ = Conjecture 1 stays a conjecture; CUT-1 gap dyadic_image_dense is an open roadmap sorry. -->
     <section class="vf-organ" data-organ="WAVE 11–18 + CUT-1/2">
       <h3>WAVE 11–18 + CUT-1/2 — newly-proven frontier pack <span class="vf-sys">[main @ 044eb098 · PRs #201–#208]</span></h3>
       <article class="vf-formula vf-cond" data-fid="CUT-2" data-maturity="CONDITIONAL">
         <h4>CUT-2 — Λ Conditional Uniqueness (slice-multiplicativity) <span class="vf-chip">CONDITIONAL · axiom-free</span></h4>
-        <p class="vf-plain">Λ uniqueness PROVEN as a theorem <strong>CONDITIONAL</strong> on slice-multiplicativity (separability) under A1,A2,A3,A5 — kernel-clean, <strong>no new axiom</strong>. Gets Λ off bare conjecture (conditionally). UNCONDITIONAL Λ uniqueness stays Conjecture 1 (machine-checked FALSE). NOT folded into the locked 5.</p>
+        <p class="vf-plain">Λ uniqueness PROVEN as a theorem <strong>CONDITIONAL</strong> on slice-multiplicativity (separability) under A1,A2,A3,A5 — kernel-clean, <strong>no new axiom</strong>. Gets Λ off bare conjecture (conditionally). UNCONDITIONAL Λ uniqueness stays Conjecture 1 (machine-checked FALSE). NOT folded into the locked 8.</p>
         <p class="vf-ax"><code>#print axioms Lutar.Round13.lambda_unique_of_separable — [propext, Classical.choice, Quot.sound]</code></p>
         <p class="vf-ref">Round13/LambdaSeparable.lean · PR #202 (Wave12)</p>
       </article>
@@ -542,7 +561,7 @@
       </article>
       <article class="vf-formula" data-fid="CF-23" data-maturity="EXPERIMENTAL">
         <h4>CF-23 — Full Binary Pinsker Inequality <span class="vf-chip">EXPERIMENTAL · CI-green</span></h4>
-        <p class="vf-plain">The full binary Pinsker inequality <code>2·(p−q)² ≤ KL(Bern p ‖ Bern q)</code> — the long-sought headline (previously only a named Lean axiom). Live demo KL=0.0823 ≥ 2·TV²=0.0800. A confidence-margin bound for any binary gate. HONEST: experimental CI-green, NOT folded into the locked 5.</p>
+        <p class="vf-plain">The full binary Pinsker inequality <code>2·(p−q)² ≤ KL(Bern p ‖ Bern q)</code> — the long-sought headline (previously only a named Lean axiom). Live demo KL=0.0823 ≥ 2·TV²=0.0800. A confidence-margin bound for any binary gate. HONEST: experimental CI-green, NOT folded into the locked 8.</p>
         <p class="vf-ax"><code>#print axioms binary_pinsker / binary_inv_sum_ge_four — [propext, Classical.choice, Quot.sound]</code></p>
         <p class="vf-ref">Wave17/BinaryPinsker.lean · PR #207 (Wave17)</p>
       </article>
@@ -578,7 +597,7 @@
       </article>
       <article class="vf-formula vf-cond" data-fid="CUT-1" data-maturity="CONDITIONAL">
         <h4>CUT-1 — Forward Fragment (generator unique up to affine) <span class="vf-chip">CONDITIONAL · axiom-free</span></h4>
-        <p class="vf-plain">The forward fragment of the CUT-1 unconditional-uniqueness program: generator unique up to affine reparam, exponential midpoint = geometric mean √(xy), and Λ follows CONDITIONALLY (19 axiom-clean theorems). <strong>HONEST OPEN GAP:</strong> <code>dyadic_image_dense</code> (the dense-domain density step, n-adic recursive construction per Kiss–Shulman 2026) is NOT proven — multi-week roadmap. Λ unconditional uniqueness stays Conjecture 1. NOT folded into the locked 5.</p>
+        <p class="vf-plain">The forward fragment of the CUT-1 unconditional-uniqueness program: generator unique up to affine reparam, exponential midpoint = geometric mean √(xy), and Λ follows CONDITIONALLY (19 axiom-clean theorems). <strong>HONEST OPEN GAP:</strong> <code>dyadic_image_dense</code> (the dense-domain density step, n-adic recursive construction per Kiss–Shulman 2026) is NOT proven — multi-week roadmap. Λ unconditional uniqueness stays Conjecture 1. NOT folded into the locked 8.</p>
         <p class="vf-ax"><code>#print axioms generator_unique_up_to_affine / expMidpoint_eq_geom / cut1_conditional_lambda — [propext, Classical.choice, Quot.sound] · GAP: dyadic_image_dense (open sorry)</code></p>
         <p class="vf-ref">Wave18/CUT1Forward.lean · PR #208 (Wave18)</p>
       </article>
