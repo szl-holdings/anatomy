@@ -9,22 +9,45 @@ pinned: false
 license: apache-2.0
 ---
 
-# SZL Agent Body — Living Anatomy (3D)
+# SZL Living Anatomy 🫀
 
-The governed-AI organ substrate shared by **a11oy** (governed-AI decision body) and
+> **Governed AI you can prove — as a living body.**
+> A 3D, navigable map of the governed organism: its organs, how a single decision
+> flows through them, and where each proof and conjecture honestly sits.
+
+> **The living substrate · 5 systems · Λ heart · DSSE Khipu receipt bus · honest by design**
+
+[![SLSA L1 honest (static viz)](https://img.shields.io/badge/SLSA-L1%20honest%20(static%20viz)-c9b787?style=flat-square)](https://github.com/szl-holdings/szl-uds-deployment)
+[![doctrine-v11](https://img.shields.io/badge/doctrine-v11%20LOCKED-0B1F3A?style=flat-square)](https://github.com/szl-holdings/.github/tree/main/doctrine)
+[![License](https://img.shields.io/badge/license-Apache--2.0-5fb3a3?style=flat-square)](https://github.com/szl-holdings/anatomy)
+[![Λ Conjecture 1](https://img.shields.io/badge/%CE%9B-Conjecture%201-B79BD6?style=flat-square)](https://github.com/szl-holdings/lutar-lean/blob/main/BOUNTY.md)
+[![Khipu Conjecture 2](https://img.shields.io/badge/Khipu%20BFT-Conjecture%202-B79BD6?style=flat-square)](https://github.com/szl-holdings/khipu-consensus)
+
+The governed-AI organ substrate shared by **a11oy** (governed-AI command body) and
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
 with the Λ heart at the center.
+
+## What you'll see
+
+Walk the organism in 3D and watch a real decision propagate: a request enters, the
+**YUYAY** gate scores it on 13 conjunctive axes (deny-by-default), the verdict is sealed
+into a **DSSE Khipu receipt** on the **YAWAR** append-only bus, and the **YACHAY** read-only
+cortex supplies reasoning without ever holding write authority. Each organ is labeled with
+its honest proof state — proven, conditional, or open conjecture — so nothing is dressed up
+as more certain than it is.
 
 **Five systems:** HEART · YUYAY (13-axis conjunctive critique gate, emits Λ-signed receipt) ·
 CIRCULATORY/BLOOD · YAWAR (append-only SHA-256 receipt bus) ·
 BRAIN · YACHAY (read-only reasoning cortex) ·
 NERVOUS · OTel/VSP · SKELETON · 12 service repos.
 
-**Honest doctrine:** locked-proven = exactly 5 {F1,F11,F12,F18,F19} @ kernel `c7c0ba17` ·
+**Honest doctrine:** locked-proven = 8 {F1, F4, F7, F11, F12, F18, F19, F22} @ kernel `c7c0ba17`
+(the no-axiom theorem `locked_count_eight`; F4 Khipu DAG acyclicity, F7 Chaski FIFO ordering,
+F22 Khipu emit append-only monotonicity) ·
 Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE); conditional Λ axiom-free PROVEN ·
 Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
-~190 experimental CI-green · trust never 100% · no AGI.
+~185 experimental CI-green · trust never 100% · no AGI.
 
 **Supply-chain posture:** this Space is a static visualization (`sdk: static`) — SLSA L1 honest.
 The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
@@ -35,4 +58,23 @@ see [szl-uds-deployment](https://github.com/szl-holdings/szl-uds-deployment).
 > Stack (USPTO Serial 99831122); SZL Holdings is not affiliated with Defense Unicorns. No
 > production ATO is claimed.
 
+## Verify it yourself
+
+The organism is a map, not the source of truth — every claim it draws is checkable against the
+live products it depicts:
+
+```bash
+# Confirm the live doctrine posture the heart reports
+curl -s https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest | jq .kernel_commit   # => "c7c0ba17"
+# Pull a signed receipt from the edge organ and verify it offline
+curl -s https://szlholdings-killinchu.hf.space/cosign.pub -o cosign.pub
+```
+
+Read the thesis → [szl-papers](https://github.com/szl-holdings/szl-papers) ·
+run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
+
+---
+
 Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a11oy.net](https://a11oy.net)**
+
+<sub>Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
