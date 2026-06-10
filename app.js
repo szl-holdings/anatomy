@@ -723,6 +723,20 @@
     if(btnDissect) btnDissect.addEventListener('click', ()=>setDock(dock.classList.contains('collapsed')));
     setDock(state.dock!==false);
 
+    /* ---- mobile bottom-sheet: FAB opens/closes the dock as a sheet ---- */
+    const fab = el('dissect-fab');
+    function setSheet(open){
+      dock.classList.toggle('sheet-open', open);
+      if(fab){ fab.setAttribute('aria-expanded', String(open)); fab.setAttribute('aria-label', open?'Close dissection tools':'Open dissection tools'); }
+      // when opening the sheet, make sure the dock body is expanded (not collapsed)
+      if(open && dock.classList.contains('collapsed')) setDock(true);
+    }
+    if(fab){
+      fab.addEventListener('click', ()=> setSheet(!dock.classList.contains('sheet-open')) );
+    }
+    // Esc closes the sheet on mobile
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape' && dock.classList.contains('sheet-open')) setSheet(false); });
+
     const layWrap=el('dz-layers');
     LAYERS.forEach(L=>{
       const s=state.layers[L.key];
