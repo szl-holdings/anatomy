@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
-<title>SZL Agent Body v3 — Living Anatomy</title>
+<title>SZL Agent Body v4 — Living Anatomy (dissection tools)</title>
 <meta name="description" content="The SZL Agent Body v3 — a genuine anatomical organism. Two bodies (a11oy + killinchu) sharing one circulatory (YAWAR receipt bus) + nervous (span lineage) mesh, with proven formulas flowing through the organs and the Λ heart beating at the center." />
 <style>
   /* ============ DESIGN TOKENS — cinematic dark scientific ============ */
@@ -192,6 +192,117 @@
   #vf-static .vf-plain{font-size:11.5px;color:var(--text-muted);line-height:1.45}
   #vf-static .vf-ax{font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-top:4px;word-break:break-word}
   #vf-static .vf-ref{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim)}
+
+  /* ============================================================
+     v4 DISSECTION TOOLS — additive layer (evolves v3, never a
+     rewrite). Dissection layer stack, clip-plane scalpel, explode
+     slider, search/jump, always-on visibility HUD, focus mode.
+     All controls keyboard-reachable, ARIA-labeled, non-overlapping.
+     ============================================================ */
+  /* dissection dock — top-left, below the title, never over #controls */
+  #dissect{top:150px;left:24px;max-width:min(290px,76vw);z-index:22}
+  #dissect .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  #dissect .dz-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);
+    padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+  #dissect .dz-head .v4tag{color:var(--audit);letter-spacing:.04em}
+  #dissect .dz-head .caret{transition:transform .2s}
+  #dissect.collapsed .dz-head .caret{transform:rotate(-90deg)}
+  #dissect .dz-body{padding:12px 14px;display:flex;flex-direction:column;gap:14px;
+    max-height:min(58vh,520px);overflow-y:auto;overscroll-behavior:contain}
+  #dissect.collapsed .dz-body{display:none}
+  .dz-sec{display:flex;flex-direction:column;gap:8px}
+  .dz-sec > .dz-label{font-family:var(--font-m);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim)}
+  /* layer rows */
+  .dz-layer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+  .dz-layer .lname{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;min-width:0}
+  .dz-layer .lsw{flex:0 0 auto;width:9px;height:9px;border-radius:3px;box-shadow:0 0 8px currentColor}
+  .dz-layer input[type=range]{width:74px}
+  .dz-toggle{position:relative;width:30px;height:17px;flex:0 0 auto;cursor:pointer;border-radius:99px;
+    border:1px solid var(--border-strong);background:rgba(120,150,210,.12);transition:background .18s;padding:0}
+  .dz-toggle::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+    background:var(--text-muted);transition:transform .18s,background .18s}
+  .dz-toggle[aria-pressed=true]{background:rgba(94,209,255,.22)}
+  .dz-toggle[aria-pressed=true]::after{transform:translateX(13px);background:var(--nerve)}
+  .dz-toggle:focus-visible{outline:2px solid var(--nerve);outline-offset:2px}
+  /* sliders */
+  input[type=range].dz-range{-webkit-appearance:none;appearance:none;height:4px;border-radius:99px;
+    background:rgba(120,150,210,.22);outline:none;cursor:pointer}
+  input[type=range].dz-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;
+    border-radius:50%;background:var(--nerve);box-shadow:0 0 8px rgba(94,209,255,.6);border:none;cursor:pointer}
+  input[type=range].dz-range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--nerve);
+    box-shadow:0 0 8px rgba(94,209,255,.6);border:none;cursor:pointer}
+  input[type=range].dz-range:focus-visible{outline:2px solid var(--nerve);outline-offset:3px}
+  .dz-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-muted)}
+  .dz-row .val{font-family:var(--font-m);font-size:10px;color:var(--nerve);min-width:34px;text-align:right}
+  .dz-axis{display:flex;gap:5px}
+  .dz-axis button{flex:1;font-family:var(--font-m);font-size:10px;color:var(--text-muted);background:var(--surface);
+    border:1px solid var(--border);border-radius:8px;padding:5px 0;cursor:pointer;transition:all .15s}
+  .dz-axis button[aria-pressed=true]{color:var(--nerve);border-color:rgba(94,209,255,.5);background:rgba(94,209,255,.1)}
+  .dz-axis button:focus-visible{outline:2px solid var(--nerve);outline-offset:2px}
+  .dz-mini{font-family:var(--font-m);font-size:10px;color:var(--text-muted);background:var(--surface);
+    border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;transition:all .15s}
+  .dz-mini:hover{border-color:var(--border-strong);color:var(--text)}
+  .dz-mini:focus-visible{outline:2px solid var(--nerve);outline-offset:2px}
+  .dz-mini.active{color:var(--audit);border-color:rgba(158,240,192,.5);background:rgba(158,240,192,.1)}
+  /* search / jump */
+  .dz-search{position:relative}
+  .dz-search input{width:100%;font-family:var(--font-d);font-size:12px;color:var(--text);background:rgba(6,9,18,.7);
+    border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+  .dz-search input::placeholder{color:var(--text-dim)}
+  .dz-search input:focus-visible{outline:2px solid var(--nerve);outline-offset:1px;border-color:var(--border-strong)}
+  .dz-results{list-style:none;margin:6px 0 0;padding:0;max-height:182px;overflow-y:auto;
+    border:1px solid var(--border);border-radius:9px;background:var(--surface-2);display:none}
+  .dz-results.show{display:block}
+  .dz-results li{padding:7px 10px;font-size:11px;color:var(--text-muted);cursor:pointer;border-bottom:1px solid var(--border);
+    display:flex;gap:7px;align-items:baseline}
+  .dz-results li:last-child{border-bottom:none}
+  .dz-results li:hover,.dz-results li[aria-selected=true]{background:rgba(94,209,255,.1);color:var(--text)}
+  .dz-results li .rk{font-family:var(--font-m);font-size:9px;color:var(--nerve);flex:0 0 auto}
+  .dz-results li .rt{font-family:var(--font-m);font-size:8.5px;color:var(--text-dim);margin-left:auto;flex:0 0 auto}
+  .dz-results .empty{color:var(--text-dim);cursor:default;font-style:italic}
+  .dz-results .empty:hover{background:none;color:var(--text-dim)}
+
+  /* always-on visibility HUD — bottom-right, compact, non-intrusive */
+  #vis-hud{bottom:24px;right:24px;z-index:21;max-width:min(290px,82vw)}
+  #vis-hud .card{background:var(--surface);backdrop-filter:blur(var(--blur));border:1px solid var(--border);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 13px}
+  #vis-hud .vh-head{display:flex;align-items:center;gap:7px;font-family:var(--font-m);font-size:9px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
+  #vis-hud .pulse-tick{width:7px;height:7px;border-radius:50%;background:var(--heart);box-shadow:0 0 8px var(--heart)}
+  #vis-hud .vh-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+  #vis-hud .vh-stat{display:flex;flex-direction:column;line-height:1.2}
+  #vis-hud .vh-stat .k{font-family:var(--font-m);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+  #vis-hud .vh-stat .v{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  #vis-hud .vh-stat .v.locked{color:var(--skel)}
+  #vis-hud .vh-stat .v.exp{color:var(--nerve)}
+  #vis-hud .vh-stat .v.conj{color:var(--warn);font-size:11px}
+  #vis-hud .vh-foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
+    font-family:var(--font-m);font-size:9px;color:var(--text-dim);line-height:1.5}
+  #vis-hud .vh-foot code{color:var(--audit)}
+
+  /* dissect handle button in #controls inherits .btn; active state in audit hue */
+  #btn-dissect.active{color:var(--audit);border-color:rgba(158,240,192,.5);background:rgba(158,240,192,.08)}
+  #btn-focus.active{color:var(--audit);border-color:rgba(158,240,192,.5);background:rgba(158,240,192,.08)}
+
+  /* respect reduced motion: stop the pulse-tick animation */
+  @media (prefers-reduced-motion: reduce){
+    #vis-hud .pulse-tick{animation:none!important}
+    .pulse-ring{animation:none!important}
+  }
+  @keyframes vh-pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+  #vis-hud .pulse-tick{animation:vh-pulse 1.6s ease-in-out infinite}
+
+  /* v4 responsive: keep new docks clear of existing HUD + #controls on phones */
+  @media (max-width:680px){
+    #dissect{display:none}            /* collapse advanced dock on small screens to avoid overlap */
+    #vis-hud{left:16px;right:16px;bottom:64px;max-width:none}
+    #vis-hud .vh-grid{grid-template-columns:repeat(3,1fr)}
+  }
+  @media (min-width:681px) and (max-width:1024px){
+    #dissect{top:140px;max-width:250px}
+  }
 </style>
 </head>
 <body>
@@ -608,8 +719,8 @@
   <!-- HUD -->
   <div class="hud" id="title">
     <div class="eyebrow">SZL Holdings · Living Anatomy</div>
-    <h1>SZL Agent Body <span class="v3">v3</span> — the governed-AI organ substrate</h1>
-    <div class="sub">Two bodies · one circulatory + nervous mesh · proven formulas instilled in the organs · the Λ heart at the center.</div>
+    <h1>SZL Agent Body <span class="v3">v4</span> — the governed-AI organ substrate</h1>
+    <div class="sub">Two bodies · one circulatory + nervous mesh · proven formulas instilled in the organs · the Λ heart at the center. <span style="color:var(--audit)">v4 adds dissection tools — layer stack, clip-plane scalpel, explode, search, focus.</span> Evolves v3; nothing removed.</div>
     <div class="bodies">
       <span class="body-tag a">a11oy · governed-AI decision body</span>
       <span class="body-tag k">killinchu · maritime / drone C2 body</span>
@@ -639,6 +750,76 @@
     <button class="btn" id="btn-reset">⟲ reset view</button>
     <button class="btn" id="btn-gpd">◆ GPD lens</button>
     <button class="btn" id="btn-formulas">≣ formulas (text)</button>
+    <button class="btn" id="btn-focus" aria-pressed="false" title="Focus mode: fade other organs when one is selected">⊙ focus</button>
+    <button class="btn active" id="btn-dissect" aria-expanded="true" aria-controls="dissect" title="Toggle the v4 dissection tools dock">⌖ dissect</button>
+  </div>
+
+  <!-- ============ v4 DISSECTION DOCK (additive) ============ -->
+  <div class="hud" id="dissect">
+    <div class="card">
+      <div class="dz-head" id="dz-head" role="button" tabindex="0" aria-expanded="true" aria-controls="dz-body">
+        <span>Dissection tools <span class="v4tag">· v4</span></span>
+        <span class="caret" aria-hidden="true">▾</span>
+      </div>
+      <div class="dz-body" id="dz-body">
+
+        <!-- search / jump -->
+        <div class="dz-sec">
+          <span class="dz-label">Search / jump</span>
+          <div class="dz-search">
+            <input type="search" id="dz-q" placeholder="Find organ or formula…" autocomplete="off"
+                   role="combobox" aria-expanded="false" aria-controls="dz-results" aria-autocomplete="list"
+                   aria-label="Search organs and formulas; press Enter to jump">
+            <ul class="dz-results" id="dz-results" role="listbox" aria-label="Search results"></ul>
+          </div>
+        </div>
+
+        <!-- dissection layer stack -->
+        <div class="dz-sec" id="dz-layers">
+          <span class="dz-label">Layer stack</span>
+          <!-- populated by app.js: toggle + opacity per conceptual layer -->
+        </div>
+
+        <!-- clip-plane scalpel -->
+        <div class="dz-sec">
+          <span class="dz-label">Clip-plane scalpel</span>
+          <div class="dz-row">
+            <button class="dz-mini" id="dz-clip-on" aria-pressed="false">enable cut</button>
+            <button class="dz-mini" id="dz-clip-reset" title="Reset the cross-section plane">reset</button>
+          </div>
+          <div class="dz-axis" role="group" aria-label="Clip-plane axis">
+            <button id="dz-axis-x" aria-pressed="true">X</button>
+            <button id="dz-axis-y" aria-pressed="false">Y</button>
+            <button id="dz-axis-z" aria-pressed="false">Z</button>
+          </div>
+          <div class="dz-row">
+            <input type="range" class="dz-range" id="dz-clip" min="-6" max="6" step="0.05" value="0"
+                   aria-label="Cross-section plane position" style="flex:1">
+            <span class="val" id="dz-clip-val">0.0</span>
+          </div>
+        </div>
+
+        <!-- explode view -->
+        <div class="dz-sec">
+          <span class="dz-label">Explode view</span>
+          <div class="dz-row">
+            <input type="range" class="dz-range" id="dz-explode" min="0" max="1" step="0.01" value="0"
+                   aria-label="Explode organs radially outward" style="flex:1">
+            <span class="val" id="dz-explode-val">0%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ v4 ALWAYS-ON VISIBILITY HUD (honest counts from D.KERNEL) ============ -->
+  <div class="hud" id="vis-hud" aria-label="Live proof-state visibility">
+    <div class="card">
+      <div class="vh-head"><span class="pulse-tick" id="vh-tick" aria-hidden="true"></span> live proof state</div>
+      <div class="vh-grid" id="vh-grid"><!-- populated from D.KERNEL by app.js --></div>
+      <div class="vh-foot" id="vh-foot"><!-- kernel sha + Λ posture, from data.js --></div>
+    </div>
   </div>
 
   <!-- Organ panel -->
