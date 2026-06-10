@@ -1208,9 +1208,25 @@
       labels.forEach(L=>{
         _projV.copy(L.anchor).project(camera);
         const behind = _projV.z>1;
-        const x=( _projV.x*0.5+0.5)*w, y=(-_projV.y*0.5+0.5)*h;
-        if(behind || x<-50 || x>w+50 || y<-50 || y>h+50){ L.div.classList.remove('show'); }
-        else { L.div.style.left=x+'px'; L.div.style.top=y+'px'; L.div.classList.add('show'); }
+        let x=( _projV.x*0.5+0.5)*w, y=(-_projV.y*0.5+0.5)*h;
+        if(behind || x<-50 || x>w+50 || y<-50 || y>h+50){ L.div.classList.remove('show'); return; }
+        const lw = L.div.offsetWidth || 120, lh = L.div.offsetHeight || 18, m = 8;
+        // keep labels clear of the fixed side panels on wide screens: the title/
+        // dissection dock occupy the left gutter and the honesty panel the right.
+        const wide = w > 980;
+        const leftBound = wide ? 320 : m;                 // clear left dock
+        const rightBound = wide ? (w - 360) : (w - lw - m); // clear right honesty panel
+        // hide labels that would land under a side panel rather than clip them
+        if(wide && (x + lw > w - 360 || x < 320)){
+          // nudge inward if it still fits the center band, else hide
+          const nudged = Math.max(leftBound, Math.min(x, rightBound - lw));
+          if(nudged < leftBound || nudged + lw > w - 360){ L.div.classList.remove('show'); return; }
+          x = nudged;
+        } else {
+          x = Math.max(m, Math.min(x, w - lw - m));
+        }
+        y = Math.max(64, Math.min(y, h - lh - 88)); // clear top eyebrow + bottom controls
+        L.div.style.left=x+'px'; L.div.style.top=y+'px'; L.div.classList.add('show');
       });
     }
     function setLabels(on){
