@@ -1,11 +1,22 @@
 /* =====================================================================
-   SZL AGENT BODY v3 — LIVING ANATOMY · WebGL engine (genius rebuild)
+   SZL AGENT BODY v4 — LIVING ANATOMY · WebGL engine
+   (EVOLVES v3 — additive dissection upgrade, NOT a rewrite. The whole
+    v3 engine below is preserved verbatim; v4 features are layered ON TOP
+    in a clearly-marked block near the end. v3 lineage stays visible.)
    Sovereign: vendored THREE r160 (global), ZERO runtime CDN, offline.
    Two organisms (a11oy / killinchu) rendered as human-like silhouettes
    sharing ONE circulatory (YAWAR receipt bus) + nervous (span lineage)
    mesh. Cinematic dark substrate, additive volumetric glow (in-core
    pseudo-bloom via radial sprites), smooth fly-in + auto-orbit, a live
    receipt-flow along YAWAR, elegant organ detail cards.
+   v4 ADDS (all additive, all on this same scene + render loop):
+     1. Dissection layer stack (toggles + opacity, localStorage-persisted)
+     2. Clip-plane scalpel (renderer.localClippingEnabled, X/Y/Z + reset)
+     3. Explode view (eased 0->1 radial separation of organs)
+     4. Search / jump (filter organs+formulas, fly + open panel)
+     5. Always-on visibility HUD (honest counts read from D.KERNEL)
+     6. Focus mode (fade other organs when one is selected)
+     7. Accessibility + mobile + prefers-reduced-motion
    Honesty preserved: data.js is the single source of truth.
    ===================================================================== */
 (function () {
@@ -120,6 +131,9 @@
   const organMeshes=[];
   const vessels=[];
   const pulses=[];
+  // v4 registries (populated by the existing builders; consumed by v4 block)
+  const silhouetteMeshes=[];
+  const silhouetteGroups=[];
   let heartGroup=null, heartCoreMat=null, heartHalo=null, heartGlow=null, heartRing=null;
 
   /* ---------------- BODY SILHOUETTE (skeleton + membrane) ----------- */
@@ -161,6 +175,10 @@
     bone( 0.4,-1.7,0, 0.55,-3.0,0.1,0.08); bone( 0.55,-3.0,0.1, 0.6,-4.1,0.2,0.06);
 
     root.add(g);
+    // v4: register silhouette membrane + skeleton meshes so the dissection
+    // layer stack and clip-plane can address them (collected, not altered here).
+    g.traverse(c=>{ if(c.isMesh) silhouetteMeshes.push(c); });
+    silhouetteGroups.push(g);
     return g;
   }
 
@@ -385,13 +403,19 @@
     // pulse the selected organ glow
     organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
     if(om&&om.grp.userData.glow) om.grp.userData.glow.material.opacity=0.7;
+    selectedOM = om || null;
+    if(V4 && V4.applyFocus) V4.applyFocus();   // v4 focus-mode hook (no-op until v4 inits)
   }
   function closePanel(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
-    organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; }); }
+    organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
+    selectedOM = null;
+    if(V4 && V4.applyFocus) V4.applyFocus(); }
   $('panel-close').addEventListener('click',closePanel);
 
   /* ---------------- camera tween ---------------- */
   let tween=null;
+  let selectedOM=null;   // v4: currently-open organ (for focus mode)
+  let V4=null;           // v4: dissection module handle (set after init)
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -407,7 +431,10 @@
     camera.lookAt(target);
   }
   let dragging=false,lastX=0,lastY=0,moved=0;
-  let autoRotate=true, pulsesOn=true;
+  // v4: respect prefers-reduced-motion — disable auto-orbit + intro easing by default
+  const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let autoRotate=!REDUCED_MOTION, pulsesOn=true;
+  if(REDUCED_MOTION){ intro.active=false; cam.r=HOME.r; cam.phi=HOME.phi; cam.theta=HOME.theta; }
 
   canvas.addEventListener('pointerdown',e=>{dragging=true;intro.active=false;lastX=e.clientX;lastY=e.clientY;moved=0;try{canvas.setPointerCapture(e.pointerId);}catch(_){}});
   canvas.addEventListener('pointermove',e=>{
@@ -548,6 +575,8 @@
       p.grp.children[0].material.opacity=a;
       if(p.glow) p.glow.material.opacity=a*(p.shared?0.7:0.5);
     });
+    // v4: per-frame dissection updates (explode easing, clip plane, HUD tick)
+    if(V4 && V4.tick) V4.tick(dt,t);
     renderer.render(scene,camera);
     if(!_loaderHidden){ _loaderHidden=true; var ld=$('loader'); if(ld) ld.classList.add('hidden'); }
   }
@@ -556,6 +585,250 @@
   loop();
 
   setTimeout(()=>{ var ld=$('loader'); if(ld) ld.classList.add('hidden'); },1500);
+
+  /* =====================================================================
+     ============================  v4  ===================================
+     DISSECTION UPGRADE — additive module. Reuses the v3 scene, materials,
+     organMeshes/vessels registries, the SAME render loop (via V4.tick),
+     openOrgan/flyTo, and reads honest posture from D.KERNEL.
+     Nothing in v3 above is replaced.
+     ===================================================================== */
+  V4 = (function(){
+    const LS = 'szl-anatomy-v4';
+    function loadState(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_){ return {}; } }
+    function saveState(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(_){} }
+
+    /* ---- capture each organ group's base position (for explode) ---- */
+    organMeshes.forEach(om=>{ om.basePos = om.grp.position.clone(); });
+    // body center for radial explode (mean of organ base positions)
+    const center = (function(){ const c=new THREE.Vector3(); organMeshes.forEach(om=>c.add(om.basePos)); if(organMeshes.length)c.multiplyScalar(1/organMeshes.length); return c; })();
+
+    /* ---- conceptual dissection LAYERS (additive, honest mapping) ---- */
+    const LAYERS = [
+      { key:'circulatory', name:'Circulatory', sw:'#ff3b5c', hint:'YAWAR receipt bus' },
+      { key:'nervous',     name:'Nervous',     sw:'#5ad1ff', hint:'span lineage' },
+      { key:'organs',      name:'Organs',      sw:'#7c5cff', hint:'all organ cores' },
+      { key:'skeleton',    name:'Skeleton',    sw:'#ffd166', hint:'bones / Khipu' },
+      { key:'halo',        name:'Halos / glow',sw:'#9ef0c0', hint:'volumetric bloom' }
+    ];
+    const state = Object.assign({ layers:{}, focus:false, dock:true }, loadState());
+    LAYERS.forEach(L=>{ if(!state.layers[L.key]) state.layers[L.key]={on:true,op:1}; });
+
+    function organLayer(om){
+      const sys = om.organ.system;
+      if(sys==='blood') return 'circulatory';
+      if(sys==='nerve') return 'nervous';
+      if(sys==='skeleton'||sys==='audit') return 'skeleton';
+      return 'organs'; // heart, brain
+    }
+    // record base opacities once so toggling is reversible & honest
+    organMeshes.forEach(om=>{
+      const mats=[];
+      om.grp.traverse(c=>{ if((c.isMesh||c.isSprite) && c.material){ mats.push({m:c.material, base:c.material.opacity, isHalo:(c===om.grp.userData.halo), isGlow:(c===om.grp.userData.glow)}); } });
+      om.v4mats = mats;
+      om.v4layer = organLayer(om);
+    });
+    vessels.forEach(v=>{
+      v.v4line = { m:v.line.material, base:v.line.material.opacity };
+      v.v4layer = (v.color==='#ff3b5c') ? 'circulatory' : 'nervous';
+    });
+    const silMats = silhouetteMeshes.map(c=>({ m:c.material, base:c.material.opacity }));
+    silhouetteMeshes.forEach((c,i)=>{
+      const col = c.material.color ? c.material.color.getHexString() : '';
+      silMats[i].layer = (/^(ffd166|e8c068|a07c20)/.test(col)) ? 'skeleton' : 'organs';
+    });
+
+    function layerMul(key){ const s=state.layers[key]; return (s&&s.on) ? s.op : 0; }
+
+    function applyLayers(){
+      const hm = layerMul('halo');
+      organMeshes.forEach(om=>{
+        const lm = layerMul(om.v4layer);
+        om.v4mats.forEach(rec=>{
+          if(rec.isHalo){ rec.m.opacity = rec.base * hm; }
+          else if(rec.isGlow){ rec.m.opacity = rec.base * hm; }
+          else { rec.m.opacity = rec.base * lm; }
+          rec.m.visible = (rec.m.opacity>0.001);
+        });
+      });
+      vessels.forEach(v=>{ const mul=layerMul(v.v4layer); v.v4line.m.opacity=v.v4line.base*mul; v.v4line.m.visible=mul>0.001; });
+      pulses.forEach(p=>{ const lay=(p.color==='#ff3b5c')?'circulatory':'nervous'; p.grp.visible = pulsesOn && layerMul(lay)>0.001; });
+      silhouetteMeshes.forEach((c,i)=>{ const mul=layerMul(silMats[i].layer); c.material.opacity=silMats[i].base*mul; c.visible=mul>0.001; });
+    }
+
+    /* ---- FOCUS MODE: fade non-selected organs when one is open ---- */
+    function applyFocus(){
+      const on = state.focus && selectedOM;
+      const hm = layerMul('halo');
+      organMeshes.forEach(om=>{
+        const dim = on && om!==selectedOM;
+        const lm=layerMul(om.v4layer);
+        om.v4mats.forEach(rec=>{
+          if(rec.isHalo) return;
+          let baseOp = rec.isGlow ? rec.base*hm : rec.base*lm;
+          rec.m.opacity = dim ? baseOp*0.12 : baseOp;
+          rec.m.visible = rec.m.opacity>0.001;
+        });
+      });
+    }
+
+    /* ---- CLIP-PLANE SCALPEL ---- */
+    renderer.localClippingEnabled = true;
+    const clip = { on:false, axis:'x', dist:0, plane:new THREE.Plane(new THREE.Vector3(-1,0,0), 0) };
+    function axisNormal(a){ return a==='x'?new THREE.Vector3(-1,0,0):a==='y'?new THREE.Vector3(0,-1,0):new THREE.Vector3(0,0,-1); }
+    const clipMats = [];
+    organMeshes.forEach(om=> om.grp.traverse(c=>{ if(c.isMesh && c.material) clipMats.push(c.material); }));
+    silhouetteMeshes.forEach(c=>{ if(c.material) clipMats.push(c.material); });
+    function applyClip(){
+      clip.plane.normal.copy(axisNormal(clip.axis));
+      clip.plane.constant = clip.dist;
+      const planes = clip.on ? [clip.plane] : [];
+      clipMats.forEach(m=>{ m.clippingPlanes = planes; });
+    }
+
+    /* ---- EXPLODE VIEW (eased radial separation) ---- */
+    let explodeTarget=0, explodeCur=0;
+    function applyExplode(amount){
+      organMeshes.forEach(om=>{
+        if(om.organ.beat) return; // keep the Λ heart anchored at center
+        const dir = om.basePos.clone().sub(center);
+        if(dir.lengthSq()<1e-6) dir.set(0,1,0);
+        dir.normalize();
+        const push = amount * 3.4;
+        om.grp.position.copy(om.basePos).addScaledVector(dir, push);
+      });
+    }
+
+    /* ===================== UI WIRING ===================== */
+    const el = id=>document.getElementById(id);
+
+    const dock=el('dissect'), dzHead=el('dz-head'), btnDissect=el('btn-dissect');
+    function setDock(open){
+      state.dock=open; saveState();
+      dock.classList.toggle('collapsed', !open);
+      dzHead.setAttribute('aria-expanded', String(open));
+      if(btnDissect){ btnDissect.classList.toggle('active', open); btnDissect.setAttribute('aria-expanded', String(open)); }
+    }
+    dzHead.addEventListener('click', ()=>setDock(dock.classList.contains('collapsed')));
+    dzHead.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setDock(dock.classList.contains('collapsed')); } });
+    if(btnDissect) btnDissect.addEventListener('click', ()=>setDock(dock.classList.contains('collapsed')));
+    setDock(state.dock!==false);
+
+    const layWrap=el('dz-layers');
+    LAYERS.forEach(L=>{
+      const s=state.layers[L.key];
+      const row=document.createElement('div'); row.className='dz-layer';
+      row.innerHTML =
+        `<button class="dz-toggle" id="lt-${L.key}" role="switch" aria-pressed="${s.on}" aria-label="${L.name} layer visibility"></button>`+
+        `<span class="lname"><span class="lsw" style="color:${L.sw}"></span>${L.name}</span>`+
+        `<input type="range" class="dz-range" id="lo-${L.key}" min="0" max="1" step="0.01" value="${s.op}" aria-label="${L.name} opacity">`;
+      layWrap.appendChild(row);
+      const tog=row.querySelector('.dz-toggle'), rng=row.querySelector('input');
+      tog.addEventListener('click', ()=>{ s.on=!s.on; tog.setAttribute('aria-pressed',String(s.on)); saveState(); applyLayers(); applyFocus(); });
+      rng.addEventListener('input', ()=>{ s.op=parseFloat(rng.value); if(!s.on){ s.on=true; tog.setAttribute('aria-pressed','true'); } saveState(); applyLayers(); applyFocus(); });
+    });
+
+    const clipOn=el('dz-clip-on'), clipReset=el('dz-clip-reset'), clipRange=el('dz-clip'), clipVal=el('dz-clip-val');
+    const axisBtns={x:el('dz-axis-x'),y:el('dz-axis-y'),z:el('dz-axis-z')};
+    function setAxis(a){ clip.axis=a; Object.keys(axisBtns).forEach(k=>axisBtns[k].setAttribute('aria-pressed',String(k===a))); applyClip(); }
+    Object.keys(axisBtns).forEach(k=>axisBtns[k].addEventListener('click',()=>setAxis(k)));
+    clipOn.addEventListener('click', ()=>{ clip.on=!clip.on; clipOn.setAttribute('aria-pressed',String(clip.on)); clipOn.classList.toggle('active',clip.on); clipOn.textContent=clip.on?'cutting':'enable cut'; applyClip(); });
+    clipRange.addEventListener('input', ()=>{ clip.dist=parseFloat(clipRange.value); clipVal.textContent=clip.dist.toFixed(1); applyClip(); });
+    clipReset.addEventListener('click', ()=>{ clip.on=false; clip.dist=0; clipRange.value=0; clipVal.textContent='0.0'; clipOn.setAttribute('aria-pressed','false'); clipOn.classList.remove('active'); clipOn.textContent='enable cut'; setAxis('x'); applyClip(); });
+
+    const expRange=el('dz-explode'), expVal=el('dz-explode-val');
+    expRange.addEventListener('input', ()=>{ explodeTarget=parseFloat(expRange.value); expVal.textContent=Math.round(explodeTarget*100)+'%'; if(REDUCED_MOTION){ explodeCur=explodeTarget; applyExplode(easeInOutCubic(explodeCur)); } });
+
+    const btnFocus=el('btn-focus');
+    if(btnFocus){
+      btnFocus.setAttribute('aria-pressed', String(!!state.focus));
+      btnFocus.classList.toggle('active', !!state.focus);
+      btnFocus.addEventListener('click', ()=>{ state.focus=!state.focus; btnFocus.setAttribute('aria-pressed',String(state.focus)); btnFocus.classList.toggle('active',state.focus); saveState(); applyFocus(); });
+    }
+    const btnRot=el('btn-rotate'); if(btnRot) btnRot.classList.toggle('active', autoRotate);
+
+    /* ---- SEARCH / JUMP (organs + formulas) ---- */
+    const q=el('dz-q'), results=el('dz-results');
+    const index = [];
+    D.ORGANS.forEach(o=>{ index.push({type:'organ', key:o.key, label:o.quechua, sub:(D.SYSTEMS.find(s=>s.key===o.system)||{}).name||o.system, organ:o}); });
+    Object.keys(D.FORMULAS).forEach(fid=>{ const f=D.FORMULAS[fid]; index.push({type:'formula', key:fid, label:f.id+' · '+f.name, sub:(D.MATURITY[f.maturity]||{}).label||f.maturity, formula:f}); });
+    let activeIdx=-1, matches=[];
+    function runSearch(){
+      const term=q.value.trim().toLowerCase();
+      results.innerHTML=''; activeIdx=-1;
+      if(!term){ results.classList.remove('show'); q.setAttribute('aria-expanded','false'); return; }
+      matches = index.filter(it=> (it.label+' '+it.key+' '+(it.sub||'')).toLowerCase().includes(term)).slice(0,12);
+      if(!matches.length){ results.innerHTML='<li class="empty" role="option">no organ or formula matches</li>'; results.classList.add('show'); q.setAttribute('aria-expanded','true'); return; }
+      matches.forEach((it,i)=>{
+        const li=document.createElement('li'); li.setAttribute('role','option'); li.id='dzr-'+i;
+        li.innerHTML=`<span class="rk">${it.type==='organ'?'\u25c9':'\u0192'}</span><span>${it.label}</span><span class="rt">${it.sub||''}</span>`;
+        li.addEventListener('click',()=>jump(it));
+        results.appendChild(li);
+      });
+      results.classList.add('show'); q.setAttribute('aria-expanded','true');
+    }
+    function highlight(i){
+      const lis=results.querySelectorAll('li'); lis.forEach(l=>l.setAttribute('aria-selected','false'));
+      if(i>=0 && i<lis.length){ lis[i].setAttribute('aria-selected','true'); lis[i].scrollIntoView({block:'nearest'}); q.setAttribute('aria-activedescendant', lis[i].id); }
+    }
+    function jump(it){
+      if(!it) return;
+      if(it.type==='organ'){ openOrgan(it.organ); }
+      else { const host = D.ORGANS.find(o=>(o.formulas||[]).includes(it.key)); if(host){ openOrgan(host); } }
+      results.classList.remove('show'); q.setAttribute('aria-expanded','false'); q.blur();
+    }
+    q.addEventListener('input', runSearch);
+    q.addEventListener('keydown', e=>{
+      if(e.key==='ArrowDown'){ e.preventDefault(); if(matches.length){ activeIdx=Math.min(activeIdx+1,matches.length-1); highlight(activeIdx);} }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); activeIdx=Math.max(activeIdx-1,0); highlight(activeIdx); }
+      else if(e.key==='Enter'){ e.preventDefault(); jump(matches[activeIdx>=0?activeIdx:0]); }
+      else if(e.key==='Escape'){ results.classList.remove('show'); q.setAttribute('aria-expanded','false'); }
+    });
+    document.addEventListener('click', e=>{ if(!results.contains(e.target) && e.target!==q){ results.classList.remove('show'); q.setAttribute('aria-expanded','false'); } });
+
+    /* ---- ALWAYS-ON VISIBILITY HUD (honest counts from D.KERNEL) ---- */
+    const K=D.KERNEL;
+    function expCount(){ return Object.keys(D.FORMULAS).filter(id=>D.FORMULAS[id].maturity==='EXPERIMENTAL').length; }
+    (function fillVisHUD(){
+      const grid=el('vh-grid'), foot=el('vh-foot');
+      const stats=[
+        {k:'locked-proven', v:K.locked_proven.length, cls:'locked'},
+        {k:'experimental',  v:expCount(), cls:'exp'},
+        {k:'axioms',        v:K.locked_axioms, cls:''},
+        {k:'sorries',       v:K.locked_sorries, cls:''},
+        {k:'\u039b posture', v:'Conjecture 1', cls:'conj'},
+        {k:'Khipu BFT',     v:'Conjecture 2', cls:'conj'}
+      ];
+      grid.innerHTML = stats.map(s=>`<div class="vh-stat"><span class="k">${s.k}</span><span class="v ${s.cls}">${s.v}</span></div>`).join('');
+      foot.innerHTML = `kernel <code>${K.locked_sha}</code> \u00b7 locked-set {${K.locked_proven.join(',')}} \u00b7 SLSA L1 honest \u00b7 trust never 100%`;
+    })();
+
+    /* ---- per-frame tick (called from the SINGLE v3 render loop) ---- */
+    let tickAcc=0;
+    function tick(dt,t){
+      if(!REDUCED_MOTION && Math.abs(explodeCur-explodeTarget)>0.0005){
+        explodeCur += (explodeTarget-explodeCur) * Math.min(1, dt*6);
+        applyExplode(easeInOutCubic(explodeCur));
+      }
+      tickAcc+=dt;
+      if(tickAcc>0.08){ tickAcc=0; applyLayers(); applyFocus(); }
+    }
+
+    applyLayers(); applyClip(); applyFocus();
+
+    return {
+      tick, applyFocus, applyLayers,
+      _state:state, LAYERS,
+      setLayer:(key,on,op)=>{ const s=state.layers[key]; if(s){ if(on!=null)s.on=on; if(op!=null)s.op=op; saveState(); applyLayers(); } },
+      setExplode:(a)=>{ explodeTarget=a; if(REDUCED_MOTION){explodeCur=a;applyExplode(easeInOutCubic(a));} expRange.value=a; expVal.textContent=Math.round(a*100)+'%'; },
+      setClip:(on,axis,dist)=>{ clip.on=on; if(axis)clip.axis=axis; if(dist!=null)clip.dist=dist; applyClip(); },
+      setFocus:(on)=>{ state.focus=on; saveState(); applyFocus(); },
+      search:(term)=>{ q.value=term; runSearch(); return matches.length; },
+      jumpFirst:()=>{ jump(matches[0]); return panel.classList.contains('open'); },
+      hud:()=>({ locked:K.locked_proven.length, experimental:expCount(), axioms:K.locked_axioms, sorries:K.locked_sorries, kernel:K.locked_sha })
+    };
+  })();
+  /* ==========================  /v4  =================================== */
 
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
@@ -567,6 +840,7 @@
     openOrgan: key=>{ const o=D.ORGANS.find(x=>x.key===key); if(o){openOrgan(o);return true;} return false; },
     openGPD: ()=>{ openGPD(); return true; },
     panelOpen: ()=>panel.classList.contains('open'),
-    rev: (window.THREE&&THREE.REVISION)||null
+    rev: (window.THREE&&THREE.REVISION)||null,
+    v4: V4   // v4 dissection module handle (layers, clip, explode, search, hud, focus)
   };
 })();

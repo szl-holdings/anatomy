@@ -27,6 +27,28 @@ The governed-AI organ substrate shared by **a11oy** (governed-AI command body) a
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
 with the Λ heart at the center.
 
+## What's new in v4 — dissection tools
+
+v4 **evolves** v3 (it does not replace it): the entire v3 engine, organs, formulas,
+YAWAR receipt bus, GPD lens, and text fallback are preserved. Layered on top are
+bench-grade dissection controls so the body is *easier to dissect*:
+
+- **Dissection layer stack** — toggle + opacity-slide the conceptual layers
+  (circulatory · nervous · organs · skeleton/Khipu · halos/glow); choices persist in `localStorage`.
+- **Clip-plane scalpel** — a sliding X/Y/Z cross-section (`renderer.localClippingEnabled`)
+  cuts the organism so you can see the interior, with a reset.
+- **Explode view** — an eased 0→1 slider separates the organ groups radially for inspection.
+- **Search / jump** — filter organs + formulas by name/id; selecting one flies the camera and opens its panel.
+- **Always-on visibility HUD** — a compact overlay reading **honest** counts straight from
+  `data.js` (`D.KERNEL`): locked-proven = 8, experimental tier, axioms 14, sorries 163,
+  kernel `c7c0ba17`, Λ = Conjecture 1, Khipu BFT = Conjecture 2. Never hardcoded.
+- **Focus mode** — fade the other organs when one is selected, to isolate it.
+- **Accessibility + mobile** — every new control is keyboard-reachable and ARIA-labeled,
+  laid out so it never overlaps the existing HUD/panel, and it respects `prefers-reduced-motion`.
+
+Still sovereign: ONLY the vendored `lib/three.min.js` (THREE r160 global) — zero runtime
+CDN, no npm, no build step. The site stays a static, offline-capable bundle.
+
 ## What you'll see
 
 Walk the organism in 3D and watch a real decision propagate: a request enters, the
@@ -77,4 +99,4 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a11oy.net](https://a11oy.net)**
 
-<sub>Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
+<sub>v4 dissection tools (evolves v3) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
