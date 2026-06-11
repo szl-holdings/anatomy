@@ -626,6 +626,67 @@
   }
   /* ===================== /v8 ===================== */
 
+  /* ===================== v9 FLY-HIGH ===================== */
+  .v9-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
+  .v9-dot.live{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:v9pulse 2.4s ease-in-out infinite}
+  .v9-dot.off{background:var(--text-dim)}
+  @keyframes v9pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  /* master ●LIVE / ○offline indicator (lives in the live-proof-state HUD) */
+  #v9-master{margin-top:9px;padding-top:9px;border-top:1px solid var(--border);font-size:10.5px;line-height:1.55}
+  #v9-master .v9-mrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:2px}
+  #v9-master #v9-master-state{display:flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:10px;color:var(--ok)}
+  #v9-master-ago{font-family:var(--font-m);font-size:8.5px;color:var(--text-dim);margin-left:auto}
+  #v9-master-rate,#v9-master-lambda{font-size:9.5px;color:var(--text-muted)}
+  #v9-master-rate b,#v9-master-lambda b{color:var(--text)}
+  #v9-master-proxy{font-size:8.5px;color:var(--text-dim);margin-top:3px;font-style:italic}
+  .v9-beat-row{display:flex;align-items:center;gap:7px;margin-top:5px}
+  #v9-beat-pause{font-family:var(--font-m);font-size:9px;letter-spacing:.04em;padding:3px 8px;border-radius:7px;cursor:pointer;
+    color:var(--text-muted);border:1px solid var(--border);background:var(--surface)}
+  #v9-beat-pause:hover{border-color:var(--border-strong);color:var(--text)}
+  #v9-beat-pause:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+  #v9-beat-state{}
+  /* cinematic vital-tour launcher button (eyebrow row) */
+  #v9-tour-btn.active{color:var(--heart);border-color:rgba(255,93,143,.5);background:rgba(255,93,143,.1)}
+  /* vital tour narration card */
+  #v9-tour{position:fixed;z-index:44;left:50%;bottom:118px;transform:translateX(-50%) translateY(20px);
+    width:min(440px,90vw);border:1px solid rgba(255,93,143,.4);border-radius:var(--radius);background:var(--surface-2);
+    backdrop-filter:blur(var(--blur));box-shadow:0 14px 44px rgba(0,0,0,.55);padding:14px 16px;opacity:0;pointer-events:none;
+    transition:transform .46s cubic-bezier(.16,1,.3,1),opacity .3s ease}
+  #v9-tour.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #v9-tour .v9-tour-top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+  #v9-tour .v9-tour-eyebrow{font-family:var(--font-m);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--heart)}
+  #v9-tour-prog{margin-left:auto;font-family:var(--font-m);font-size:9.5px;color:var(--text-dim)}
+  #v9-tour-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+  #v9-tour-body{font-size:11.5px;line-height:1.5;color:var(--text-muted);min-height:32px}
+  #v9-tour .v9-tour-ctrl{display:flex;gap:7px;margin-top:11px}
+  #v9-tour .v9-tour-ctrl button{font-family:var(--font-m);font-size:10.5px;color:var(--text-muted);background:var(--surface);
+    border:1px solid var(--border);border-radius:8px;padding:6px 11px;cursor:pointer}
+  #v9-tour .v9-tour-ctrl button:hover{border-color:var(--border-strong);color:var(--text)}
+  #v9-tour .v9-tour-bar{height:2px;border-radius:99px;background:rgba(120,150,210,.18);margin-top:11px;overflow:hidden}
+  #v9-tour .v9-tour-bar i{display:block;height:100%;background:var(--heart);width:0;transition:width .2s linear}
+  /* honest agent trace card + killinchu 2nd-body card (inside the decision-flow dialog) */
+  #v9-trace,#v9-killinchu{margin-top:12px;padding-top:11px;border-top:1px solid var(--border);display:none}
+  #v9-trace.show,#v9-killinchu.show{display:block}
+  .v9-trace-head,.v9-k-head{display:flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:10px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap}
+  .v9-k-title{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:7px}
+  .v9-trace-rows{display:flex;flex-direction:column;gap:6px}
+  .v9-trace-r{display:flex;flex-direction:column;line-height:1.4}
+  .v9-trace-k{font-family:var(--font-m);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+  .v9-trace-v{font-size:11px;color:var(--text)}
+  .v9-trace-v code{color:var(--audit);font-family:var(--font-m);font-size:10.5px}
+  .v9-dim{color:var(--text-dim);font-size:10px}
+  .v9-trace-note{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin:9px 0 0;padding:8px 10px;
+    background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.18);border-radius:8px}
+  @media (prefers-reduced-motion: reduce){
+    .v9-dot.live{animation:none}
+    #v9-tour{transition:none}
+    #v9-tour .v9-tour-bar i{transition:none}
+  }
+  @media (max-width:680px){
+    #v9-tour{left:12px;right:12px;width:auto;bottom:auto;top:150px}
+  }
+  /* ===================== /v9 ===================== */
+
 </style>
 </head>
 <body>
@@ -1079,6 +1140,8 @@
     <button class="btn" id="btn-atlas" aria-expanded="false" aria-controls="atlas" title="Formula Atlas: every formula in data.js, grouped by maturity tier">⎙ formula atlas</button>
     <button class="btn" id="btn-forecast" aria-expanded="false" aria-controls="forecast" title="Honest proof-maturity timeline + roadmap">⌁ forecast</button>
     <button class="btn" id="btn-tour" aria-pressed="false" title="Guided tour: fly organ-to-organ with narration (pausable)">▷ guided tour</button>
+    <!-- v9: cinematic hands-free vital tour (auto-fly, narrates live organ values, ends on the Λ-heart) -->
+    <button class="btn" id="v9-tour-btn" aria-pressed="false" title="Cinematic vital tour: a hands-free ~50s auto-fly that narrates each organ's LIVE value and ends on the Λ-heart (Esc to skip)">◈ vital tour</button>
     <button class="btn active" id="btn-labels" aria-pressed="true" title="Toggle floating organ labels (leader lines)">⌗ labels</button>
     <!-- v5 quantum-bio layer (additive · verified model mirroring a11oy /api/a11oy/v1/qbio) -->
     <button class="btn" id="btn-qbio" aria-expanded="false" aria-controls="qbio" title="Quantum-Bio Layer (v5): coherence · bioenergetic charge · Λ-v5 closure floor · radical-pair compass">⌬ quantum-bio (v5)</button>
@@ -1178,6 +1241,14 @@
         <div class="v8-vrow"><span class="v8-vk">locked-8</span><span class="v8-vv" id="v8-vitals-locked">8</span></div>
         <div class="v8-vrow"><span class="v8-vk">Λ posture</span><span class="v8-vv" id="v8-vitals-lambda"><span class="v8-conj">Conjecture 1</span></span></div>
       </div>
+      <!-- v9: master ●LIVE/○offline indicator + autonomous-telemetry pause -->
+      <div id="v9-master" aria-live="polite">
+        <div class="v9-mrow"><span id="v9-master-state"><span class="v9-dot off"></span>○ offline · static snapshot</span><span id="v9-master-ago">updated never</span></div>
+        <div class="v9-mrow" id="v9-master-rate">PURIQ floor <b>0.62</b> · <b>49</b> gates (static)</div>
+        <div class="v9-mrow" id="v9-master-lambda">Λ-v5 gate offline · PROPOSED engineering gate</div>
+        <div id="v9-master-proxy">receipt bloodstream is a live proxy visual of real scalars (PURIQ / Λ-v5 / gate count) — not individual receipts.</div>
+        <div class="v9-beat-row"><span class="v9-dot off" id="v9-beat-state"></span><span id="v9-master-beat" style="font-family:var(--font-m);font-size:8.5px;color:var(--text-dim);flex:1">telemetry every ~17s</span><button id="v9-beat-pause" type="button" aria-pressed="false">⏸ pause telemetry</button></div>
+      </div>
     </div>
   </div>
 
@@ -1267,6 +1338,25 @@
       <button id="v8-flow-run" type="button">run ▶</button>
     </div>
     <div id="v8-flow-out" aria-live="polite"></div>
+    <!-- v9: honest agent trace card (tier · PURIQ vs 0.62 · Λ-v5 λ + closure_ok · stub note) from REAL /code/healthz + /v1/qbio/lambda -->
+    <div id="v9-trace" aria-live="polite"></div>
+    <!-- v9: second body — killinchu live posture (rendered IFF its honest endpoint returns 200; effector SIMULATED) -->
+    <div id="v9-killinchu" aria-live="polite"></div>
+  </div>
+
+  <!-- v9: cinematic hands-free vital-tour narration card (auto-fly; narrates REAL live organ values; ends on the Λ-heart) -->
+  <div id="v9-tour" role="region" aria-label="Cinematic vital tour" aria-live="polite">
+    <div class="v9-tour-top">
+      <span class="v9-tour-eyebrow">◈ vital tour · live values</span>
+      <span id="v9-tour-prog">1 / 5</span>
+    </div>
+    <div id="v9-tour-name">HEART · YUYAY</div>
+    <div id="v9-tour-body">starting the cinematic fly-through…</div>
+    <div class="v9-tour-ctrl">
+      <button id="v9-tour-next" title="Skip to next organ">next ›</button>
+      <button id="v9-tour-stop" title="End the vital tour (Esc)">■ skip</button>
+    </div>
+    <div class="v9-tour-bar"><i id="v9-tour-bar-i"></i></div>
   </div>
 
   <!-- ZERO CDN: vendored Three.js r160 + local data + local app -->
