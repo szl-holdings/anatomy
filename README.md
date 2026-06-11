@@ -43,6 +43,13 @@ bench-grade dissection controls so the body is *easier to dissect*:
   `data.js` (`D.KERNEL`): locked-proven = 8, experimental tier, axioms 14, sorries 163,
   kernel `c7c0ba17`, Λ = Conjecture 1, Khipu BFT = Conjecture 2. Never hardcoded.
 - **Focus mode** — fade the other organs when one is selected, to isolate it.
+- **yarqa flow compartments (CFD) — additive, off by default** — an *engineering-method*
+  layer in the dissection dock that runs a clean-room plug-flow compartmentalization
+  (`yarqa`) over the **existing** circulatory / YAWAR flow sampled from `data.js`, draws
+  the compartments as a toggleable read-only overlay, and emits a reproducible integrity
+  receipt digest. It is **labeled CFD, not a locked theorem, and is never counted among
+  the locked 8** — `data.js` stays the single source of truth and the locked-proven count
+  is unchanged at 8.
 - **Accessibility + mobile** — every new control is keyboard-reachable and ARIA-labeled,
   laid out so it never overlaps the existing HUD/panel, and it respects `prefers-reduced-motion`.
 

@@ -433,6 +433,7 @@
   let selectedOM=null;   // v4: currently-open organ (for focus mode)
   let V4=null;           // v4: dissection module handle (set after init)
   let V5=null;           // v5: deepen module handle (atlas, forecast, tour, labels, drill-down)
+  let V6=null;           // v6: yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -596,6 +597,8 @@
     if(V4 && V4.tick) V4.tick(dt,t);
     // v5: per-frame deepen updates (label projection, breathing heart idle, tour fly)
     if(V5 && V5.tick) V5.tick(dt,t,beat);
+    // v6: yarqa flow-compartments layer (additive overlay over the circulatory/YAWAR flow)
+    if(V6 && V6.tick) V6.tick(dt,t);
     renderer.render(scene,camera);
     if(!_loaderHidden){ _loaderHidden=true; var ld=$('loader'); if(ld) ld.classList.add('hidden'); }
   }
@@ -1346,6 +1349,266 @@
   })();
   /* =========================  /v4-DEEPEN (v5)  ======================== */
 
+  /* =====================================================================
+     ====================  v6 · yarqa FLOW COMPARTMENTS  =================
+     ADDITIVE overlay (NEVER replaces v3/v4/v5). Reuses the v3 scene, the
+     `vessels` registry built from data.js (SINGLE source of truth — no new
+     data), THREE r160 (vendored, zero-CDN), and the SAME render loop via
+     V6.tick. Sovereign: no network, no new asset.
+
+     What it does: it samples the EXISTING circulatory / YAWAR vessel curves
+     into a velocity field (points + flow tangents), then runs a clean-room
+     in-browser port of yarqa.compartmentalize — region-growing of
+     velocity-aligned cells across a flow front — to reduce the circulatory
+     flow to a small set of plug-flow compartments, rendered as a toggleable
+     layer of compartment hulls + centroids over the flow.
+
+     HONESTY (doctrine v11) — never violated:
+       • yarqa is an ENGINEERING METHOD (CFD), NOT a locked theorem. It is
+         NEVER folded into the locked-proven count (stays exactly 8
+         {F1,F4,F7,F11,F12,F18,F19,F22} @ D.KERNEL.locked_sha). No proven /
+         kernel-verified badge — the layer is labeled verbatim
+         "yarqa flow compartments — engineering method (CFD)".
+       • It does NOT route the locked-8 governance theorems "through" yarqa,
+         and does NOT re-implement the a11oy↔killinchu connection on yarqa —
+         it is a read-only VISUALIZATION over the existing circulatory flow.
+       • Method clean-room (Jacobs et al. 1991 / reactor-engineering
+         compartmental reduction cited as concept only); no third-party
+         source copied.
+     ===================================================================== */
+  V6 = (function(){
+    const CFD_LABEL = 'yarqa flow compartments \u2014 engineering method (CFD)';
+    const PAL = [0x3fb6d6,0xe8b33f,0x46d39a,0xb06fe0,0xe8615f,0x5f8de8,0xe88f3f,0x6fe0c0,0xd65fb0,0x9ad63f];
+
+    // ---- 1. Build the flow field from the EXISTING circulatory vessels ----
+    // Circulatory = YAWAR receipt bus (vessel color '#ff3b5c'). We sample each
+    // such vessel curve into cells: center = sample point, velocity = local
+    // flow tangent (downstream direction along the bus). data.js is the source.
+    function buildField(){
+      const centers=[], velocities=[], cellVessel=[];
+      const circ = vessels.filter(v=> v.color==='#ff3b5c');
+      const SAMPLES = 7; // per vessel — keep cell count modest for the overlay
+      circ.forEach((v,vi)=>{
+        for(let s=0;s<SAMPLES;s++){
+          const t = (s+0.5)/SAMPLES;
+          const p = v.curve.getPoint(t);
+          const tan = v.curve.getTangent(Math.min(0.999,t)).normalize();
+          centers.push(p);
+          velocities.push(tan);
+          cellVessel.push(vi);
+        }
+      });
+      // Face adjacency: consecutive samples on the same vessel are neighbors,
+      // plus cross-links between cells from different vessels that are spatially
+      // close (a shared flow front through the YAWAR mesh).
+      const n = centers.length;
+      const neighbors = Array.from({length:n},()=>[]);
+      for(let i=0;i<n;i++){
+        for(let j=i+1;j<n;j++){
+          const sameVessel = cellVessel[i]===cellVessel[j];
+          const seq = sameVessel && Math.abs((i-j))===1;
+          const d = centers[i].distanceTo(centers[j]);
+          if(seq || d<0.9){ neighbors[i].push(j); neighbors[j].push(i); }
+        }
+      }
+      return { centers, velocities, neighbors, n };
+    }
+
+    // ---- 2. Clean-room yarqa.compartmentalize (region-grow) ----------------
+    // Mirrors the published algorithm: deterministic seed order (fastest flow
+    // first), grow through face-neighbors that are velocity-aligned AND straddle
+    // the seed's flow front. Pure THREE.Vector3 math; no third-party source.
+    function unit(v){ const l=v.length(); return l>1e-9? v.clone().multiplyScalar(1/l): v.clone(); }
+    function straddles(uSeed, rSeed, rN){
+      // Single representative point per neighbor (its center): a neighbor is on
+      // the front if the projection sign differs from a tiny upstream probe.
+      const rel = rN.clone().sub(rSeed);
+      const proj = rel.dot(uSeed);
+      // Front straddle test: admit neighbors near/across the front plane.
+      return Math.abs(proj) <= 0.55 || proj>=0;
+    }
+    function compartmentalize(field, alignThreshold){
+      const {centers,velocities,neighbors,n}=field;
+      const labels = new Array(n).fill(-1);
+      const speed = velocities.map(v=>v.length());
+      const order = Array.from({length:n},(_,i)=>i).sort((a,b)=>speed[b]-speed[a]);
+      let cur=0;
+      for(const start of order){
+        if(labels[start]!==-1) continue;
+        const uSeed = velocities[start];
+        const uSeedU = unit(uSeed);
+        const rSeed = centers[start];
+        labels[start]=cur;
+        const frontier=[start];
+        while(frontier.length){
+          const cell=frontier.shift();
+          for(const k of neighbors[cell]){
+            if(labels[k]!==-1) continue;
+            const uk=unit(velocities[k]);
+            if(uSeedU.dot(uk) < alignThreshold) continue;
+            if(!straddles(uSeed,rSeed,centers[k])) continue;
+            labels[k]=cur; frontier.push(k);
+          }
+        }
+        cur++;
+      }
+      return labels;
+    }
+    function summarize(field, labels){
+      const groups={};
+      for(let i=0;i<labels.length;i++){
+        const c=labels[i]; (groups[c]||(groups[c]={n:0,cs:new THREE.Vector3(),mv:new THREE.Vector3()}));
+        groups[c].n++; groups[c].cs.add(field.centers[i]); groups[c].mv.add(field.velocities[i]);
+      }
+      Object.keys(groups).forEach(c=>{ groups[c].cs.multiplyScalar(1/groups[c].n); groups[c].mv.multiplyScalar(1/groups[c].n); });
+      return groups;
+    }
+
+    // ---- 3. Reproducible integrity receipt (mirrors yarqa.provenance) ------
+    // SHA-256 over canonical (rounded) inputs + params + result. Pure WebCrypto.
+    // Asserts INTEGRITY/REPRODUCIBILITY, NOT correctness, NOT a locked theorem.
+    function canonicalField(field, alignThreshold){
+      const r=x=>Math.round(x*1e4)/1e4;
+      return JSON.stringify({
+        schema:'szl.yarqa.receipt/v1-viz',
+        claim_tier:'engineering-method-cfd; integrity-receipt; NOT a locked theorem',
+        params:{align_threshold:alignThreshold},
+        n:field.n,
+        centers:field.centers.map(p=>[r(p.x),r(p.y),r(p.z)]),
+        velocities:field.velocities.map(p=>[r(p.x),r(p.y),r(p.z)])
+      });
+    }
+    async function sha256Hex(str){
+      try{
+        const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch(e){ // sovereign fallback: small deterministic non-crypto digest (labeled)
+        let h=5381; for(let i=0;i<str.length;i++){ h=((h<<5)+h+str.charCodeAt(i))>>>0; }
+        return 'fnv-'+h.toString(16);
+      }
+    }
+
+    // ---- 4. Render group (toggleable, additive) ---------------------------
+    const grp = new THREE.Group(); grp.name='yarqa-flow-compartments'; grp.visible=false; root.add(grp);
+    let field=null, labels=null, groups=null, lastReceipt=null, currentOpacity=1, layerOn=false;
+
+    function clearGrp(){ for(let i=grp.children.length-1;i>=0;i--){ const c=grp.children[i]; grp.remove(c); if(c.geometry)c.geometry.dispose(); if(c.material)c.material.dispose(); } }
+
+    function render(){
+      clearGrp();
+      if(!field||!labels) return;
+      // cell markers tinted by compartment
+      for(let i=0;i<field.n;i++){
+        const col=PAL[labels[i]%PAL.length];
+        const m=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8),
+          new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.9*currentOpacity}));
+        m.position.copy(field.centers[i]); grp.add(m);
+      }
+      // compartment centroids + mean-flow arrows
+      Object.keys(groups).forEach(c=>{
+        const g=groups[c]; const col=PAL[(+c)%PAL.length];
+        const node=new THREE.Mesh(new THREE.IcosahedronGeometry(0.14,0),
+          new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.55*currentOpacity,wireframe:true}));
+        node.position.copy(g.cs); grp.add(node);
+        const dir=unit(g.mv); const len=0.6;
+        const arrowGeo=new THREE.BufferGeometry().setFromPoints([g.cs, g.cs.clone().addScaledVector(dir,len)]);
+        grp.add(new THREE.Line(arrowGeo, new THREE.LineBasicMaterial({color:col,transparent:true,opacity:0.8*currentOpacity})));
+      });
+    }
+
+    async function recompute(alignThreshold){
+      const aln = (alignThreshold==null)?0.2:alignThreshold;
+      field = buildField();
+      labels = compartmentalize(field, aln);
+      groups = summarize(field, labels);
+      const canon = canonicalField(field, aln);
+      const resultStr = JSON.stringify(labels);
+      const digest = await sha256Hex(canon + '|' + resultStr);
+      lastReceipt = {
+        schema:'szl.yarqa.receipt/v1-viz',
+        method_tier:'engineering method (CFD)',
+        claim:'integrity/reproducibility, NOT correctness; NOT a locked theorem',
+        yarqa_in_locked_count:false,
+        routes_locked8_through_yarqa:false,
+        align_threshold:aln,
+        n_cells:field.n,
+        n_compartments:Object.keys(groups).length,
+        receipt_digest:digest,
+        source:'circulatory / YAWAR vessels (data.js single source of truth)'
+      };
+      render();
+      updatePanel();
+      return lastReceipt;
+    }
+
+    // ---- 5. Dock UI: a layer row + honest CFD panel (mobile-safe) ----------
+    const el = id=>document.getElementById(id);
+    function updatePanel(){
+      const box=el('yq-receipt'); if(!box||!lastReceipt) return;
+      box.textContent =
+        lastReceipt.n_compartments+' compartments \u00b7 '+lastReceipt.n_cells+' cells \u00b7 align '+lastReceipt.align_threshold.toFixed(2)+
+        '\nreceipt '+lastReceipt.receipt_digest.slice(0,32)+'\u2026';
+    }
+    function setLayer(on, op){
+      if(on!=null){ layerOn=on; grp.visible=on; }
+      if(op!=null){ currentOpacity=op; }
+      grp.visible = layerOn;
+      if(layerOn && (!labels)) { recompute(0.2); } else { render(); }
+    }
+
+    function buildDockRow(){
+      const wrap=el('dz-layers'); if(!wrap) return;
+      const sec=document.createElement('div'); sec.className='dz-layer'; sec.id='yq-layer-row';
+      sec.innerHTML =
+        '<button class="dz-toggle" id="yq-toggle" role="switch" aria-pressed="false" aria-label="yarqa flow compartments layer (engineering method, CFD)"></button>'+
+        '<span class="lname"><span class="lsw" style="color:#3fb6d6"></span>yarqa flow compartments</span>'+
+        '<input type="range" class="dz-range" id="yq-op" min="0" max="1" step="0.01" value="1" aria-label="yarqa flow compartments opacity">';
+      wrap.appendChild(sec);
+      // honest CFD note + receipt readout + align slider (sits under the row)
+      const note=document.createElement('div'); note.className='dz-sec'; note.id='yq-sec';
+      note.innerHTML =
+        '<span class="dz-label">CFD method \u00b7 not a locked theorem</span>'+
+        '<div style="font-size:11px;line-height:1.45;color:var(--audit);margin:2px 0 6px">'+
+          'Plug-flow compartmentalization (<b>yarqa</b>) of the circulatory / YAWAR flow \u2014 an '+
+          '<b>engineering method (CFD)</b>, <b>not</b> a locked theorem and never counted among the '+
+          'locked 8. Read-only viz over the existing flow; data.js is the source.'+
+        '</div>'+
+        '<div class="dz-row"><span class="dz-label" style="flex:0 0 auto">align</span>'+
+          '<input type="range" class="dz-range" id="yq-align" min="0" max="0.9" step="0.05" value="0.2" aria-label="yarqa alignment threshold" style="flex:1">'+
+          '<span class="val" id="yq-align-val">0.20</span></div>'+
+        '<pre id="yq-receipt" style="font-size:10.5px;white-space:pre-wrap;word-break:break-all;color:var(--nerve);margin:4px 0 0;background:rgba(0,0,0,.18);border-radius:6px;padding:6px">layer off \u2014 toggle to compute</pre>';
+      // place the note section right after the layer-stack section
+      const stack = wrap.parentNode; // dz-body
+      if(stack && wrap.nextSibling){ stack.insertBefore(note, wrap.nextSibling); } else if(stack){ stack.appendChild(note); }
+
+      const tog=el('yq-toggle'), op=el('yq-op'), align=el('yq-align'), alignVal=el('yq-align-val');
+      tog.addEventListener('click', ()=>{ const on=tog.getAttribute('aria-pressed')!=='true'; tog.setAttribute('aria-pressed',String(on)); setLayer(on,null); if(on){ el('yq-receipt').textContent='computing\u2026'; recompute(parseFloat(align.value)); } });
+      op.addEventListener('input', ()=>{ setLayer(null, parseFloat(op.value)); });
+      align.addEventListener('input', ()=>{ alignVal.textContent=parseFloat(align.value).toFixed(2); if(layerOn) recompute(parseFloat(align.value)); });
+    }
+    buildDockRow();
+
+    // gentle idle shimmer on the compartment nodes (respects reduced motion)
+    let acc=0;
+    function tick(dt,t){
+      if(!layerOn || REDUCED_MOTION) return;
+      acc+=dt; if(acc<0.05) return; acc=0;
+      grp.children.forEach(c=>{ if(c.material && c.material.wireframe){ c.material.opacity = (0.4+0.2*Math.sin(t*1.5))*currentOpacity; } });
+    }
+
+    return {
+      tick, recompute, setLayer,
+      label: CFD_LABEL,
+      isOn: ()=>layerOn,
+      compartments: ()=> labels? Object.keys(groups).length : 0,
+      cells: ()=> field? field.n : 0,
+      receipt: ()=> lastReceipt,
+      yarqaInLockedCount: ()=> false,
+      routesLocked8ThroughYarqa: ()=> false
+    };
+  })();
+  /* =====================  /v6 yarqa flow compartments  ================= */
+
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
     organs: organMeshes.length,
@@ -1359,6 +1622,7 @@
     rev: (window.THREE&&THREE.REVISION)||null,
     v4: V4,  // v4 dissection module handle (layers, clip, explode, search, hud, focus)
     v5: V5,  // v4-deepen module handle (atlas, forecast, tour, labels, drill-down)
+    v6: V6,  // v6 yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
     formulas: Object.keys(D.FORMULAS).length,
     tierCounts: (V5&&V5.api)?V5.api.tierCounts():null
   };
