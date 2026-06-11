@@ -783,6 +783,13 @@
   /* ============ UX2 MOBILE (<=680px): canvas hero + tab-bar ============ */
   @media (max-width:680px){
     body.ux2 #ux-toolbar{display:none !important;}
+    /* but the More popover must still work on mobile: render the toolbar
+       wrapper as a zero-size fixed anchor when its menu is open, so the
+       fixed-positioned menu (detached) is not hidden by an ancestor. */
+    body.ux2.ux-more-open #ux-toolbar{display:block !important;position:fixed;width:0;height:0;left:auto;right:0;bottom:0;overflow:visible;pointer-events:none;z-index:71}
+    body.ux2.ux-more-open #ux-toolbar > *:not(#ux-more-wrap){display:none !important}
+    body.ux2.ux-more-open #ux-more-wrap{pointer-events:auto}
+    body.ux2 #ux-more-menu.open{pointer-events:auto;z-index:72;bottom:74px;right:10px;left:auto;min-width:200px}
     /* minimal floating top title only */
     body.ux2 #title{top:14px;left:14px;right:14px;max-width:none;}
     body.ux2 #title h1{font-size:16px;line-height:1.18;}
@@ -1645,14 +1652,21 @@
 
     /* ---------- More menu ---------- */
     var moreMenu=$('ux-more-menu');
+    function setMore(open){
+      moreMenu.classList.toggle('open',open);
+      document.body.classList.toggle('ux-more-open',open);
+      $('ux-more').setAttribute('aria-expanded',String(open));
+      var t=$('uxt-more'); if(t) t.setAttribute('aria-pressed',String(open));
+      if(MOBILE()) scrim(open);
+    }
+    function closeMore(){ setMore(false); }
     $('ux-more').addEventListener('click',function(e){
       e.stopPropagation();
-      var open=moreMenu.classList.toggle('open');
-      this.setAttribute('aria-expanded',String(open));
+      setMore(!moreMenu.classList.contains('open'));
     });
     document.addEventListener('click',function(e){
-      if(moreMenu.classList.contains('open') && !$('ux-more-wrap').contains(e.target)){
-        moreMenu.classList.remove('open'); $('ux-more').setAttribute('aria-expanded','false');
+      if(moreMenu.classList.contains('open') && !$('ux-more-wrap').contains(e.target) && e.target.id!=='uxt-more' && !(e.target.closest && e.target.closest('#uxt-more'))){
+        closeMore();
       }
     });
     function menuAct(id, underlying, opt){
@@ -1660,7 +1674,7 @@
       b.addEventListener('click',function(){
         if(typeof underlying==='function'){ underlying(); }
         else { click(underlying); }
-        if(!opt||!opt.keepOpen){ moreMenu.classList.remove('open'); $('ux-more').setAttribute('aria-expanded','false'); }
+        if(!opt||!opt.keepOpen){ closeMore(); }
       });
     }
     menuAct('ux-m-trust', function(){
@@ -1690,28 +1704,24 @@
     $('uxt-proof').addEventListener('click',function(){ toggleSheet('proof'); });
     $('uxt-more').addEventListener('click',function(e){
       e.stopPropagation();
-      // reuse the same More menu, anchored bottom on mobile via fixed positioning
-      var open=moreMenu.classList.toggle('open');
-      $('ux-more').setAttribute('aria-expanded',String(open));
+      // close any open one-at-a-time sheet first, then toggle the More menu
+      var wantOpen=!moreMenu.classList.contains('open');
+      if(wantOpen){ closeAllSheets(); }
+      setMore(wantOpen);
     });
-    $('ux-scrim').addEventListener('click',closeAllSheets);
+    $('ux-scrim').addEventListener('click',function(){ closeAllSheets(); closeMore(); });
 
     // Esc closes any open mobile sheet
-    window.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(MOBILE) closeAllSheets(); moreMenu.classList.remove('open'); } });
+    window.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(MOBILE()) closeAllSheets(); closeMore(); } });
 
     // When app drawers (atlas/forecast/qbio/panel) open on mobile, show scrim + clear tab state
     function watchDrawers(){
       var anyOpen=['panel','atlas','forecast','qbio'].some(function(id){ var e=$(id); return e && e.classList.contains('open'); });
-      if(MOBILE){ scrim(anyOpen||!!openKey); }
+      if(MOBILE()){ scrim(anyOpen||!!openKey); }
     }
     setInterval(watchDrawers, 400);
 
-    // On mobile, the More menu should sit just above the tab-bar
-    function placeMoreMenu(){
-      if(MOBILE){ moreMenu.style.position='fixed'; moreMenu.style.right='10px'; moreMenu.style.left='auto'; moreMenu.style.bottom='72px'; }
-      else { moreMenu.style.position=''; moreMenu.style.right=''; moreMenu.style.left=''; moreMenu.style.bottom=''; }
-    }
-    window.addEventListener('resize',placeMoreMenu); placeMoreMenu();
+    // (More menu positioning is governed by CSS at each breakpoint.)
 
     // init after app.js has filled the honesty card
     function init(){
