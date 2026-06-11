@@ -421,6 +421,7 @@
     selectedOM = om || null;
     if(V4 && V4.applyFocus) V4.applyFocus();   // v4 focus-mode hook (no-op until v4 inits)
     if(V5 && V5.onOrganOpen) V5.onOrganOpen(o); // v5 deepen hook: per-formula Lean drill-down + organ↔formula highlight
+    if(V7 && V7.onOrganOpen) V7.onOrganOpen(o); // v5 quantum-bio hook: per-organ coherence/charge/Λ-v5 mini-panel + decay sparkline
   }
   function closePanel(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
     organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
@@ -434,6 +435,7 @@
   let V4=null;           // v4: dissection module handle (set after init)
   let V5=null;           // v5: deepen module handle (atlas, forecast, tour, labels, drill-down)
   let V6=null;           // v6: yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
+  let V7=null;           // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -599,6 +601,8 @@
     if(V5 && V5.tick) V5.tick(dt,t,beat);
     // v6: yarqa flow-compartments layer (additive overlay over the circulatory/YAWAR flow)
     if(V6 && V6.tick) V6.tick(dt,t);
+    // v5 quantum-bio: coherence-as-opacity over time + Λ-v5 gate cue + attractor basin
+    if(V7 && V7.tick) V7.tick(dt,t);
     renderer.render(scene,camera);
     if(!_loaderHidden){ _loaderHidden=true; var ld=$('loader'); if(ld) ld.classList.add('hidden'); }
   }
@@ -1609,6 +1613,330 @@
   })();
   /* =====================  /v6 yarqa flow compartments  ================= */
 
+  /* =====================================================================
+     ====================  v5 · QUANTUM-BIO LAYER  =======================
+     ADDITIVE (NEVER replaces v3/v4/v5/v6). Reuses the v3 scene, the
+     organMeshes registry, THREE (vendored, zero-CDN), the SAME render
+     loop via V7.tick, and the per-organ qbio fields computed in data.js
+     by the QBIO verified-model module. Sovereign: no network at runtime.
+
+     The 4 verified formulas (Lindblad coherence, Mitchell pmf, radical-
+     pair compass, Λ-v5 closure) live in data.js as window.SZL_ANATOMY.QBIO
+     and are labeled "verified model (mirrors a11oy /api/a11oy/v1/qbio)".
+
+     HONESTY (doctrine v11) — never violated:
+       • Lindblad coherence / Mitchell single-ion pmf / radical-pair
+         compass / Becker-Nernst = VERIFIED physics.
+       • Two-ion K⁺/H⁺ + Λ-v5 closure floor = PROPOSED SZL engineering
+         constructs. Λ-v5 is an ENGINEERING gate, explicitly NOT the
+         formal uniqueness Λ (Conjecture 1, machine-checked FALSE).
+       • Jack Kruse light/water/magnetism framing = NARRATIVE only.
+       • Adds NO locked theorem — locked-proven stays exactly 8. Per-organ
+         pmf INPUTS are a labeled SAMPLE; every shown number is computed.
+     ===================================================================== */
+  V7 = (function(){
+    const QB = D.QBIO; if(!QB) return null;
+    const el = id=>document.getElementById(id);
+    const C = QB.CONST;
+
+    /* ---- status-tag helper (three honest tags everywhere) ---- */
+    function statTag(s){
+      const k = (s||'').toUpperCase();
+      if(k.indexOf('VERIFIED')===0) return '<span class="qb-stat verified">VERIFIED</span>';
+      if(k.indexOf('PROPOSED')===0) return '<span class="qb-stat proposed">PROPOSED</span>';
+      if(k.indexOf('NARRATIVE')===0) return '<span class="qb-stat narrative">NARRATIVE</span>';
+      return '<span class="qb-stat">'+esc(k)+'</span>';
+    }
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    /* ---- tiny SVG coherence decay sparkline C(t)=e^(-t/τc) ---- */
+    function decaySpark(tau_c, C0, w, h, markT){
+      w=w||300; h=h||58; C0=(C0==null)?1:C0; tau_c=tau_c||C.tau_c;
+      const series = QB.coherenceSeries(tau_c, C0, tau_c*3, 48);
+      const x = i => 4 + (i/(series.length-1))*(w-8);
+      const y = v => (h-6) - v*(h-14);
+      let d=''; series.forEach((p,i)=>{ d += (i?'L':'M')+x(i).toFixed(1)+' '+y(p.C).toFixed(1)+' '; });
+      // floor line at lam_min/charge-equivalent is organ-specific; here mark τc
+      const txAt = (markT==null)?tau_c:markT;
+      const frac = Math.min(1, txAt/(tau_c*3));
+      const mx = 4 + frac*(w-8);
+      const cMark = QB.coherenceAt(txAt, tau_c, C0);
+      return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="coherence decay sparkline">'+
+        '<line x1="4" y1="'+y(0).toFixed(1)+'" x2="'+(w-4)+'" y2="'+y(0).toFixed(1)+'" stroke="rgba(120,150,210,.25)" stroke-width="1"/>'+
+        '<path d="'+d.trim()+'" fill="none" stroke="#5ad1ff" stroke-width="1.8"/>'+
+        '<line x1="'+mx.toFixed(1)+'" y1="4" x2="'+mx.toFixed(1)+'" y2="'+(h-4)+'" stroke="#9ef0c0" stroke-width="1" stroke-dasharray="3 3"/>'+
+        '<circle cx="'+mx.toFixed(1)+'" cy="'+y(cMark).toFixed(1)+'" r="3" fill="#9ef0c0"/>'+
+        '<text x="6" y="12" fill="#5ad1ff" font-family="monospace" font-size="9">C(t)=e^(-t/τc)</text>'+
+        '<text x="'+(w-4)+'" y="'+(h-2)+'" text-anchor="end" fill="#6f86b6" font-family="monospace" font-size="8">t → 3τc · τc='+tau_c+'</text>'+
+        '</svg>';
+    }
+
+    /* ---- radical-pair compass dial (angular singlet yield) ---- */
+    function compassDial(B_uT, sz){
+      sz=sz||128; const cx=sz/2, cy=sz/2, rad=sz/2-10;
+      const N=48; let pts='';
+      for(let i=0;i<=N;i++){
+        const th=(i/N)*Math.PI*2;
+        const phi=QB.radicalPairYield(B_uT, th);        // 0..1
+        // exaggerate visually around the mean so the (tiny, honest) contrast is visible
+        const r = rad*(0.55 + (phi-0.5)*6.0);
+        const rr = Math.max(rad*0.2, Math.min(rad, r));
+        const px=cx+rr*Math.sin(th), py=cy-rr*Math.cos(th);
+        pts += (i?'L':'M')+px.toFixed(1)+' '+py.toFixed(1)+' ';
+      }
+      const cc = QB.compassContrast(B_uT);
+      // selected execution direction = angle of max yield (field-parallel)
+      const selX=cx, selY=cy-rad;
+      return '<svg viewBox="0 0 '+sz+' '+sz+'" role="img" aria-label="radical-pair compass dial">'+
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+rad+'" fill="none" stroke="rgba(120,150,210,.25)" stroke-width="1"/>'+
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+(rad*0.55).toFixed(1)+'" fill="none" stroke="rgba(120,150,210,.15)" stroke-width="1" stroke-dasharray="2 3"/>'+
+        '<path d="'+pts.trim()+'Z" fill="rgba(124,92,255,.12)" stroke="#7c5cff" stroke-width="1.6"/>'+
+        '<line x1="'+cx+'" y1="'+cy+'" x2="'+selX+'" y2="'+selY+'" stroke="#9ef0c0" stroke-width="1.6"/>'+
+        '<circle cx="'+selX+'" cy="'+selY+'" r="3" fill="#9ef0c0"/>'+
+        '<text x="'+cx+'" y="11" text-anchor="middle" fill="#9ef0c0" font-family="monospace" font-size="8">exec dir</text>'+
+        '</svg>';
+    }
+
+    /* ====================================================================
+       (A) THE v5 PANEL — summarizes τc, pmf, compass, Λ-gate, leaders,
+       sources, the 3 Lean theorems, and the honest doctrine line.
+       ==================================================================== */
+    function buildPanel(){
+      const body = el('qbio-body'); if(!body) return;
+      el('qbio-note').innerHTML =
+        'Coherence · bioenergetic charge · Λ-v5 closure floor · radical-pair compass. '+
+        'A <b>self-contained verified model</b> (4 closed-form formulas embedded in data.js) that '+
+        '<b>mirrors a11oy <code>/api/a11oy/v1/qbio</code></b> — 0 runtime CDN, 0 network. '+
+        'Three honest tags throughout: '+statTag('VERIFIED')+' '+statTag('PROPOSED')+' '+statTag('NARRATIVE')+'.';
+
+      const exec = D.ORGANS.filter(o=>o.qbio && o.qbio.execute).length;
+      const cc = QB.compassContrast(50);
+
+      let h = '';
+      /* doctrine gate banner */
+      h += '<div class="qb-disc"><b>Λ-v5 is an ENGINEERING gate · PROPOSED.</b> It is explicitly '+
+        '<b>NOT</b> the formal uniqueness Λ, which stays <b>Conjecture 1</b> (unconditional uniqueness '+
+        'machine-checked <b>FALSE</b>). This layer adds <b>NO</b> locked theorem — locked-proven stays '+
+        'exactly 8 {F1,F4,F7,F11,F12,F18,F19,F22}. Jack Kruse framing = '+statTag('NARRATIVE')+' only; the '+
+        'load-bearing math is Mitchell / Lane / Wallace / Schulten / Hore '+statTag('VERIFIED')+'. Trust never 100%.</div>';
+
+      /* 1. Coherence */
+      h += '<div class="qb-card"><div class="qc-h"><b>1 · Coherence layer</b> '+statTag('VERIFIED')+' Lindblad/GKSL</div>'+
+        '<div class="qc-math">C(t) = C₀·e^(−t/τc) ,  τc ≈ '+C.tau_c+'</div>'+
+        decaySpark(C.tau_c, 1.0, 300, 58, C.tau_c)+
+        '<div class="qc-row"><span>C(τc) = e⁻¹</span><b>'+QB.coherenceAt(C.tau_c).toFixed(4)+'</b></div>'+
+        '<div class="qc-plain">Open-quantum-system coherence decays exponentially; steady state dρ/dt=0 is the proof of closure. Each organ sits at its own point on this curve (its coherence drives Λ-v5).</div></div>';
+
+      /* 2. Bioenergetic */
+      h += '<div class="qb-card"><div class="qc-h"><b>2 · Bioenergetic layer</b> '+statTag('VERIFIED')+' Mitchell <span class="qb-stat proposed">two-ion PROPOSED</span></div>'+
+        '<div class="qc-math">Δp = ΔΨ − (2.3 RT/F)·ΔpH</div>'+
+        '<div class="qc-row"><span>single-ion pmf</span><b>'+C.pmf_single_mV.toFixed(1)+' mV</b></div>'+
+        '<div class="qc-row"><span>two-ion K⁺/H⁺ (w≈0.18) <span class="qb-stat proposed">PROPOSED</span></span><b>'+C.pmf_two_ion_mV.toFixed(1)+' mV</b></div>'+
+        '<div class="qc-plain">Each organ’s <b>charge = Δp/Δp₀</b> (Δp₀ = '+C.pmf_two_ion_mV.toFixed(1)+' mV). The two-ion correction lifts 119.3 → 121.5 mV.</div></div>';
+
+      /* 3. Λ-v5 closure floor */
+      h += '<div class="qb-card"><div class="qc-h"><b>3 · Λ-v5 closure floor</b> <span class="qb-stat proposed">PROPOSED gate</span></div>'+
+        '<div class="qc-math">lambdaV5 = coherence · charge  ≥  λ_min ('+C.lam_min+')  ⇒  EXECUTE, else RECHARGE</div>'+
+        '<div class="qc-row"><span>organs above floor (this scene)</span><b>'+exec+' / '+D.ORGANS.length+'</b></div>'+
+        '<div class="qc-row"><span>tested lifecycle</span><b>'+esc(C.lifecycle)+'</b></div>'+
+        '<div class="qc-plain">A node may execute iff it is <b>coherent AND charged</b>; otherwise it RECHARGES / re-tunes. In 3D, organs <b>below</b> the floor are dimmed/desaturated and organs <b>above</b> glow. EXPLICITLY NOT the formal Λ (Conjecture 1).</div></div>';
+
+      /* 4. Compass */
+      h += '<div class="qb-card"><div class="qc-h"><b>4 · Magnetosensitive compass</b> '+statTag('VERIFIED')+' radical pair</div>'+
+        '<div class="qb-compass">'+compassDial(50,128)+
+        '<div style="flex:1;min-width:170px">'+
+        '<div class="qc-row"><span>angular contrast (single-nucleus, closed)</span><b>'+cc.contrast.toFixed(3)+'</b></div>'+
+        '<div class="qc-row"><span>full density-matrix model</span><b>'+C.compass_contrast_full.toFixed(3)+'</b></div>'+
+        '<div class="qc-plain">A radical-pair compass biases which execution direction a node selects. <b>HONEST:</b> the toy cos(ωt) model FAILS (~0.003); the single-nucleus closed form gives ≈'+C.compass_contrast_closed+'; only the full model reaches ≈'+C.compass_contrast_full+'.</div>'+
+        '</div></div></div>';
+
+      /* Field leaders */
+      h += '<div class="qb-sec-h">Field leaders</div>';
+      D.QBIO_LEADERS.forEach(L=>{
+        h += '<div class="qb-leader"><span class="ql-name">'+esc(L.name)+'</span>'+
+          '<span class="ql-work">'+esc(L.work)+'</span>'+statTag(L.status)+'</div>';
+      });
+
+      /* 3 Lean theorems */
+      h += '<div class="qb-sec-h">Λ-v5 closure · 3 Lean theorems (mirrored)</div>';
+      D.QBIO_THEOREMS.forEach(t=>{
+        h += '<div class="qb-thm"><div class="qt-id">'+esc(t.id)+' · '+esc(t.name)+' '+statTag(t.status)+'</div>'+
+          '<div class="qt-lean">'+esc(t.lean)+'</div>'+
+          '<div class="qt-plain">'+esc(t.plain)+'</div></div>';
+      });
+
+      /* Sources */
+      h += '<div class="qb-sec-h">Sources · arXiv / DOI / PMC</div>';
+      D.QBIO_SOURCES.forEach(s=>{
+        h += '<a class="qb-src" href="'+esc(s.url)+'" target="_blank" rel="noopener">'+esc(s.label)+
+          '<span class="qs-tag">'+statTag(s.status)+'</span></a>';
+      });
+
+      h += '<div class="qc-plain" style="margin-top:16px;color:var(--text-dim)">Embed decision: the 4 formulas are implemented <b>locally in data.js</b> (self-contained, sovereign, 0 runtime CDN) and labeled <code>'+esc(QB.label)+'</code>. The live a11oy endpoint does set <code>access-control-allow-origin</code> for this Space, but the doctrine prefers a no-network, self-contained model so the layer stays honest and offline-robust.</div>';
+
+      body.innerHTML = h;
+    }
+
+    /* ====================================================================
+       (B) PER-ORGAN Λ-v5 mini-panel injected into the organ drill panel.
+       ==================================================================== */
+    function onOrganOpen(o){
+      if(!o || !o.qbio) return;
+      const pbody = el('p-body'); if(!pbody) return;
+      if(pbody.querySelector('.qb-organ')) return; // avoid double-inject
+      const q = o.qbio;
+      const v = document.createElement('div'); v.className='qb-organ';
+      const verdictCls = q.execute ? 'exec' : 'recharge';
+      v.innerHTML =
+        '<div class="qo-h">⌬ Quantum-Bio (v5) <span class="qb-stat verified">VERIFIED math</span> <span class="qb-stat proposed">SAMPLE inputs</span></div>'+
+        decaySpark(q.tau_c, 1.0, 280, 52, q.age_units)+
+        '<div class="qo-grid">'+
+          '<span>coherence C</span><b>'+q.coherence.toFixed(3)+'</b>'+
+          '<span>charge Δp/Δp₀</span><b>'+q.charge.toFixed(3)+'</b>'+
+          '<span>pmf single</span><b>'+q.pmf_single_mV.toFixed(1)+' mV</b>'+
+          '<span>pmf two-ion</span><b>'+q.pmf_two_ion_mV.toFixed(1)+' mV</b>'+
+          '<span>Λ-v5 = C·charge</span><b>'+q.lambdaV5.toFixed(3)+'</b>'+
+          '<span>λ_min floor</span><b>'+q.lam_min.toFixed(2)+'</b>'+
+        '</div>'+
+        '<div class="qo-verdict '+verdictCls+'">'+(q.execute?'✔ ':'⚠ ')+esc(q.verdict)+'</div>'+
+        '<div class="qc-plain" style="margin-top:8px">Λ-v5 is a <b>PROPOSED engineering gate</b> (C·charge ≥ λ_min), NOT the formal uniqueness Λ (Conjecture 1). pmf inputs are a labeled <b>SAMPLE</b>; coherence/charge/Λ-v5 are computed. Mirrors a11oy /qbio.</div>';
+      pbody.appendChild(v);
+    }
+
+    /* ====================================================================
+       (C) 3D CUES — coherence-as-opacity over time + Λ-gate glow/dim +
+       a small Λ-gate attractor basin floating near the Λ heart.
+       ==================================================================== */
+    let layerOn = false;
+    // map organMeshes (built in v3) to their data.js organ qbio state
+    const tracked = organMeshes.map(om=>{
+      const mats=[];
+      om.grp.traverse(c=>{ if(c.isMesh && c.material && ('opacity' in c.material)){ mats.push({ m:c.material, baseOp:(c.material.opacity==null?1:c.material.opacity), baseTrans:!!c.material.transparent }); } });
+      return { om, q:om.organ.qbio, mats, glowBase:om.glowBase };
+    });
+
+    /* attractor basin: a translucent funnel near the Λ heart; nodes above
+       the floor are pulled toward the basin floor (EXECUTE), below stay on
+       the rim (RECHARGE). Purely illustrative of the Λ-v5 gate. */
+    const basinGrp = new THREE.Group(); basinGrp.name='lambda-v5-attractor-basin'; basinGrp.visible=false; root.add(basinGrp);
+    (function buildBasin(){
+      const heart = D.ORGANS.find(o=>o.key==='yuyay');
+      const hp = heart? heart.pos : [0,0.55,0.18];
+      basinGrp.position.set(0, hp[1]+1.7, hp[2]); // float just above the Λ heart, shared center
+      // funnel (cone) = the basin
+      const cone=new THREE.Mesh(new THREE.ConeGeometry(0.95,1.0,28,1,true),
+        new THREE.MeshBasicMaterial({color:'#9ef0c0',transparent:true,opacity:0.10,side:THREE.DoubleSide,depthWrite:false,wireframe:false}));
+      cone.rotation.x=Math.PI; cone.position.y=0.5; basinGrp.add(cone);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(0.95,0.012,8,40),
+        new THREE.MeshBasicMaterial({color:'#9ef0c0',transparent:true,opacity:0.5,depthWrite:false}));
+      rim.rotation.x=Math.PI/2; rim.position.y=1.0; basinGrp.add(rim);
+      const floorRing=new THREE.Mesh(new THREE.TorusGeometry(0.12,0.02,8,24),
+        new THREE.MeshBasicMaterial({color:'#9ef0c0',transparent:true,opacity:0.8,depthWrite:false}));
+      floorRing.rotation.x=Math.PI/2; floorRing.position.y=0.02; basinGrp.add(floorRing);
+      basinGrp.userData.rim=rim;
+      // markers for each organ, placed by Λ-v5: above floor → deep in basin
+      tracked.forEach((t,i)=>{
+        if(!t.q) return;
+        const ang=(i/tracked.length)*Math.PI*2;
+        const depth = Math.min(1, t.q.lambdaV5 / 0.5); // 0..1 (deeper = higher Λ-v5)
+        const rr = 0.92*(1-depth)+0.10*depth;
+        const yy = 0.02 + (1-depth)*0.96;
+        const col = t.q.execute ? 0x9ef0c0 : 0xff7eb6;
+        const m=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8),
+          new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.95}));
+        m.position.set(rr*Math.cos(ang), yy, rr*Math.sin(ang)); basinGrp.add(m);
+      });
+    })();
+
+    function applyCues(on){
+      tracked.forEach(t=>{
+        if(!t.q) return;
+        const om=t.om;
+        if(on){
+          // coherence as opacity; below-floor organs dimmed/desaturated, above glow
+          const opMul = 0.25 + 0.75*t.q.coherence;     // coherence drives opacity
+          t.mats.forEach(mm=>{ mm.m.transparent=true; mm.m.opacity = mm.baseOp*opMul; });
+          if(om.grp.userData.glow){ om.grp.userData.glow.material.opacity = t.q.execute ? Math.max(t.glowBase, 0.7*t.q.coherence) : t.glowBase*0.25; }
+          if(om.grp.userData.coreMat && om.grp.userData.coreMat.emissive){ om.grp.userData.coreMat.emissiveIntensity = t.q.execute ? 0.9 : 0.25; }
+        } else {
+          // restore exactly
+          t.mats.forEach(mm=>{ mm.m.opacity = mm.baseOp; mm.m.transparent = mm.baseTrans; });
+          if(om.grp.userData.glow) om.grp.userData.glow.material.opacity = t.glowBase;
+          if(om.grp.userData.coreMat && om.grp.userData.coreMat.emissive) om.grp.userData.coreMat.emissiveIntensity = 0.6;
+        }
+      });
+    }
+
+    /* coherence-over-TIME: optional animated decay sweep (purely visual) */
+    let sweep=0, acc=0;
+    function tick(dt,t){
+      if(!layerOn) return;
+      if(basinGrp.userData.rim && !REDUCED_MOTION) basinGrp.rotation.y += dt*0.25;
+      if(REDUCED_MOTION) return;
+      acc+=dt; if(acc<0.08) return; acc=0;
+      // gentle coherence breathing on above-floor organs (decay re-charge cadence)
+      sweep += 0.08;
+      tracked.forEach((tr,i)=>{
+        if(!tr.q || !tr.q.execute || !tr.om.grp.userData.glow) return;
+        const breathe = 0.6 + 0.25*Math.sin(sweep + i);
+        tr.om.grp.userData.glow.material.opacity = Math.max(tr.glowBase, breathe*tr.q.coherence);
+      });
+    }
+
+    function setLayer(on){
+      layerOn = !!on;
+      basinGrp.visible = layerOn;
+      applyCues(layerOn);
+    }
+
+    /* ====================================================================
+       (D) open/close the panel (mirrors atlas open/close pattern) + the
+       3D cue layer toggles WITH the panel (open = cues on).
+       ==================================================================== */
+    const aside = el('qbio'); let built=false;
+    function openPanel(){
+      if(!aside) return;
+      if(!built){ buildPanel(); built=true; }
+      aside.classList.add('open'); aside.setAttribute('aria-hidden','false');
+      const b=el('btn-qbio'); if(b){ b.classList.add('active'); b.setAttribute('aria-expanded','true'); }
+      setLayer(true);
+    }
+    function closePanel(){
+      if(!aside) return;
+      aside.classList.remove('open'); aside.setAttribute('aria-hidden','true');
+      const b=el('btn-qbio'); if(b){ b.classList.remove('active'); b.setAttribute('aria-expanded','false'); }
+      setLayer(false);
+    }
+    (function wire(){
+      const b=el('btn-qbio'); if(b) b.addEventListener('click', ()=> aside.classList.contains('open')?closePanel():openPanel());
+      const x=el('qbio-close'); if(x) x.addEventListener('click', closePanel);
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && aside && aside.classList.contains('open')) closePanel(); });
+    })();
+
+    return {
+      tick, onOrganOpen, openPanel, closePanel, setLayer,
+      label: QB.label,
+      api: ()=>({
+        tau_c: C.tau_c,
+        pmf_single_mV: C.pmf_single_mV,
+        pmf_two_ion_mV: C.pmf_two_ion_mV,
+        compass_contrast_closed: C.compass_contrast_closed,
+        compass_contrast_full: C.compass_contrast_full,
+        lam_min: C.lam_min,
+        execute_count: D.ORGANS.filter(o=>o.qbio && o.qbio.execute).length,
+        organ_count: D.ORGANS.length,
+        leaders: D.QBIO_LEADERS.length,
+        sources: D.QBIO_SOURCES.length,
+        theorems: D.QBIO_THEOREMS.length,
+        adds_locked_theorem: false,
+        lambda_is_conjecture1: true,
+        layerOn
+      }),
+      isOn: ()=>layerOn
+    };
+  })();
+  /* =====================  /v5 quantum-bio layer  ====================== */
+
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
     organs: organMeshes.length,
@@ -1623,7 +1951,9 @@
     v4: V4,  // v4 dissection module handle (layers, clip, explode, search, hud, focus)
     v5: V5,  // v4-deepen module handle (atlas, forecast, tour, labels, drill-down)
     v6: V6,  // v6 yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
+    v7: V7,  // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
     formulas: Object.keys(D.FORMULAS).length,
-    tierCounts: (V5&&V5.api)?V5.api.tierCounts():null
+    tierCounts: (V5&&V5.api)?V5.api.tierCounts():null,
+    qbio: (V7&&V7.api)?V7.api():null
   };
 })();
