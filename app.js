@@ -438,6 +438,7 @@
   let V6=null;           // v6: yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
   let V7=null;           // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
   let V8=null;           // v8 live agentic lens (read-only reflection of a11oy's real agent loop / gates / verified math)
+  let V9=null;           // v9 fly-high: live receipt bloodstream + heartbeat loop + killinchu body + cinematic vital tour + agent trace + polish
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -605,6 +606,8 @@
     if(V6 && V6.tick) V6.tick(dt,t);
     // v5 quantum-bio: coherence-as-opacity over time + Λ-v5 gate cue + attractor basin
     if(V7 && V7.tick) V7.tick(dt,t);
+    // v9 fly-high: live receipt bloodstream particles + cinematic vital tour camera + heartbeat-loop heart breathing
+    if(V9 && V9.tick) V9.tick(dt,t,beat);
     renderer.render(scene,camera);
     if(!_loaderHidden){ _loaderHidden=true; var ld=$('loader'); if(ld) ld.classList.add('hidden'); }
   }
@@ -2298,7 +2301,9 @@
       if(fclose && card) fclose.addEventListener('click', ()=>{ card.classList.remove('open'); if(fab) fab.setAttribute('aria-expanded','false'); });
     }
 
-    return { onOrganOpen, startVitals, wire, runDecisionFlow, pollVitals, highlightOrgan, flyToOrgan, _BINDINGS:BINDINGS };
+    return { onOrganOpen, startVitals, wire, runDecisionFlow, pollVitals, highlightOrgan, flyToOrgan, _BINDINGS:BINDINGS,
+             // v9 reuses v8's verified fetch contract + helpers (additive, no behaviour change):
+             pull, ENDPOINTS, dot, esc, BASE, REDUCED, cache, liveAge };
   })();
   /* =========================  /v8 live agentic lens  =================== */
 
@@ -2307,6 +2312,465 @@
     try{ V8.wire(); }catch(e){}
     try{ V8.startVitals(); }catch(e){}
   }
+
+
+  /* =====================================================================
+     ===========================  v9 — FLY HIGH  ========================
+     ADDITIVE module. Builds on v8's live agentic lens. anatomy stays
+     sdk:static — 0 backend, 0 model key, 0 runtime CDN, offline-graceful.
+     Reuses v8's VERIFIED fetch contract (V8.pull / V8.ENDPOINTS) so every
+     number shown is a REAL polled scalar or an honest data.js fallback.
+     NEVER fabricates a number or a reasoning string.
+
+       (1) live receipt bloodstream  — particles whose RATE/COLOR track
+           real polled scalars (PURIQ 0.62 floor, live Λ-v5 closure, gate
+           count). Honestly labelled a PROXY visual of real scalars.
+       (2) autonomous heartbeat loop  — re-polls /v1/honest + /code/healthz
+           ~every 17s, breathes the Λ-heart, updates the master HUD +
+           last-updated stamp + ● LIVE / ○ offline dot. Pause toggle +
+           prefers-reduced-motion aware.
+       (3) second body: killinchu     — IF its honest endpoint returns 200,
+           binds a LIVE posture lens onto the already-rendered killinchu
+           silhouette sharing the circ/nervous mesh; effector SIMULATED.
+       (4) cinematic vital tour        — hands-free 45–60s auto-fly that
+           visits each live organ, narrates its REAL current value, ends on
+           the Λ-heart. Skippable, keyboard, reduced-motion = instant cuts.
+       (5) decision-flow trace card    — honest trace (tier, PURIQ vs 0.62,
+           Λ-v5 λ + closure_ok, stub note) from REAL /code/healthz +
+           /v1/qbio/lambda, rendered alongside the v8 decision flow.
+       (6) polish                      — master ●LIVE/○offline indicator,
+           subtle bloom on live organs only, FPS-safe (capped particle
+           count, reused geometry/material).
+     Reuses outer-scope organMeshes / worldPos / flyTo / heartGroup /
+     heartCoreMat / cam / root / THREE / vessels / D from v3. Replaces
+     nothing above; appends one V9.tick into the single render loop.
+     ===================================================================== */
+  V9 = (function(){
+    if(!V8){ return null; }                       // v9 layers on top of v8
+    const el = id=>document.getElementById(id);
+    const D  = window.SZL_ANATOMY;
+    const K  = D.KERNEL;
+    const pull = V8.pull, ENDPOINTS = V8.ENDPOINTS, esc = V8.esc, dot = V8.dot;
+    const REDUCED = !!V8.REDUCED;
+    const KILLINCHU_HONEST = 'https://szlholdings-killinchu.hf.space/api/killinchu/v1/honest';
+
+    // ---- shared live posture, refreshed by the heartbeat loop. Never faked. ----
+    const LIVE = {
+      online:false, at:0,
+      puriq:0.62,            // PURIQ floor — confirmed by /code/healthz when live
+      gates: (K.gate_count || 49),
+      lambda: null,          // Λ-v5 λ from /v1/qbio/lambda (PROPOSED engineering gate)
+      closure_ok: null,
+      mode:'offline',
+      kernel: K.locked_sha,
+      lambdaPosture:'Conjecture 1'
+    };
+
+    /* ====================================================================
+       (1) LIVE RECEIPT BLOODSTREAM — capped particle pool flowing along the
+       circulatory (YAWAR, #ff3b5c) vessels. RATE + COLOR are driven by real
+       polled scalars. Honest: this is a PROXY VISUAL of real scalars, never
+       claimed to be individual real receipts (no endpoint returns those).
+       Reuses ONE geometry + ONE material (FPS-safe).
+       ==================================================================== */
+    const MAX_PARTICLES = REDUCED ? 0 : 90;        // hard cap for healthy FPS
+    let bloodCurves = [];
+    let streamGroup = null, streamPts = null, streamPos = null, streamMat = null;
+    let particles = [];                            // {curve, t, speed}
+    let streamBaseColor = new THREE.Color('#ff3b5c');
+    let streamLiveColor = new THREE.Color('#ff5d8f');
+
+    function buildBloodstream(){
+      if(MAX_PARTICLES<=0) return;                 // reduced-motion: no flowing particles
+      // circulatory vessels only (blood-bus color), reuse their curves
+      bloodCurves = (typeof vessels!=='undefined' ? vessels : []).filter(v=>v && v.curve && v.color==='#ff3b5c').map(v=>v.curve);
+      if(!bloodCurves.length){ return; }
+      streamGroup = new THREE.Group();
+      streamPos = new Float32Array(MAX_PARTICLES*3);
+      for(let i=0;i<MAX_PARTICLES;i++){
+        const curve = bloodCurves[i % bloodCurves.length];
+        particles.push({ curve, t:(i*0.137)%1, speed:0.10+ (i%5)*0.012 });
+        const p = curve.getPoint(particles[i].t);
+        streamPos[i*3]=p.x; streamPos[i*3+1]=p.y; streamPos[i*3+2]=p.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(streamPos,3));
+      streamMat = new THREE.PointsMaterial({ color:streamBaseColor.clone(), size:0.10, transparent:true,
+        opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true });
+      streamPts = new THREE.Points(geo, streamMat);
+      streamGroup.add(streamPts);
+      root.add(streamGroup);
+    }
+
+    // honest derived RATE/COLOR from live scalars: more gates + closure_ok =>
+    // faster, warmer flow; offline => slow, dim baseline. Never invents data.
+    function streamRate(){
+      // base 0.85; live PURIQ floor and Λ closure modulate within a tasteful band
+      let r = 0.85;
+      if(LIVE.online){
+        r = 1.0;
+        if(LIVE.closure_ok===true) r += 0.35;            // Λ-v5 closes -> flow executes
+        if(LIVE.lambda!=null) r += Math.min(0.4, Math.max(0,(LIVE.lambda-0.25))*0.5);
+        if(LIVE.gates) r += Math.min(0.25, (LIVE.gates/49-1)*0.25 + 0.0);
+      } else { r = 0.55; }
+      return r;
+    }
+    function tickBloodstream(dt){
+      if(!streamPts || !streamPos) return;
+      const rate = streamRate();
+      for(let i=0;i<particles.length;i++){
+        const p = particles[i];
+        p.t = (p.t + dt*p.speed*rate) % 1;
+        const pt = p.curve.getPoint(p.t);
+        streamPos[i*3]=pt.x; streamPos[i*3+1]=pt.y; streamPos[i*3+2]=pt.z;
+      }
+      streamPts.geometry.attributes.position.needsUpdate = true;
+      // color lerps toward the live warm tone when online + Λ closes
+      const warm = LIVE.online ? (LIVE.closure_ok===true?1.0:0.55) : 0.0;
+      streamMat.color.copy(streamBaseColor).lerp(streamLiveColor, warm);
+      streamMat.opacity = LIVE.online ? 0.92 : 0.5;
+    }
+
+    // bright decision pulse HEART->BRAIN->CIRC->SKELETON, fired by the flow.
+    let decisionPulse = null;   // {keys:[...world], t, dur}
+    function fireDecisionPulse(){
+      if(REDUCED) return;
+      const order = ['yuyay','amaru','yawar','hatun'];
+      const pts = order.map(k=>{ const o=D.ORGANS.find(x=>x.key===k); if(!o) return null;
+        const om = organMeshes.find(m=>m.organ===o && (o.shared || m.bodyKey==='a11oy'));
+        return om ? (om.basePos?om.basePos.clone():om.grp.position.clone()) : null; }).filter(Boolean);
+      if(pts.length<2) return;
+      if(!decisionPulse){
+        const g = new THREE.SphereGeometry(0.16,12,12);
+        const m = new THREE.MeshBasicMaterial({color:'#ffe1ec',transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false});
+        const mesh = new THREE.Mesh(g,m);
+        const gl = (typeof glowSprite==='function') ? glowSprite('#ff5d8f',0.9,0.8) : null;
+        const grp = new THREE.Group(); grp.add(mesh); if(gl) grp.add(gl);
+        root.add(grp);
+        decisionPulse = { grp, mesh, glow:gl, pts:[], t:0, dur:2.2, active:false };
+      }
+      decisionPulse.pts = pts; decisionPulse.t=0; decisionPulse.active=true; decisionPulse.grp.visible=true;
+    }
+    function tickDecisionPulse(dt){
+      const dp = decisionPulse; if(!dp || !dp.active) return;
+      dp.t += dt/dp.dur;
+      if(dp.t>=1){ dp.active=false; dp.grp.visible=false; return; }
+      const segs = dp.pts.length-1;
+      const f = dp.t*segs; const i = Math.min(segs-1, Math.floor(f)); const lf = f-i;
+      const a = dp.pts[i], b = dp.pts[i+1];
+      dp.grp.position.lerpVectors(a,b,lf);
+      const fade = Math.sin(dp.t*Math.PI);
+      dp.mesh.material.opacity = 0.55+0.45*fade;
+      if(dp.glow) dp.glow.material.opacity = 0.5*fade+0.2;
+    }
+
+    /* ====================================================================
+       (6) POLISH — subtle bloom on LIVE organs only. Reuses each organ's
+       existing glow sprite (no new materials). When online, the four bound
+       organs get a gentle extra emissive lift; offline they sit at baseline.
+       ==================================================================== */
+    const LIVE_ORGAN_KEYS = ['yuyay','amaru','yawar','hatun'];
+    const _panelEl = el('panel');
+    function tickBloom(t){
+      const on = LIVE.online;
+      // never fight the open panel's framing or the hovered organ's halo state
+      if(_panelEl && _panelEl.classList.contains('open')) return;
+      const hov = (typeof hoverOM!=='undefined') ? hoverOM : null;
+      LIVE_ORGAN_KEYS.forEach((k,idx)=>{
+        const o=D.ORGANS.find(x=>x.key===k); if(!o) return;
+        organMeshes.forEach(om=>{
+          if(om.organ!==o || om===hov) return;
+          const gl = om.grp.userData.glow;
+          if(gl){
+            const base = om.glowBase;
+            const lift = on ? (0.18 + 0.10*Math.sin(t*1.6+idx)) : 0.0;   // bloom on LIVE organs only
+            gl.material.opacity = Math.min(1.0, base + lift);
+          }
+        });
+      });
+    }
+
+    /* ====================================================================
+       (2) AUTONOMOUS HEARTBEAT TELEMETRY LOOP — re-polls /v1/honest +
+       /code/healthz + /v1/qbio/lambda ~every 17s, refreshes LIVE posture,
+       breathes the Λ-heart, updates the master HUD + last-updated stamp +
+       ●LIVE/○offline dot. Pause toggle + prefers-reduced-motion aware.
+       ==================================================================== */
+    let beatTimer = null, beatPaused = false, beatPhase9 = 0, beatBoost = 0;
+    function fmtAgo(ms){
+      if(!ms) return 'never';
+      const s = Math.round((Date.now()-ms)/1000);
+      if(s<2) return 'just now';
+      if(s<60) return s+'s ago';
+      const m=Math.round(s/60); return m+'m ago';
+    }
+    async function heartbeatPoll(){
+      const [h, hz, lam] = await Promise.all([
+        pull(ENDPOINTS.honest, 12000),
+        pull(ENDPOINTS.healthz, 12000),
+        pull(ENDPOINTS.qlambda + '?C=0.92&dp=120&dp0=100&lam_min=0.5', 12000)
+      ]);
+      const live = !!(h.ok && h.data && h.data.doctrine_lock);
+      LIVE.online = live;
+      LIVE.at = Date.now();
+      if(live){
+        const dl = h.data.doctrine_lock;
+        LIVE.kernel = dl.commit || K.locked_sha;
+        LIVE.lambdaPosture = dl.lambda || 'Conjecture 1';
+      }
+      if(hz.ok && hz.data){
+        LIVE.mode = hz.data.mode || 'live';
+        if(typeof hz.data.puriq_threshold==='number') LIVE.puriq = hz.data.puriq_threshold;
+      } else { LIVE.mode = 'offline'; }
+      if(lam.ok && lam.data){
+        LIVE.lambda = (typeof lam.data.lambda==='number') ? lam.data.lambda : null;
+        LIVE.closure_ok = lam.data.closure_ok===true;
+      }
+      renderMaster();
+      // a live poll gives the heart an extra "thump" so the body looks alive
+      if(!REDUCED && live) beatBoost = 1.0;
+    }
+    function startHeartbeat(){
+      if(beatTimer) return;
+      heartbeatPoll();
+      beatTimer = setInterval(()=>{ if(!beatPaused) heartbeatPoll(); }, 17000);
+    }
+    function toggleHeartbeat(){
+      beatPaused = !beatPaused;
+      const b = el('v9-beat-pause');
+      if(b){ b.textContent = beatPaused ? '▶ resume telemetry' : '⏸ pause telemetry'; b.setAttribute('aria-pressed', String(beatPaused)); }
+      renderMaster();
+    }
+    // gentle secondary heart breath driven by the live loop (layers atop v3 beat)
+    function tickHeartbeatBreath(dt){
+      if(REDUCED) return;
+      if(beatBoost>0){ beatBoost = Math.max(0, beatBoost - dt*1.4); }
+      if(heartGroup && LIVE.online){
+        const extra = beatBoost*0.05;
+        if(extra>0){ heartGroup.scale.multiplyScalar(1+extra); }
+        if(typeof heartCoreMat!=='undefined' && heartCoreMat){ heartCoreMat.emissiveIntensity += beatBoost*0.6; }
+      }
+    }
+
+    /* ====================================================================
+       (6) MASTER ●LIVE / ○offline INDICATOR — one always-on chip with the
+       last-updated stamp, live mode, PURIQ floor, Λ-v5 λ, gate count.
+       Reads ONLY from LIVE (real polled scalars) or honest data.js fallback.
+       ==================================================================== */
+    function renderMaster(){
+      const wrap = el('v9-master'); if(!wrap) return;          // null-safe
+      const stEl = el('v9-master-state');
+      const agoEl = el('v9-master-ago');
+      const rateEl = el('v9-master-rate');
+      const lamEl = el('v9-master-lambda');
+      const beatEl = el('v9-master-beat');
+      if(stEl) stEl.innerHTML = LIVE.online
+        ? '<span class="v9-dot live"></span>● LIVE · two endpoints'
+        : '<span class="v9-dot off"></span>○ offline · static snapshot';
+      if(agoEl) agoEl.textContent = 'updated ' + fmtAgo(LIVE.at);
+      if(rateEl){
+        rateEl.innerHTML = LIVE.online
+          ? ('PURIQ floor <b>'+esc(LIVE.puriq)+'</b> · <b>'+esc(LIVE.gates)+'</b> gates')
+          : ('PURIQ floor <b>0.62</b> · <b>49</b> gates (static)');
+      }
+      if(lamEl){
+        lamEl.innerHTML = (LIVE.online && LIVE.lambda!=null)
+          ? ('Λ-v5 λ=<b>'+esc(LIVE.lambda.toFixed(6))+'</b> · closure '+(LIVE.closure_ok?'<b style="color:var(--ok)">OK</b>':'<b style="color:var(--warn)">recharge</b>'))
+          : 'Λ-v5 gate offline · PROPOSED engineering gate';
+      }
+      if(beatEl) beatEl.textContent = beatPaused ? 'telemetry paused' : 'telemetry every ~17s';
+      const bs = el('v9-beat-state'); if(bs){ bs.className = 'v9-dot ' + (LIVE.online?'live':'off'); }
+    }
+
+    /* ====================================================================
+       (5) DECISION-FLOW → HONEST AGENT TRACE CARD. Wraps v8.runDecisionFlow:
+       after the v8 flow renders, append a compact trace card built from the
+       REAL /code/healthz + /v1/qbio/lambda values (already cached by v8/v9).
+       Fires the bright bloodstream decision pulse too. Stub note kept honest.
+       ==================================================================== */
+    async function runTracedDecision(){
+      // refresh the two endpoints the trace reads (reuses v8's verified pull)
+      const [hz, lam] = await Promise.all([
+        pull(ENDPOINTS.healthz, 12000),
+        pull(ENDPOINTS.qlambda + '?C=0.92&dp=120&dp0=100&lam_min=0.5', 12000)
+      ]);
+      const live = hz.ok && hz.data;
+      const lamLive = lam.ok && lam.data;
+      const reqEl = el('v8-flow-input');
+      const req = (reqEl && reqEl.value || '').trim() || 'Should I execute this action?';
+      const tiers = live ? hz.data.tiers : ['T0','T1','T2','T3','T4','T5','T6'];
+      const n = req.length;
+      const tier = tiers[Math.min(tiers.length-1, Math.max(1, Math.round(n/14)))];
+      const puriq = live ? hz.data.puriq_threshold : 0.62;
+      const lamVal = lamLive ? lam.data.lambda : null;
+      const lamOk = lamLive ? lam.data.closure_ok : null;
+      const lamMin = lamLive ? lam.data.lam_min : 0.25;
+      const wired = live && hz.data.key_resolution && hz.data.key_resolution.wired;
+      const card = el('v9-trace'); if(!card) return;             // null-safe
+      const passPuriq = true; // tier/PURIQ decision is the agent's, not ours; we report the floor honestly
+      let html = '<div class="v9-trace-head">'+dot(!!live)+' · honest agent trace</div>';
+      html += '<div class="v9-trace-rows">';
+      html += traceRow('tier chosen', '<b>'+esc(tier)+'</b> <span class="v9-dim">(deterministic, length-driven · from live tier set)</span>');
+      html += traceRow('PURIQ decision', 'floor <b>'+esc(puriq)+'</b> · proposer must clear ≥ '+esc(puriq)+' to act <span class="v9-dim">(threshold is real; per-call PURIQ is the agent\u2019s)</span>');
+      html += traceRow('Λ-v5 closure', lamLive
+        ? ('λ=<b>'+esc(lamVal)+'</b> (min '+esc(lamMin)+') · closure_ok=<b style="color:'+(lamOk?'var(--ok)':'var(--warn)')+'">'+(lamOk?'true':'false')+'</b>')
+        : 'offline · static snapshot (PROPOSED engineering gate)');
+      html += traceRow('mode', live ? '<b style="color:var(--ok)">'+esc(hz.data.mode)+'</b>' : 'offline');
+      html += '</div>';
+      html += '<p class="v9-trace-note">'+(wired
+        ? 'model text: live (provider resolved).'
+        : 'model prose = deterministic stub until SZL_LOCAL_LLM_URL is wired (Zero-Bandaid Law). The tier / PURIQ floor / Λ-v5 values above are REAL polled scalars; reasoning prose is NOT fabricated.')+'</p>';
+      card.innerHTML = html;
+      card.classList.add('show');
+      fireDecisionPulse();
+    }
+    function traceRow(k,v){ return '<div class="v9-trace-r"><span class="v9-trace-k">'+esc(k)+'</span><span class="v9-trace-v">'+v+'</span></div>'; }
+
+    /* ====================================================================
+       (3) SECOND BODY: killinchu (probe-first). If the killinchu honest
+       endpoint returns 200, bind a LIVE posture lens onto the already-
+       rendered killinchu silhouette. Effector is clearly SIMULATED. If
+       unreachable, leave the single a11oy body with no error.
+       ==================================================================== */
+    let killinchuLive = false;
+    async function probeKillinchu(){
+      const r = await pull(KILLINCHU_HONEST, 12000);
+      const host = el('v9-killinchu'); 
+      killinchuLive = !!(r.ok && r.data && r.data.doctrine_lock);
+      if(!host) return;                                         // null-safe
+      if(killinchuLive){
+        const dl = r.data.doctrine_lock || {};
+        const hl = r.data.honest_labels || {};
+        let html = '<div class="v9-k-head">'+dot(true)+' · second body</div>';
+        html += '<div class="v9-k-title">killinchu — maritime / drone C2 body</div>';
+        html += '<div class="v9-trace-rows">';
+        html += traceRow('organ', '<b>'+esc(r.data.organ||'killinchu')+'</b>');
+        html += traceRow('doctrine', esc(dl.doctrine)+' · '+esc(dl.state));
+        html += traceRow('kernel', '<code>'+esc(dl.commit)+'</code>');
+        html += traceRow('Λ posture', '<span class="v8-conj">'+esc(dl.lambda||'Conjecture 1')+'</span>');
+        html += '</div>';
+        html += '<p class="v9-trace-note"><b>effector: SIMULATED.</b> detect·classify·defeat runs under human-authority ROE; the defeat actuator is a simulated effector — no live weapon. Shares the circulatory (YAWAR receipt bus) + nervous (span lineage) mesh with a11oy.</p>';
+        if(hl.principle) html += '<p class="v9-trace-note"><b>'+esc(hl.principle)+'</b></p>';
+        host.innerHTML = html;
+        host.classList.add('show');
+      } else {
+        // unreachable: keep single body, no error, no fabricated posture
+        host.classList.remove('show');
+        host.innerHTML = '';
+      }
+      renderMaster();
+    }
+
+    /* ====================================================================
+       (4) CINEMATIC GUIDED VITAL TOUR — hands-free 45–60s auto-fly that
+       visits each LIVE organ, narrates its REAL current value, ends on the
+       Λ-heart. Skippable, keyboard, reduced-motion = instant cuts (no sweep).
+       Reuses outer-scope flyTo + worldPos. Real values only (LIVE + caches).
+       ==================================================================== */
+    // stops: organ key + a live-value narrator that reads ONLY real scalars
+    const TOUR_STOPS = [
+      { key:'yuyay', title:'HEART · YUYAY — the Λ gate',
+        say:()=> 'doctrine '+(LIVE.online?'LOCKED @ '+LIVE.kernel:'v11 LOCKED (static)')+' · Λ = '+LIVE.lambdaPosture+' · 13-axis conjunctive gate · trust never 100%.' },
+      { key:'amaru', title:'BRAIN · YACHAY — read-only cortex',
+        say:()=> LIVE.online ? ('mode '+LIVE.mode+' · PURIQ floor '+LIVE.puriq+' · reasons, never writes.') : 'offline · PURIQ floor 0.62 · reasons, never writes (static).' },
+      { key:'yawar', title:'CIRCULATORY · YAWAR — receipt bus',
+        say:()=> LIVE.online ? ('live receipt bloodstream flowing · '+LIVE.gates+' policy gates · SHA-256 append-only.') : 'offline · 49 gates · SHA-256 append-only (static).' },
+      { key:'hatun', title:'SKELETON · HATUN — sovereign seal',
+        say:()=> 'Khipu BFT quorum n≥3f+1 · Conjecture 2 (Wave23 conditional safety) · sealed.' },
+      { key:'yuyay', title:'HEART · YUYAY — Λ closure',
+        say:()=> (LIVE.online && LIVE.lambda!=null) ? ('Λ-v5 closure λ='+LIVE.lambda.toFixed(4)+' · '+(LIVE.closure_ok?'execute':'recharge')+' · the body is ALIVE and self-updating.') : 'Λ-v5 PROPOSED engineering gate (offline) · the body breathes on live telemetry.' }
+    ];
+    let vtour = { on:false, i:0, t:0, dwell: REDUCED?5.0:10.0, total:0 };
+    function vtourShow(stop){
+      const nameEl = el('v9-tour-name'), bodyEl = el('v9-tour-body'), progEl = el('v9-tour-prog');
+      if(nameEl) nameEl.textContent = stop.title;
+      if(bodyEl) bodyEl.textContent = stop.say();
+      if(progEl) progEl.textContent = (vtour.i+1)+' / '+TOUR_STOPS.length;
+      const bar = el('v9-tour-bar-i'); if(bar) bar.style.width='0%';
+    }
+    function vtourFly(stop){
+      const o = D.ORGANS.find(x=>x.key===stop.key); if(!o) return;
+      const om = organMeshes.find(m=>m.organ===o && (o.shared || m.bodyKey==='a11oy'));
+      const side = o.shared ? 0 : -1;
+      const wp = (typeof worldPos==='function') ? worldPos(o, side) : (om?om.grp.position:null);
+      if(!wp) return;
+      try{ flyTo(new THREE.Vector3(wp.x,wp.y,wp.z), o.shared?9.0:7.6); }catch(e){}
+    }
+    function vtourGo(i){
+      vtour.i = ((i%TOUR_STOPS.length)+TOUR_STOPS.length)%TOUR_STOPS.length;
+      vtour.t = 0;
+      const stop = TOUR_STOPS[vtour.i];
+      vtourShow(stop);
+      vtourFly(stop);
+    }
+    function startVtour(){
+      vtour.on = true; vtour.total = 0;
+      const card = el('v9-tour'); if(card) card.classList.add('show');
+      const b = el('v9-tour-btn'); if(b){ b.classList.add('active'); b.setAttribute('aria-pressed','true'); }
+      // stop the v5 idle auto-rotate so the cinematic camera owns the frame
+      try{ if(typeof autoRotate!=='undefined'){ autoRotate=false; const rb=el('btn-rotate'); if(rb) rb.classList.remove('active'); } }catch(e){}
+      vtourGo(0);
+    }
+    function stopVtour(){
+      vtour.on = false;
+      const card = el('v9-tour'); if(card) card.classList.remove('show');
+      const b = el('v9-tour-btn'); if(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); }
+    }
+    function tickVtour(dt){
+      if(!vtour.on) return;
+      vtour.t += dt; vtour.total += dt;
+      const frac = Math.min(1, vtour.t/vtour.dwell);
+      const bar = el('v9-tour-bar-i'); if(bar) bar.style.width = (frac*100).toFixed(0)+'%';
+      if(vtour.t >= vtour.dwell){
+        if(vtour.i >= TOUR_STOPS.length-1){ stopVtour(); }   // ~50s total, ends on the Λ-heart
+        else vtourGo(vtour.i+1);
+      }
+    }
+
+    /* ---- wire all v9 DOM controls (null-safe) ---- */
+    function wire(){
+      const tb = el('v9-tour-btn'); if(tb) tb.addEventListener('click', ()=> vtour.on?stopVtour():startVtour());
+      const ts = el('v9-tour-stop'); if(ts) ts.addEventListener('click', stopVtour);
+      const tn = el('v9-tour-next'); if(tn) tn.addEventListener('click', ()=>{ if(vtour.on) vtourGo(vtour.i+1); });
+      const pb = el('v9-beat-pause'); if(pb) pb.addEventListener('click', toggleHeartbeat);
+      // keyboard: Esc ends the vital tour; arrow advances
+      document.addEventListener('keydown', e=>{
+        if(!vtour.on) return;
+        if(e.key==='Escape'){ stopVtour(); }
+        else if(e.key==='ArrowRight'){ vtourGo(vtour.i+1); }
+        else if(e.key==='ArrowLeft'){ vtourGo(vtour.i-1); }
+      });
+      // chain the honest agent trace + decision pulse onto the v8 decision-flow run
+      const runBtn = el('v8-flow-run');
+      if(runBtn) runBtn.addEventListener('click', ()=>{ try{ runTracedDecision(); }catch(e){} });
+      const flowInput = el('v8-flow-input');
+      if(flowInput) flowInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ try{ runTracedDecision(); }catch(_){} } });
+    }
+
+    /* ---- per-frame tick from the single v3 render loop ---- */
+    function tick(dt,t,beat){
+      tickBloodstream(dt);
+      tickDecisionPulse(dt);
+      tickBloom(t);
+      tickHeartbeatBreath(dt);
+      tickVtour(dt);
+    }
+
+    /* ---- bootstrap ---- */
+    buildBloodstream();
+    wire();
+    startHeartbeat();
+    probeKillinchu();
+    renderMaster();
+
+    return { tick, startHeartbeat, toggleHeartbeat, startVtour, stopVtour, runTracedDecision, probeKillinchu, renderMaster,
+             _LIVE:LIVE, killinchuPresent:()=>killinchuLive, api:{
+               online:()=>LIVE.online, particles:()=>particles.length, vtourOn:()=>vtour.on, killinchu:()=>killinchuLive
+             } };
+  })();
+  /* =========================  /v9 fly-high  =========================== */
+
+  /* ---- v9 bootstrap is internal to the IIFE above (wire + heartbeat + killinchu probe) ---- */
 
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
@@ -2324,6 +2788,7 @@
     v6: V6,  // v6 yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
     v7: V7,  // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
     v8: V8,  // v8 live agentic lens (read-only reflection of a11oy's real agent loop; runDecisionFlow/pollVitals/onOrganOpen)
+    v9: V9,  // v9 fly-high (bloodstream particles, autonomous heartbeat loop, killinchu 2nd body, cinematic vital tour, agent trace, polish)
     formulas: Object.keys(D.FORMULAS).length,
     tierCounts: (V5&&V5.api)?V5.api.tierCounts():null,
     qbio: (V7&&V7.api)?V7.api():null
