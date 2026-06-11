@@ -542,6 +542,90 @@
     #tour .tr-bar i{transition:none}
     .olabel{transition:none}
   }
+
+  /* ===================== v8 LIVE AGENTIC LENS (additive) ===================== */
+  /* per-organ live-lens block appended into #p-body */
+  .v8-lens{margin:0 0 16px;padding:12px 13px;border:1px solid var(--border-strong);border-radius:12px;
+    background:linear-gradient(180deg,rgba(63,224,197,.06),rgba(13,18,33,.0))}
+  .v8-title{font-family:var(--font-m);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ok);margin-bottom:9px}
+  .v8-head{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-family:var(--font-m);font-size:10px}
+  .v8-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+  .v8-dot.live{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .v8-dot.off{background:var(--text-dim)}
+  .v8-state{color:var(--ok);font-family:var(--font-m);font-size:10px;letter-spacing:.04em}
+  .v8-state.off{color:var(--text-dim)}
+  .v8-kv{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-bottom:6px}
+  .v8-row{display:flex;flex-direction:column;line-height:1.25}
+  .v8-k{font-family:var(--font-m);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+  .v8-v{font-size:12.5px;color:var(--text);font-variant-numeric:tabular-nums}
+  .v8-v code,.v8-vitals code{color:var(--audit);font-family:var(--font-m);font-size:11px}
+  .v8-conj{color:var(--warn);font-weight:700}
+  .v8-note{font-size:11.5px;color:var(--text-muted);line-height:1.45;margin:7px 0 0}
+  .v8-note.v8-warn{color:var(--warn)}
+  .v8-load{font-family:var(--font-m);font-size:10.5px;color:var(--text-dim)}
+  .v8-rows{display:flex;flex-direction:column;gap:4px}
+  .v8-r{display:grid;grid-template-columns:1.4fr .6fr auto;gap:8px;align-items:center;font-size:12px}
+  .v8-q{color:var(--text-muted)}
+  .v8-val{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+  .v8-tag{font-family:var(--font-m);font-size:8px;letter-spacing:.04em;padding:2px 6px;border-radius:6px;border:1px solid currentColor;white-space:nowrap}
+  .v8-tag.VERIFIED{color:var(--ok)}
+  .v8-tag.PROPOSED{color:var(--skel)}
+  .v8-tag.NARRATIVE{color:var(--text-dim)}
+
+  /* live vital-signs row inside the always-on HUD */
+  #v8-vitals{margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+  #v8-vitals .v8-vrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;line-height:1.5}
+  #v8-vitals .v8-vk{font-family:var(--font-m);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+  #v8-vitals .v8-vv{color:var(--text);font-variant-numeric:tabular-nums}
+  #v8-vitals #v8-vitals-state{display:flex;align-items:center;gap:6px;font-family:var(--font-m);color:var(--ok)}
+  #v8-vitals #v8-vitals-locked{font-size:9.5px}
+
+  /* WATCH A DECISION FLOW — HEART-anchored control */
+  #v8-flow-fab{position:fixed;left:24px;bottom:24px;z-index:23;display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--font-m);font-size:11px;letter-spacing:.06em;padding:10px 15px;border-radius:99px;cursor:pointer;
+    color:var(--heart);border:1px solid rgba(255,93,143,.5);background:var(--surface);backdrop-filter:blur(var(--blur));
+    box-shadow:0 6px 24px rgba(0,0,0,.4)}
+  #v8-flow-fab:hover{border-color:rgba(255,93,143,.85);background:rgba(255,93,143,.1)}
+  #v8-flow-fab:focus-visible{outline:2px solid var(--heart);outline-offset:2px}
+  #v8-flow-fab .hb{width:9px;height:9px;border-radius:50%;background:var(--heart);box-shadow:0 0 8px var(--heart)}
+  #v8-flow{position:fixed;left:24px;bottom:74px;z-index:23;width:min(380px,86vw);
+    border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-2);backdrop-filter:blur(var(--blur));
+    box-shadow:0 12px 40px rgba(0,0,0,.5);padding:15px 16px;display:none}
+  #v8-flow.open{display:block}
+  #v8-flow .v8-flow-close{position:absolute;top:9px;right:11px;background:none;border:none;color:var(--text-muted);font-size:20px;line-height:1;cursor:pointer}
+  #v8-flow .v8-flow-close:hover{color:var(--text)}
+  #v8-flow .v8-flow-eyebrow{font-family:var(--font-m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--heart);margin-bottom:4px}
+  #v8-flow .v8-flow-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
+  #v8-flow .v8-flow-sub{font-size:11px;color:var(--text-muted);margin-bottom:11px;line-height:1.4}
+  #v8-flow .v8-flow-bar{display:flex;gap:8px;margin-bottom:11px}
+  #v8-flow-input{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:9px;color:var(--text);
+    font-size:12px;padding:8px 10px;font-family:inherit}
+  #v8-flow-input:focus{outline:none;border-color:var(--heart)}
+  #v8-flow-run{flex:none;font-family:var(--font-m);font-size:10.5px;letter-spacing:.04em;padding:8px 13px;border-radius:9px;cursor:pointer;
+    color:var(--heart);border:1px solid rgba(255,93,143,.5);background:rgba(255,93,143,.08)}
+  #v8-flow-run:hover{background:rgba(255,93,143,.16)}
+  #v8-flow-run:disabled{opacity:.5;cursor:wait}
+  #v8-flow-run:focus-visible{outline:2px solid var(--heart);outline-offset:2px}
+  .v8-flow-head{font-size:11px;color:var(--text-muted);margin-bottom:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .v8-flow-head i{color:var(--text)}
+  ol.v8-flow-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .v8-step{display:flex;gap:9px;opacity:.32;transition:opacity .35s ease}
+  .v8-step.on{opacity:1}
+  .v8-step-dot{width:10px;height:10px;border-radius:50%;flex:none;margin-top:3px;background:var(--c,var(--heart));box-shadow:0 0 0 0 var(--c,var(--heart))}
+  .v8-step.on .v8-step-dot{box-shadow:0 0 10px 1px var(--c,var(--heart))}
+  .v8-step-l{font-size:11px;line-height:1.4}
+  .v8-step-d{color:var(--text-muted);font-size:11px}
+
+  @media (prefers-reduced-motion: reduce){
+    .v8-step{transition:none}
+    #v8-flow-fab .hb{box-shadow:none}
+  }
+  @media (max-width:680px){
+    #v8-flow-fab{left:16px;bottom:120px}
+    #v8-flow{left:16px;right:16px;bottom:170px;width:auto}
+  }
+  /* ===================== /v8 ===================== */
+
 </style>
 </head>
 <body>
@@ -1088,6 +1172,12 @@
       <div class="vh-head"><span class="pulse-tick" id="vh-tick" aria-hidden="true"></span> live proof state</div>
       <div class="vh-grid" id="vh-grid"><!-- populated from D.KERNEL by app.js --></div>
       <div class="vh-foot" id="vh-foot"><!-- kernel sha + Λ posture, from data.js --></div>
+      <div id="v8-vitals" aria-live="polite">
+        <div class="v8-vrow"><span id="v8-vitals-state"><span class="v8-dot off"></span>connecting…</span><span class="pulse-tick" id="v8-vitals-tick" aria-hidden="true"></span></div>
+        <div class="v8-vrow"><span class="v8-vk">kernel</span><span class="v8-vv" id="v8-vitals-kernel"><code>c7c0ba17</code></span></div>
+        <div class="v8-vrow"><span class="v8-vk">locked-8</span><span class="v8-vv" id="v8-vitals-locked">8</span></div>
+        <div class="v8-vrow"><span class="v8-vk">Λ posture</span><span class="v8-vv" id="v8-vitals-lambda"><span class="v8-conj">Conjecture 1</span></span></div>
+      </div>
     </div>
   </div>
 
@@ -1162,6 +1252,22 @@
         }}catch(e){document.body.classList.add('nojs');}
     })();
   </script>
+
+  <!-- ============ v8 WATCH A DECISION FLOW — HEART-anchored agentic showcase ============ -->
+  <button id="v8-flow-fab" type="button" aria-controls="v8-flow" aria-expanded="false" aria-label="Watch a decision flow through the body">
+    <span class="hb" aria-hidden="true"></span> watch a decision flow
+  </button>
+  <div id="v8-flow" role="dialog" aria-label="Watch a decision flow" aria-modal="false">
+    <button class="v8-flow-close" id="v8-flow-close" aria-label="close decision flow">×</button>
+    <div class="v8-flow-eyebrow">● live read-only · a11oy agent loop</div>
+    <div class="v8-flow-title">Watch a decision flow</div>
+    <div class="v8-flow-sub">A request propagates HEART gate → BRAIN reason → CIRCULATORY receipt → SKELETON quorum, driven by REAL <code>/code/healthz</code> + <code>/v1/qbio/lambda</code> values. Model prose stays a labeled stub — never fabricated.</div>
+    <div class="v8-flow-bar">
+      <input id="v8-flow-input" type="text" placeholder="Should I execute this action?" aria-label="decision request" autocomplete="off">
+      <button id="v8-flow-run" type="button">run ▶</button>
+    </div>
+    <div id="v8-flow-out" aria-live="polite"></div>
+  </div>
 
   <!-- ZERO CDN: vendored Three.js r160 + local data + local app -->
   <script src="./lib/three.min.js"></script>
