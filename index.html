@@ -1593,9 +1593,9 @@
 
     /* ---------- Mobile one-at-a-time sheet manager ---------- */
     var SHEETS={
-      tools:    { open:function(){ ensureDockOpen(); $('dissect').classList.add('ux-show'); openSheet($('dissect'),'sheet-open'); }, close:function(){ $('dissect').classList.remove('sheet-open'); } },
+      tools:    { open:function(){ ensureDockOpen(); $('dissect').classList.add('ux-show'); openSheet($('dissect'),'sheet-open'); }, close:function(){ $('dissect').classList.remove('sheet-open'); if(MOBILE()) $('dissect').classList.remove('ux-show'); } },
       doctrine: { open:function(){ $('honesty').classList.add('ux-sheet'); }, close:function(){ $('honesty').classList.remove('ux-sheet'); } },
-      proof:    { open:function(){ $('vis-hud').classList.add('ux-show','ux-sheet'); }, close:function(){ $('vis-hud').classList.remove('ux-sheet'); } }
+      proof:    { open:function(){ $('vis-hud').classList.add('ux-show','ux-sheet'); }, close:function(){ $('vis-hud').classList.remove('ux-sheet'); if(MOBILE()) $('vis-hud').classList.remove('ux-show'); } }
     };
     var openKey=null;
     function ensureDockOpen(){ var d=$('dissect'); if(d){ d.classList.add('ux-show'); d.classList.remove('collapsed'); var b=$('dz-body'); } }
