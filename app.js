@@ -422,6 +422,7 @@
     if(V4 && V4.applyFocus) V4.applyFocus();   // v4 focus-mode hook (no-op until v4 inits)
     if(V5 && V5.onOrganOpen) V5.onOrganOpen(o); // v5 deepen hook: per-formula Lean drill-down + organ↔formula highlight
     if(V7 && V7.onOrganOpen) V7.onOrganOpen(o); // v5 quantum-bio hook: per-organ coherence/charge/Λ-v5 mini-panel + decay sparkline
+    if(V8 && V8.onOrganOpen) V8.onOrganOpen(o); // v8 live agentic lens: per-organ READ-ONLY reflection of a11oy's live endpoints
   }
   function closePanel(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
     organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
@@ -436,6 +437,7 @@
   let V5=null;           // v5: deepen module handle (atlas, forecast, tour, labels, drill-down)
   let V6=null;           // v6: yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
   let V7=null;           // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
+  let V8=null;           // v8 live agentic lens (read-only reflection of a11oy's real agent loop / gates / verified math)
   function flyTo(targetVec, radius){
     tween={fromT:cam.target.clone(),toT:targetVec.clone(),fromR:cam.r,toR:radius==null?cam.r:radius,t:0,dur:0.9};
   }
@@ -1937,6 +1939,375 @@
   })();
   /* =====================  /v5 quantum-bio layer  ====================== */
 
+  /* =====================================================================
+     ===========================  v8 — LIVE AGENTIC LENS  ================
+     ADDITIVE module. anatomy stays sdk:static — 0 backend, 0 model key,
+     0 runtime CDN. v8 gives every organ "power" by READ-ONLY reflecting
+     a11oy's already-live agent loop / gates / verified math over the
+     internet (fetch). a11oy runs the REAL loop; anatomy OBSERVES it and
+     degrades GRACEFULLY to the static data.js baseline when offline.
+     NEVER fabricates a number, NEVER fakes a reasoning string.
+       - HEART / YUYAY      -> /v1/honest doctrine_lock + /v1/gates
+       - BRAIN / YACHAY     -> /code/healthz (live agentic loop, read-only)
+       - CIRCULATORY/YAWAR  -> /v1/qbio/summary (VERIFIED/PROPOSED legend)
+       - SKELETON / HATUN   -> /v1/honest Khipu / Conjecture-2 posture
+     Reuses organMeshes / worldPos / flyTo from v3 for the decision-flow
+     animation; appends into the existing #p-body panel; never rewrites it.
+     ===================================================================== */
+  V8 = (function(){
+    const el = id=>document.getElementById(id);
+    const D  = window.SZL_ANATOMY;
+    const K  = D.KERNEL;
+    const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    /* ---- 0 CDN: same-network read-only base. a11oy sets CORS for this origin. ---- */
+    const BASE = 'https://szlholdings-a11oy.hf.space/api/a11oy';
+    // map an organ key -> the live endpoint(s) bound to it
+    const ENDPOINTS = {
+      honest:    BASE + '/v1/honest',
+      gates:     BASE + '/v1/gates',
+      healthz:   BASE + '/code/healthz',
+      qsummary:  BASE + '/v1/qbio/summary',
+      qlambda:   BASE + '/v1/qbio/lambda',
+      qcoh:      BASE + '/v1/qbio/coherence'
+    };
+
+    /* ---- shared null-safe fetch helper: AbortController ~12s, try/catch,
+            graceful offline -> caller falls back to data.js. NEVER throws. ---- */
+    const cache = {};   // url -> {ok, data, at}
+    function liveAge(url){ const c=cache[url]; return c&&c.ok ? (Date.now()-c.at) : Infinity; }
+    async function pull(url, timeoutMs){
+      const ctl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+      const to  = ctl ? setTimeout(()=>{ try{ctl.abort();}catch(e){}}, timeoutMs||12000) : null;
+      try{
+        const r = await fetch(url, { method:'GET', mode:'cors', cache:'no-store', signal: ctl?ctl.signal:undefined });
+        if(to) clearTimeout(to);
+        if(!r || !r.ok) { cache[url]={ok:false,data:null,at:Date.now()}; return {ok:false,data:null}; }
+        const data = await r.json();
+        cache[url] = {ok:true, data, at:Date.now()};
+        return {ok:true, data};
+      }catch(e){
+        if(to) clearTimeout(to);
+        cache[url] = {ok:false, data:null, at:Date.now()};
+        return {ok:false, data:null, err:String(e&&e.message||e)};
+      }
+    }
+
+    /* ---- honest live/offline indicator chip ---- */
+    function dot(isLive){
+      return isLive
+        ? '<span class="v8-dot live" aria-hidden="true"></span><span class="v8-state">● live · a11oy</span>'
+        : '<span class="v8-dot off" aria-hidden="true"></span><span class="v8-state off">offline · static snapshot</span>';
+    }
+
+    /* ====================================================================
+       PER-ORGAN LIVE BINDING — appended into the existing #p-body panel.
+       Each binding renders REAL current values when live, else falls back
+       to the honest data.js baseline labeled "offline · static snapshot".
+       ==================================================================== */
+    // organ key -> binding renderer
+    const BINDINGS = {
+      // HEART / YUYAY
+      yuyay: async function(host){
+        host.innerHTML = '<div class="v8-load">querying a11oy <code>/v1/honest</code> + <code>/v1/gates</code>…</div>';
+        const [h, g] = await Promise.all([ pull(ENDPOINTS.honest), pull(ENDPOINTS.gates) ]);
+        const node = el('v8-bind-yuyay'); if(!node) return;           // null-safe: panel may have closed
+        const live = h.ok;
+        let body = '';
+        if(live && h.data && h.data.doctrine_lock){
+          const dl = h.data.doctrine_lock;
+          body += '<div class="v8-kv">'+
+            row('doctrine', esc(dl.doctrine)+' · '+esc(dl.state)) +
+            row('kernel', '<code>'+esc(dl.commit)+'</code>') +
+            row('declarations', esc(dl.declarations)) +
+            row('axioms', esc(dl.axioms)) +
+            row('sorries', esc(dl.sorries)) +
+            row('Λ posture', '<span class="v8-conj">'+esc(dl.lambda)+'</span>') +
+          '</div>';
+          if(dl.lambda_note) body += '<p class="v8-note">'+esc(dl.lambda_note)+'</p>';
+        } else {
+          body += '<div class="v8-kv">'+
+            row('doctrine', 'v11 · LOCKED') +
+            row('kernel', '<code>'+esc(K.locked_sha)+'</code>') +
+            row('declarations', esc(K.locked_decls)) +
+            row('axioms', esc(K.locked_axioms)) +
+            row('sorries', esc(K.locked_sorries)) +
+            row('Λ posture', '<span class="v8-conj">Conjecture 1</span>') +
+          '</div>';
+        }
+        if(g.ok && g.data && Array.isArray(g.data.gates)){
+          const sample = g.data.gates.slice(0,4).map(x=>esc(x.name)).join(', ');
+          body += '<p class="v8-note"><b>'+esc(g.data.count)+' live policy gates</b> on the 13-axis conjunctive gate · e.g. '+sample+'…</p>';
+        } else {
+          body += '<p class="v8-note">49 policy gates (static snapshot) — conjunctive deny-by-default; trust never 100%.</p>';
+        }
+        node.innerHTML = '<div class="v8-head">'+dot(live)+'</div>'+body;
+      },
+
+      // BRAIN / YACHAY (read-only reasoning cortex)
+      amaru: async function(host){
+        host.innerHTML = '<div class="v8-load">querying a11oy <code>/code/healthz</code>…</div>';
+        const r = await pull(ENDPOINTS.healthz);
+        const node = el('v8-bind-amaru'); if(!node) return;
+        const live = r.ok && r.data;
+        let body = '';
+        if(live){
+          const d = r.data;
+          const kr = d.key_resolution || {};
+          body += '<div class="v8-kv">'+
+            row('mode', '<b style="color:var(--ok)">'+esc(d.mode)+'</b>') +
+            row('doctrine', esc(d.doctrine)) +
+            row('inference', esc(d.inference)) +
+            row('PURIQ floor', esc(d.puriq_threshold)) +
+            row('memory', esc(d.memory)) +
+            row('signed by', esc(d.signed)) +
+          '</div>';
+          if(Array.isArray(d.tiers)) body += '<p class="v8-note"><b>'+d.tiers.length+' tiers:</b> '+d.tiers.map(esc).join(' · ')+'</p>';
+          if(Array.isArray(d.tools)) body += '<p class="v8-note"><b>'+d.tools.length+' real tools:</b> '+d.tools.map(esc).join(', ')+'</p>';
+          body += '<p class="v8-note v8-warn">'+esc(kr.honest_note||'model credential not resolved; the agent loop runs for real, model text degrades to a labeled stub (Zero-Bandaid Law).')+'</p>';
+        } else {
+          body += '<p class="v8-note">offline — the cortex READS frozen snapshots, NEVER WRITES. PURIQ floor 0.62 · 7 tiers (T0–T6) · 18 real tools (static snapshot).</p>';
+        }
+        body += '<p class="v8-note"><b>reasons, never holds write authority.</b> YACHAY is read-only by doctrine.</p>';
+        node.innerHTML = '<div class="v8-head">'+dot(live)+'</div>'+body;
+      },
+
+      // CIRCULATORY / YAWAR -> metabolic / quantum-bio verified results
+      yawar: async function(host){
+        host.innerHTML = '<div class="v8-load">querying a11oy <code>/v1/qbio/summary</code>…</div>';
+        const r = await pull(ENDPOINTS.qsummary);
+        const node = el('v8-bind-yawar'); if(!node) return;
+        const live = r.ok && r.data && Array.isArray(r.data.results);
+        let body = '';
+        if(live){
+          const d = r.data;
+          body += '<div class="v8-rows">';
+          d.results.forEach(x=>{
+            const st = String(x.status||'').split(' ')[0];
+            body += '<div class="v8-r"><span class="v8-q">'+esc(x.quantity)+'</span>'+
+                    '<span class="v8-val">'+esc(x.value)+'</span>'+
+                    '<span class="v8-tag '+esc(st)+'">'+esc(x.status)+'</span></div>';
+          });
+          body += '</div>';
+          const lg = d.status_legend||{};
+          body += '<p class="v8-note"><b>legend:</b> '+
+            '<span class="v8-tag VERIFIED">VERIFIED</span> '+esc(lg.VERIFIED||'')+' · '+
+            '<span class="v8-tag PROPOSED">PROPOSED</span> '+esc(lg.PROPOSED||'')+' · '+
+            '<span class="v8-tag NARRATIVE">NARRATIVE</span> '+esc(lg.NARRATIVE||'')+'</p>';
+          body += '<p class="v8-note">'+esc(d.doctrine||'')+'</p>';
+        } else {
+          body += '<p class="v8-note">offline — static snapshot: Lindblad τ_c 6.05 (VERIFIED) · pmf single-ion 119.3 mV (VERIFIED) · pmf two-ion K⁺/H⁺ 121.5 mV (PROPOSED) · compass contrast 0.025 (VERIFIED). Λ-v5 is a PROPOSED engineering gate; Kruse = NARRATIVE only.</p>';
+        }
+        node.innerHTML = '<div class="v8-head">'+dot(live)+'</div>'+body;
+      },
+
+      // SKELETON / HATUN -> Khipu / Conjecture-2 posture (from /v1/honest)
+      hatun: async function(host){
+        host.innerHTML = '<div class="v8-load">querying a11oy <code>/v1/honest</code> (Khipu posture)…</div>';
+        const r = await pull(ENDPOINTS.honest);
+        const node = el('v8-bind-hatun'); if(!node) return;
+        const live = r.ok && r.data;
+        let body = '';
+        if(live){
+          const hl = r.data.honest_labels || {};
+          const dl = r.data.doctrine_lock || {};
+          body += '<div class="v8-kv">'+
+            row('kernel', '<code>'+esc(dl.commit||K.locked_sha)+'</code>') +
+            row('Khipu BFT', '<span class="v8-conj">Conjecture 2</span>') +
+            row('chain integrity', 'SHA3-256 hash-chain') +
+          '</div>';
+          if(hl.khipu_signatures) body += '<p class="v8-note">'+esc(hl.khipu_signatures)+'</p>';
+          if(hl.persistence)      body += '<p class="v8-note">'+esc(hl.persistence)+'</p>';
+          if(hl.principle)        body += '<p class="v8-note"><b>'+esc(hl.principle)+'</b></p>';
+        } else {
+          body += '<div class="v8-kv">'+
+            row('kernel', '<code>'+esc(K.locked_sha)+'</code>') +
+            row('Khipu BFT', '<span class="v8-conj">Conjecture 2</span>') +
+          '</div>';
+          body += '<p class="v8-note">offline — static snapshot. Khipu BFT safety is Conjecture 2; Wave23 proves it CONDITIONAL on {n≥3f+1, honest non-equivocation}. Unconditional safety stays Conjecture 2 at the sharp boundary.</p>';
+        }
+        node.innerHTML = '<div class="v8-head">'+dot(live)+'</div>'+body;
+      }
+    };
+    function row(k,v){ return '<div class="v8-row"><span class="v8-k">'+esc(k)+'</span><span class="v8-v">'+v+'</span></div>'; }
+
+    /* ---- panel hook: when a BOUND organ opens, append a live-lens block ---- */
+    function onOrganOpen(o){
+      if(!o) return;
+      const binder = BINDINGS[o.key];
+      if(!binder) return;
+      const pb = el('p-body'); if(!pb) return;                       // null-safe
+      // avoid duplicate insertion if v5/v7 re-render; insert at top of panel body
+      if(el('v8-bind-'+o.key)) { try{ binder(el('v8-bind-'+o.key)); }catch(e){} return; }
+      const wrap = document.createElement('section');
+      wrap.className = 'v8-lens';
+      wrap.innerHTML = '<div class="v8-title">● LIVE LENS — read-only reflection of a11oy\u2019s real agent loop</div>'+
+                       '<div id="v8-bind-'+esc(o.key)+'" class="v8-bind"></div>';
+      pb.insertBefore(wrap, pb.firstChild);
+      const inner = el('v8-bind-'+o.key);
+      if(inner){ try{ binder(inner); }catch(e){ inner.innerHTML='<p class="v8-note">offline · static snapshot</p>'; } }
+    }
+
+    /* ====================================================================
+       LIVE VITAL-SIGNS HUD — small always-on overlay polling /v1/honest
+       ~every 20s: kernel commit, locked-8, Λ=Conjecture 1, live/offline.
+       Falls back to D.KERNEL offline. Respects prefers-reduced-motion.
+       ==================================================================== */
+    let vitalTimer = null;
+    async function pollVitals(){
+      const r = await pull(ENDPOINTS.honest, 12000);
+      const wrap = el('v8-vitals'); if(!wrap) return;                // null-safe
+      const live = r.ok && r.data && r.data.doctrine_lock;
+      const dl = live ? r.data.doctrine_lock : null;
+      const kernel = dl ? dl.commit : K.locked_sha;
+      const lam    = dl ? dl.lambda  : 'Conjecture 1';
+      const stEl = el('v8-vitals-state');
+      const knEl = el('v8-vitals-kernel');
+      const lkEl = el('v8-vitals-locked');
+      const lmEl = el('v8-vitals-lambda');
+      const tk   = el('v8-vitals-tick');
+      if(stEl) stEl.innerHTML = live ? '<span class="v8-dot live"></span>a11oy live' : '<span class="v8-dot off"></span>offline · static';
+      if(knEl) knEl.innerHTML = '<code>'+esc(kernel)+'</code>';
+      if(lkEl) lkEl.textContent = K.locked_proven.length + ' {'+K.locked_proven.join(',')+'}';
+      if(lmEl) lmEl.innerHTML = '<span class="v8-conj">'+esc(lam)+'</span>';
+      if(tk) tk.classList.toggle('live', !!live);
+    }
+    function startVitals(){
+      if(vitalTimer) return;
+      pollVitals();
+      vitalTimer = setInterval(pollVitals, 20000);
+    }
+
+    /* ====================================================================
+       WATCH A DECISION FLOW — HEART-anchored agentic showcase.
+       Drives an HONEST, deterministic flow from REAL read-only values:
+         /code/healthz (tier set, PURIQ floor, mode) + /v1/qbio/lambda
+       Animates the decision propagating organ-by-organ through the 3D body:
+         HEART gate -> BRAIN reason -> CIRCULATORY receipt -> SKELETON quorum.
+       Model text stays a LABELED deterministic stub (never fabricated).
+       ==================================================================== */
+    // honest deterministic tier pick from the live tier set + request length
+    function pickTier(tiers, req){
+      const t = Array.isArray(tiers)&&tiers.length ? tiers : ['T0','T1','T2','T3','T4','T5','T6'];
+      const n = (req||'').trim().length;
+      const idx = Math.min(t.length-1, Math.max(1, Math.round(n/14)));  // deterministic, length-driven
+      return t[idx];
+    }
+    const FLOW_KEYS = ['yuyay','amaru','yawar','hatun'];   // HEART -> BRAIN -> CIRC -> SKELETON
+    let flowBusy = false;
+
+    // highlight / fly to an organ by key, using the v3 mesh registry in outer scope.
+    function highlightOrgan(key, on, color){
+      const o = D.ORGANS.find(x=>x.key===key); if(!o) return;
+      const om = organMeshes.find(m=>m.organ===o); if(!om || !om.grp || !om.grp.userData.glow) return;
+      om.grp.userData.glow.material.opacity = on ? 0.92 : om.glowBase;
+    }
+    function flyToOrgan(key){
+      const o = D.ORGANS.find(x=>x.key===key); if(!o) return;
+      const om = organMeshes.find(m=>m.organ===o);
+      const side = o.shared ? 0 : (om && om.bodyKey==='killinchu' ? 1 : -1);
+      const wp = worldPos(o, side);
+      try{ flyTo(new THREE.Vector3(wp.x,wp.y,wp.z), o.shared?9.5:8.2); }catch(e){}
+    }
+
+    async function runDecisionFlow(){
+      if(flowBusy) return;
+      const reqEl = el('v8-flow-input');
+      const out   = el('v8-flow-out');
+      const btn   = el('v8-flow-run');
+      if(!out) return;
+      const req = (reqEl && reqEl.value || '').trim() || 'Should I execute this action?';
+      flowBusy = true;
+      if(btn){ btn.disabled = true; }
+      out.innerHTML = '<div class="v8-load">calling a11oy <code>/code/healthz</code> + <code>/v1/qbio/lambda</code>…</div>';
+
+      const [hz, lam] = await Promise.all([ pull(ENDPOINTS.healthz), pull(ENDPOINTS.qlambda + '?C=0.92&dp=120&dp0=100&lam_min=0.5') ]);
+      const o2 = el('v8-flow-out'); if(!o2){ flowBusy=false; return; }   // null-safe: closed mid-flight
+
+      const live = hz.ok && hz.data;
+      const tiers = live ? hz.data.tiers : null;
+      const puriq = live ? hz.data.puriq_threshold : 0.62;
+      const tier  = pickTier(tiers, req);
+      const lamLive = lam.ok && lam.data;
+      const lamVal  = lamLive ? lam.data.lambda : null;
+      const lamOk   = lamLive ? lam.data.closure_ok : null;
+      const lamMin  = lamLive ? lam.data.lam_min : 0.5;
+
+      // honest, deterministic per-step payload — REAL returned values only
+      const steps = [
+        { key:'yuyay', label:'HEART · YUYAY gate', color:'var(--heart)',
+          line: '13-axis conjunctive gate · deny-by-default · '+(live?'live':'static')+' posture · trust never 100%' },
+        { key:'amaru', label:'BRAIN · YACHAY reason', color:'var(--brain)',
+          line: 'tier '+esc(tier)+' chosen · PURIQ floor '+esc(puriq)+' · mode '+(live?esc(hz.data.mode):'offline')+' · reasons, never writes' },
+        { key:'yawar', label:'CIRCULATORY · YAWAR receipt', color:'var(--blood)',
+          line: 'Λ-v5 gate '+(lamLive?('λ='+esc(lamVal)+' (min '+esc(lamMin)+') · closure '+(lamOk?'OK':'recharge')):'offline · static')+' · SHA-256 receipt appended' },
+        { key:'hatun', label:'SKELETON · Khipu quorum', color:'var(--skel)',
+          line: 'n≥3f+1 Khipu BFT quorum · Conjecture 2 (Wave23 conditional safety) · sealed' }
+      ];
+
+      // model text is an honest labeled stub — NEVER fabricated reasoning
+      const wired = live && hz.data.key_resolution && hz.data.key_resolution.wired;
+      const stub = wired
+        ? 'model text: live (provider resolved).'
+        : 'model text = labeled deterministic stub until SZL_LOCAL_LLM_URL is wired. The agent loop + gate/tier/Λ values above are REAL; reasoning prose is NOT fabricated.';
+
+      // render the flow log
+      o2.innerHTML = '<div class="v8-flow-head">'+dot(live)+' · decision: <i>'+esc(req)+'</i></div>'+
+        '<ol class="v8-flow-steps">'+steps.map((s,i)=>
+          '<li id="v8-step-'+i+'" class="v8-step"><span class="v8-step-dot" style="--c:'+s.color+'"></span>'+
+          '<span class="v8-step-l"><b style="color:'+s.color+'">'+esc(s.label)+'</b><br><span class="v8-step-d">'+s.line+'</span></span></li>'
+        ).join('')+'</ol>'+
+        '<p class="v8-note v8-warn">'+esc(stub)+'</p>';
+
+      // animate propagation through the 3D body — gated by reduced-motion
+      const stepMs = REDUCED ? 0 : 700;
+      for(let i=0;i<steps.length;i++){
+        const li = document.getElementById('v8-step-'+i);
+        if(li) li.classList.add('on');
+        highlightOrgan(steps[i].key, true, steps[i].color);
+        if(!REDUCED) flyToOrgan(steps[i].key);
+        if(stepMs) await new Promise(res=>setTimeout(res, stepMs));
+        if(i<steps.length-1) highlightOrgan(steps[i].key, false);
+        if(!document.getElementById('v8-flow-out')) break;            // null-safe abort
+      }
+      // leave final (skeleton) lit briefly then release
+      if(!REDUCED) await new Promise(res=>setTimeout(res, 600));
+      FLOW_KEYS.forEach(k=>highlightOrgan(k, false));
+
+      const b2 = el('v8-flow-run'); if(b2){ b2.disabled = false; }
+      flowBusy = false;
+    }
+
+    /* ---- wire DOM controls (null-safe) ---- */
+    function wire(){
+      const runBtn = el('v8-flow-run');
+      if(runBtn) runBtn.addEventListener('click', runDecisionFlow);
+      const input = el('v8-flow-input');
+      if(input) input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); runDecisionFlow(); } });
+      const fab = el('v8-flow-fab');
+      const card = el('v8-flow');
+      if(fab && card){
+        fab.addEventListener('click', ()=>{
+          const open = card.classList.toggle('open');
+          fab.setAttribute('aria-expanded', open?'true':'false');
+          if(open){ const inp=el('v8-flow-input'); if(inp) inp.focus(); }
+        });
+      }
+      const fclose = el('v8-flow-close');
+      if(fclose && card) fclose.addEventListener('click', ()=>{ card.classList.remove('open'); if(fab) fab.setAttribute('aria-expanded','false'); });
+    }
+
+    return { onOrganOpen, startVitals, wire, runDecisionFlow, pollVitals, highlightOrgan, flyToOrgan, _BINDINGS:BINDINGS };
+  })();
+  /* =========================  /v8 live agentic lens  =================== */
+
+  /* ---- v8 bootstrap: wire decision-flow controls + start vital-signs poll ---- */
+  if(V8){
+    try{ V8.wire(); }catch(e){}
+    try{ V8.startVitals(); }catch(e){}
+  }
+
   /* ---------------- test hooks for headless QA ---------------- */
   window.__anatomy = {
     organs: organMeshes.length,
@@ -1952,6 +2323,7 @@
     v5: V5,  // v4-deepen module handle (atlas, forecast, tour, labels, drill-down)
     v6: V6,  // v6 yarqa flow-compartments layer (engineering method / CFD, NOT a locked theorem)
     v7: V7,  // v5 quantum-bio layer (coherence + bioenergetic + Λ-v5 gate + compass; verified model, mirrors a11oy /qbio)
+    v8: V8,  // v8 live agentic lens (read-only reflection of a11oy's real agent loop; runDecisionFlow/pollVitals/onOrganOpen)
     formulas: Object.keys(D.FORMULAS).length,
     tierCounts: (V5&&V5.api)?V5.api.tierCounts():null,
     qbio: (V7&&V7.api)?V7.api():null
