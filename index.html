@@ -687,6 +687,165 @@
   }
   /* ===================== /v9 ===================== */
 
+  /* ============================================================
+     UX2 REFACTOR (additive, layout/CSS-first) — 3D is the hero.
+     Panels start COLLAPSED as slim toggles; default copy is minimal
+     plain language; mobile uses ONE-AT-A-TIME bottom sheets via a
+     tab-bar. No three.js / scene logic touched. Honest doctrine
+     content preserved verbatim behind a Details expander.
+     ============================================================ */
+  body.ux2{}
+
+  /* --- Default-hide the heavy always-open HUD walls. They become
+         opt-in (opened via toolbar / tab-bar). The 3D scene gets the
+         whole screen on first load. --- */
+  body.ux2 #legend{display:none !important;}
+  body.ux2 #hint{display:none !important;}
+  /* Dissection dock + live-proof HUD start closed; surfaced on demand. */
+  body.ux2 #dissect{display:none;}
+  body.ux2 #dissect.ux-show{display:block;}
+  body.ux2 #vis-hud{display:none;}
+  body.ux2 #vis-hud.ux-show{display:block;}
+  /* Old floating FABs that overlapped body text: fold into toolbar/sheet. */
+  body.ux2 #v8-flow-fab{display:none !important;}
+  body.ux2 #v8-flow-fab.ux-show{display:inline-flex !important;}
+  body.ux2 #dissect-fab{display:none !important;}
+
+  /* --- Lighter title: plain one-line hero, smaller, no jargon sub by default --- */
+  body.ux2 #title{top:18px;left:20px;max-width:min(520px,70vw);}
+  body.ux2 #title h1{font-size:19px;font-weight:600;line-height:1.14;}
+  body.ux2 #title .eyebrow{margin-bottom:5px;}
+  body.ux2 #title .sub{font-size:11.5px;color:var(--text-muted);margin-top:6px;max-width:46ch;}
+  body.ux2 #title .bodies{margin-top:9px;}
+
+  /* --- Compact TRUST CHIP replacing the doctrine wall on the right ---
+     A small premium card: one plain headline + key honest facts as chips,
+     and a Details expander holding the full (verbatim) doctrine rows. --- */
+  body.ux2 #honesty{top:18px;right:20px;max-width:min(300px,40vw);}
+  body.ux2 #honesty .card{padding:13px 14px;}
+  body.ux2 #honesty .hdr{display:none;}            /* replaced by trust-chip header */
+  body.ux2 #ux-trust{pointer-events:auto;}
+  .ux-trust-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .ux-trust-head .tdot{width:8px;height:8px;border-radius:50%;background:var(--audit);box-shadow:0 0 8px var(--audit);flex:0 0 auto}
+  .ux-trust-head .tlabel{font-family:var(--font-m);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim)}
+  .ux-trust-line{font-size:12.5px;line-height:1.5;color:var(--text);font-weight:500}
+  .ux-trust-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .ux-tchip{font-family:var(--font-m);font-size:10px;letter-spacing:.02em;padding:4px 9px;border-radius:99px;
+    border:1px solid var(--border);background:var(--surface);color:var(--text-muted);white-space:nowrap}
+  .ux-tchip.ok{color:var(--audit);border-color:rgba(158,240,192,.4)}
+  .ux-tchip.conj{color:var(--warn);border-color:rgba(255,126,182,.4)}
+  .ux-tchip.lock{color:var(--skel);border-color:rgba(255,209,102,.4)}
+  /* the verbatim honest doctrine, now behind a Details expander */
+  .ux-details{margin-top:11px}
+  .ux-details > summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--font-m);font-size:10px;letter-spacing:.04em;color:var(--nerve);padding:5px 0}
+  .ux-details > summary::-webkit-details-marker{display:none}
+  .ux-details > summary::before{content:"\25b8";color:var(--text-dim);transition:transform .15s}
+  .ux-details[open] > summary::before{transform:rotate(90deg)}
+  .ux-details .ux-details-in{margin-top:9px;padding-top:10px;border-top:1px solid var(--border);
+    max-height:min(56vh,520px);overflow-y:auto;overscroll-behavior:contain}
+  /* doctrine rows shrink a touch inside the expander */
+  body.ux2 #honesty .row{font-size:11px;margin-bottom:9px}
+
+  /* --- TOOLBAR: tidy grouped primary actions + a More menu ---
+     Hide the raw 16-button row; show a compact toolbar instead. --- */
+  body.ux2 #controls{display:none !important;}
+  #ux-toolbar{position:fixed;z-index:24;left:50%;bottom:22px;transform:translateX(-50%);
+    display:flex;gap:9px;align-items:center;pointer-events:none}
+  #ux-toolbar .uxb{pointer-events:auto;font-family:var(--font-m);font-size:12px;letter-spacing:.02em;
+    color:var(--text);background:var(--surface-2);backdrop-filter:blur(var(--blur));border:1px solid var(--border-strong);
+    border-radius:99px;padding:11px 17px;cursor:pointer;transition:all .16s;display:inline-flex;align-items:center;gap:7px;
+    box-shadow:var(--shadow);min-height:44px;white-space:nowrap}
+  #ux-toolbar .uxb:hover{background:rgba(40,52,90,.95);transform:translateY(-1px)}
+  #ux-toolbar .uxb.primary{color:#06241f;background:linear-gradient(180deg,#7fe9d2,#3fe0c5);border-color:rgba(63,224,197,.6);font-weight:700}
+  #ux-toolbar .uxb.primary:hover{background:linear-gradient(180deg,#92eedb,#52e6cd)}
+  #ux-toolbar .uxb.on{color:var(--heart);border-color:rgba(255,93,143,.55);background:rgba(255,93,143,.1)}
+  #ux-toolbar .uxb.qb.on{color:var(--nerve);border-color:rgba(90,209,255,.55);background:rgba(90,209,255,.1)}
+  /* More menu (popover above the toolbar) */
+  #ux-more-wrap{position:relative;pointer-events:auto}
+  #ux-more-menu{position:absolute;bottom:54px;right:0;min-width:210px;background:var(--surface-2);
+    backdrop-filter:blur(var(--blur));border:1px solid var(--border-strong);border-radius:14px;box-shadow:var(--shadow);
+    padding:7px;display:none;flex-direction:column;gap:2px}
+  #ux-more-menu.open{display:flex}
+  #ux-more-menu .uxm{font-family:var(--font-m);font-size:12px;color:var(--text-muted);background:none;border:none;
+    text-align:left;padding:10px 12px;border-radius:9px;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:9px}
+  #ux-more-menu .uxm:hover{background:rgba(120,150,210,.12);color:var(--text)}
+  #ux-more-menu .uxm.on{color:var(--heart)}
+  #ux-more-menu .uxm-div{height:1px;background:var(--border);margin:4px 6px}
+
+  /* --- MOBILE BOTTOM TAB-BAR: opens panels ONE at a time --- */
+  #ux-tabbar{display:none}
+  #ux-scrim{display:none}
+
+  /* ===== UX2 DESKTOP/TABLET: keep drawers as overlays (already fine) ===== */
+  body.ux2 #ux-toolbar{display:flex}
+
+  /* ============ UX2 MOBILE (<=680px): canvas hero + tab-bar ============ */
+  @media (max-width:680px){
+    body.ux2 #ux-toolbar{display:none !important;}
+    /* minimal floating top title only */
+    body.ux2 #title{top:14px;left:14px;right:14px;max-width:none;}
+    body.ux2 #title h1{font-size:16px;line-height:1.18;}
+    body.ux2 #title .sub{display:none;}
+    body.ux2 #title .bodies{display:none;}
+    /* hide ALL fixed HUD walls by default — surfaced one-at-a-time via sheets */
+    body.ux2 #honesty{display:none !important;}
+    body.ux2 #honesty.ux-sheet{display:block !important;position:fixed;left:0;right:0;bottom:0;top:auto;
+      max-width:none;z-index:62;}
+    body.ux2 #vis-hud{left:0;right:0;bottom:0;top:auto;max-width:none;z-index:62;}
+    body.ux2 #vis-hud.ux-show.ux-sheet{display:block !important;}
+    body.ux2 #dissect{z-index:62;}
+    /* sheet shell shared look for honesty/vis-hud when surfaced as sheet */
+    body.ux2 #honesty.ux-sheet .card,
+    body.ux2 #vis-hud.ux-sheet .card{border-radius:18px 18px 0 0;border:1px solid var(--border-strong);
+      border-bottom:none;max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding-bottom:78px;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
+    body.ux2 #honesty.ux-sheet .ux-details .ux-details-in{max-height:none}
+    body.ux2 #honesty.ux-sheet .ux-details[open] .ux-details-in,
+    body.ux2 #honesty.ux-sheet .ux-details > summary{}
+    /* grab handle on sheets */
+    body.ux2 #honesty.ux-sheet .card::before,
+    body.ux2 #vis-hud.ux-sheet .card::before{content:"";display:block;width:40px;height:4px;border-radius:99px;
+      background:var(--border-strong);margin:2px auto 12px}
+    /* drawers (atlas/forecast/qbio/panel/dissect) already become bottom sheets in earlier media block; bump z + leave room for tab-bar */
+    body.ux2 #panel,body.ux2 #atlas,body.ux2 #forecast,body.ux2 #qbio{z-index:63;}
+    body.ux2 #panel{top:auto !important;left:0 !important;right:0 !important;bottom:0 !important;
+      width:100% !important;height:auto !important;max-height:86vh !important;border-left:none;
+      border-top:1px solid var(--border-strong);border-radius:18px 18px 0 0;transform:translateY(102%);}
+    body.ux2 #panel.open{transform:translateY(0);}
+    body.ux2 #panel .pb{padding-bottom:90px;}
+
+    /* scrim behind any open sheet */
+    body.ux2 #ux-scrim{display:block;position:fixed;inset:0;z-index:55;background:rgba(2,4,9,.45);
+      opacity:0;pointer-events:none;transition:opacity .25s}
+    body.ux2 #ux-scrim.show{opacity:1;pointer-events:auto}
+
+    /* the always-visible bottom tab-bar */
+    body.ux2 #ux-tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:70;
+      background:linear-gradient(180deg,rgba(10,14,26,.86),rgba(4,6,12,.97));backdrop-filter:blur(var(--blur));
+      border-top:1px solid var(--border-strong);padding:6px max(10px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));
+      justify-content:space-around;align-items:stretch;gap:4px}
+    body.ux2 #ux-tabbar .uxt{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      min-height:52px;background:none;border:none;color:var(--text-muted);font-family:var(--font-m);font-size:9.5px;
+      letter-spacing:.04em;cursor:pointer;border-radius:11px;padding:5px 2px;transition:background .15s,color .15s}
+    body.ux2 #ux-tabbar .uxt .ic{font-size:17px;line-height:1}
+    body.ux2 #ux-tabbar .uxt[aria-pressed=true]{color:var(--text);background:rgba(120,150,210,.14)}
+    body.ux2 #ux-tabbar .uxt.cta{color:var(--a11oy)}
+    body.ux2 #ux-tabbar .uxt.cta[aria-pressed=true]{color:#06241f;background:var(--a11oy)}
+
+    /* mobile: lift toolbar-less drawers above tab-bar; tab-bar always on top */
+    body.ux2 #tour,body.ux2 #v9-tour{z-index:64 !important;}
+  }
+  /* small phones */
+  @media (max-width:380px){
+    body.ux2 #ux-tabbar .uxt{font-size:9px}
+    body.ux2 #title h1{font-size:15px}
+  }
+  /* reduced clutter on tablet: toolbar stays, drawers overlay */
+  @media (min-width:681px) and (max-width:1024px){
+    body.ux2 #honesty{max-width:min(300px,42vw)}
+  }
+
 </style>
 </head>
 <body>
@@ -1104,7 +1263,7 @@
   <div class="hud" id="title">
     <div class="eyebrow">SZL Holdings · Living Anatomy</div>
     <h1>SZL Agent Body <span class="v3">v4</span> — the governed-AI organ substrate</h1>
-    <div class="sub">Two bodies · one circulatory + nervous mesh · the Λ heart at center. <span style="color:var(--audit)">v4-deepen: Formula Atlas, per-organ Lean drill-down, honest forecast, guided tour + labels.</span></div>
+    <div class="sub">An interactive 3D body for governed AI. Click an organ, or take the guided tour.</div>
     <div class="bodies">
       <span class="body-tag a">a11oy · governed-AI decision body</span>
       <span class="body-tag k">killinchu · maritime / drone C2 body</span>
@@ -1358,6 +1517,213 @@
     </div>
     <div class="v9-tour-bar"><i id="v9-tour-bar-i"></i></div>
   </div>
+
+  <!-- ============ UX2 toolbar (desktop/tablet) ============ -->
+  <div id="ux-toolbar" role="toolbar" aria-label="Primary actions">
+    <button class="uxb primary" id="ux-tour" type="button">▷ Guided Tour</button>
+    <button class="uxb" id="ux-dissect" type="button">⌖ Dissect</button>
+    <button class="uxb" id="ux-forecast" type="button">⌁ Forecast</button>
+    <button class="uxb qb" id="ux-qbio" type="button">⌬ Quantum-Bio</button>
+    <div id="ux-more-wrap">
+      <button class="uxb" id="ux-more" type="button" aria-haspopup="true" aria-expanded="false">⋯ More</button>
+      <div id="ux-more-menu" role="menu" aria-label="More actions">
+        <button class="uxm" id="ux-m-trust" role="menuitem" type="button">◈ Trust &amp; proof</button>
+        <button class="uxm" id="ux-m-atlas" role="menuitem" type="button">⎙ Formula atlas</button>
+        <button class="uxm" id="ux-m-vital" role="menuitem" type="button">◈ Vital tour</button>
+        <button class="uxm" id="ux-m-flow" role="menuitem" type="button">♥ Watch a decision flow</button>
+        <button class="uxm" id="ux-m-gpd" role="menuitem" type="button">◆ GPD lens</button>
+        <button class="uxm" id="ux-m-text" role="menuitem" type="button">≣ Formulas (text)</button>
+        <div class="uxm-div"></div>
+        <button class="uxm" id="ux-m-rotate" role="menuitem" type="button">◍ Auto-rotate</button>
+        <button class="uxm" id="ux-m-pulse" role="menuitem" type="button">⟿ Pulses</button>
+        <button class="uxm" id="ux-m-labels" role="menuitem" type="button">⌗ Labels</button>
+        <button class="uxm" id="ux-m-focus" role="menuitem" type="button">⊙ Focus mode</button>
+        <button class="uxm" id="ux-m-reset" role="menuitem" type="button">⟲ Reset view</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ UX2 mobile bottom tab-bar (one panel at a time) ============ -->
+  <div id="ux-scrim" aria-hidden="true"></div>
+  <nav id="ux-tabbar" aria-label="Sections">
+    <button class="uxt cta" id="uxt-tour" type="button" aria-pressed="false"><span class="ic" aria-hidden="true">▷</span>Tour</button>
+    <button class="uxt" id="uxt-tools" type="button" aria-pressed="false"><span class="ic" aria-hidden="true">⌖</span>Tools</button>
+    <button class="uxt" id="uxt-doctrine" type="button" aria-pressed="false"><span class="ic" aria-hidden="true">◈</span>Trust</button>
+    <button class="uxt" id="uxt-proof" type="button" aria-pressed="false"><span class="ic" aria-hidden="true">≡</span>Proof</button>
+    <button class="uxt" id="uxt-more" type="button" aria-pressed="false"><span class="ic" aria-hidden="true">⋯</span>More</button>
+  </nav>
+
+  <!-- ============ UX2 controller (layout only; delegates to existing buttons) ============ -->
+  <script>
+  (function(){
+    document.body.classList.add('ux2');
+    var $=function(id){return document.getElementById(id);};
+    function click(id){ var b=$(id); if(b) b.click(); }
+    function isPressed(id){ var b=$(id); return b && (b.classList.contains('active')||b.getAttribute('aria-pressed')==='true'); }
+    var MOBILE=function(){ return window.matchMedia('(max-width:680px)').matches; };
+
+    /* ---------- Build the compact Trust chip (plain language) ----------
+       The verbatim honest doctrine (#honesty-card, filled by app.js) is
+       moved INTO a Details expander — nothing deleted, just folded. */
+    function buildTrust(){
+      var honesty=$('honesty'); if(!honesty) return;
+      var card=honesty.querySelector('.card'); if(!card) return;
+      if($('ux-trust')) return; // once
+      var src=$('honesty-card'); // app.js fills this with the full honest rows
+      var wrap=document.createElement('div'); wrap.id='ux-trust';
+      wrap.innerHTML=
+        '<div class="ux-trust-head"><span class="tdot"></span><span class="tlabel">Trust &amp; proof</span></div>'+
+        '<div class="ux-trust-line">8 results machine-proven. Λ uniqueness is still an open conjecture — we never claim it as a theorem, and trust is never 100%.</div>'+
+        '<div class="ux-trust-chips">'+
+          '<span class="ux-tchip lock">8 locked-proven</span>'+
+          '<span class="ux-tchip conj">Λ = Conjecture 1</span>'+
+          '<span class="ux-tchip conj">Khipu BFT = Conjecture 2</span>'+
+          '<span class="ux-tchip ok">SLSA L1+L2 · L3 roadmap</span>'+
+          '<span class="ux-tchip">no fabricated data</span>'+
+        '</div>';
+      var det=document.createElement('details'); det.className='ux-details';
+      det.innerHTML='<summary>Full honesty doctrine</summary>';
+      var din=document.createElement('div'); din.className='ux-details-in';
+      det.appendChild(din);
+      // relocate the existing honest rows under the expander (preserves listeners is N/A; gpd-row listener re-added by app already attached to node which we move)
+      card.insertBefore(wrap, card.firstChild);
+      card.appendChild(det);
+      if(src){ din.appendChild(src); } // moves the live node, keeping its content + #gpd-row handler
+    }
+
+    /* ---------- Mobile one-at-a-time sheet manager ---------- */
+    var SHEETS={
+      tools:    { open:function(){ ensureDockOpen(); $('dissect').classList.add('ux-show'); openSheet($('dissect'),'sheet-open'); }, close:function(){ $('dissect').classList.remove('sheet-open'); } },
+      doctrine: { open:function(){ $('honesty').classList.add('ux-sheet'); }, close:function(){ $('honesty').classList.remove('ux-sheet'); } },
+      proof:    { open:function(){ $('vis-hud').classList.add('ux-show','ux-sheet'); }, close:function(){ $('vis-hud').classList.remove('ux-sheet'); } }
+    };
+    var openKey=null;
+    function ensureDockOpen(){ var d=$('dissect'); if(d){ d.classList.add('ux-show'); d.classList.remove('collapsed'); var b=$('dz-body'); } }
+    function openSheet(el,cls){ if(el) el.classList.add(cls||'open'); }
+    function closeAllSheets(){
+      Object.keys(SHEETS).forEach(function(k){ try{SHEETS[k].close();}catch(e){} });
+      // also close app drawers
+      ['panel','atlas','forecast','qbio'].forEach(function(id){ var e=$(id); if(e) e.classList.remove('open'); });
+      // stop tours
+      openKey=null;
+      scrim(false);
+      setTabPressed(null);
+    }
+    function scrim(on){ var s=$('ux-scrim'); if(s) s.classList.toggle('show',!!on); }
+    function setTabPressed(key){
+      [['tour','uxt-tour'],['tools','uxt-tools'],['doctrine','uxt-doctrine'],['proof','uxt-proof']].forEach(function(p){
+        var b=$(p[1]); if(b) b.setAttribute('aria-pressed', String(p[0]===key));
+      });
+    }
+    function toggleSheet(key){
+      if(openKey===key){ closeAllSheets(); return; }
+      closeAllSheets();
+      var s=SHEETS[key]; if(!s) return;
+      s.open(); openKey=key; scrim(true); setTabPressed(key);
+    }
+
+    /* ---------- Wire desktop toolbar ---------- */
+    $('ux-tour').addEventListener('click',function(){ click('btn-tour'); });
+    $('ux-dissect').addEventListener('click',function(){
+      // open the dissection dock as an on-demand drawer (desktop)
+      var d=$('dissect'); if(!d) return;
+      var show=!d.classList.contains('ux-show');
+      d.classList.toggle('ux-show',show);
+      if(show){ d.classList.remove('collapsed'); }
+      this.classList.toggle('on',show);
+    });
+    $('ux-forecast').addEventListener('click',function(){ click('btn-forecast'); });
+    $('ux-qbio').addEventListener('click',function(){ click('btn-qbio'); });
+
+    // reflect active states from underlying buttons onto toolbar
+    function syncToolbar(){
+      $('ux-tour').classList.toggle('on', isPressed('btn-tour'));
+      $('ux-forecast').classList.toggle('on', isPressed('btn-forecast'));
+      $('ux-qbio').classList.toggle('on', isPressed('btn-qbio'));
+    }
+    setInterval(syncToolbar, 600);
+
+    /* ---------- More menu ---------- */
+    var moreMenu=$('ux-more-menu');
+    $('ux-more').addEventListener('click',function(e){
+      e.stopPropagation();
+      var open=moreMenu.classList.toggle('open');
+      this.setAttribute('aria-expanded',String(open));
+    });
+    document.addEventListener('click',function(e){
+      if(moreMenu.classList.contains('open') && !$('ux-more-wrap').contains(e.target)){
+        moreMenu.classList.remove('open'); $('ux-more').setAttribute('aria-expanded','false');
+      }
+    });
+    function menuAct(id, underlying, opt){
+      var b=$(id); if(!b) return;
+      b.addEventListener('click',function(){
+        if(typeof underlying==='function'){ underlying(); }
+        else { click(underlying); }
+        if(!opt||!opt.keepOpen){ moreMenu.classList.remove('open'); $('ux-more').setAttribute('aria-expanded','false'); }
+      });
+    }
+    menuAct('ux-m-trust', function(){
+      // pop the trust card details open + scroll into view (desktop)
+      var det=document.querySelector('#honesty .ux-details'); if(det){ det.open=true; det.scrollIntoView({block:'nearest'}); }
+    });
+    menuAct('ux-m-atlas','btn-atlas');
+    menuAct('ux-m-vital','v9-tour-btn');
+    menuAct('ux-m-flow', function(){ click('v8-flow-fab'); });
+    menuAct('ux-m-gpd','btn-gpd');
+    menuAct('ux-m-text','btn-formulas');
+    menuAct('ux-m-rotate','btn-rotate',{keepOpen:true});
+    menuAct('ux-m-pulse','btn-pulse',{keepOpen:true});
+    menuAct('ux-m-labels','btn-labels',{keepOpen:true});
+    menuAct('ux-m-focus','btn-focus',{keepOpen:true});
+    menuAct('ux-m-reset','btn-reset');
+
+    /* ---------- Mobile tab-bar ---------- */
+    $('uxt-tour').addEventListener('click',function(){
+      // Guided tour: not a sheet — it narrates over the scene. Start/stop it.
+      closeAllSheets();
+      click('btn-tour');
+      var on=isPressed('btn-tour'); this.setAttribute('aria-pressed',String(on));
+    });
+    $('uxt-tools').addEventListener('click',function(){ toggleSheet('tools'); });
+    $('uxt-doctrine').addEventListener('click',function(){ toggleSheet('doctrine'); });
+    $('uxt-proof').addEventListener('click',function(){ toggleSheet('proof'); });
+    $('uxt-more').addEventListener('click',function(e){
+      e.stopPropagation();
+      // reuse the same More menu, anchored bottom on mobile via fixed positioning
+      var open=moreMenu.classList.toggle('open');
+      $('ux-more').setAttribute('aria-expanded',String(open));
+    });
+    $('ux-scrim').addEventListener('click',closeAllSheets);
+
+    // Esc closes any open mobile sheet
+    window.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(MOBILE) closeAllSheets(); moreMenu.classList.remove('open'); } });
+
+    // When app drawers (atlas/forecast/qbio/panel) open on mobile, show scrim + clear tab state
+    function watchDrawers(){
+      var anyOpen=['panel','atlas','forecast','qbio'].some(function(id){ var e=$(id); return e && e.classList.contains('open'); });
+      if(MOBILE){ scrim(anyOpen||!!openKey); }
+    }
+    setInterval(watchDrawers, 400);
+
+    // On mobile, the More menu should sit just above the tab-bar
+    function placeMoreMenu(){
+      if(MOBILE){ moreMenu.style.position='fixed'; moreMenu.style.right='10px'; moreMenu.style.left='auto'; moreMenu.style.bottom='72px'; }
+      else { moreMenu.style.position=''; moreMenu.style.right=''; moreMenu.style.left=''; moreMenu.style.bottom=''; }
+    }
+    window.addEventListener('resize',placeMoreMenu); placeMoreMenu();
+
+    // init after app.js has filled the honesty card
+    function init(){
+      buildTrust();
+      if($('honesty-card')) return true;
+      return false;
+    }
+    var tries=0; var iv=setInterval(function(){ if(init()||++tries>40){ clearInterval(iv); } }, 150);
+    // also try once DOM settled
+    setTimeout(buildTrust, 1200);
+  })();
+  </script>
 
   <!-- ZERO CDN: vendored Three.js r160 + local data + local app -->
   <script src="./lib/three.min.js"></script>
