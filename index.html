@@ -428,6 +428,69 @@
     background:rgba(255,126,182,.07);font-size:11px;line-height:1.55;color:var(--text)}
   .fc-disc b{color:var(--warn)}
 
+  /* --- v5 Quantum-Bio Layer panel (additive; mirrors atlas/forecast styling) --- */
+  #qbio{position:fixed;z-index:42;top:0;right:0;height:100%;width:min(540px,96vw);
+    background:linear-gradient(180deg,var(--surface-2),rgba(8,11,22,.98));backdrop-filter:blur(26px);
+    border-left:1px solid var(--border-strong);transform:translateX(102%);
+    transition:transform .46s cubic-bezier(.16,1,.3,1);overflow-y:auto;overscroll-behavior:contain;
+    box-shadow:-40px 0 100px rgba(0,0,0,.6);display:flex;flex-direction:column}
+  #qbio.open{transform:translateX(0)}
+  #qbio .qb-head{position:sticky;top:0;z-index:2;padding:22px 24px 14px;
+    background:linear-gradient(180deg,rgba(13,17,32,.99),rgba(13,17,32,.86));border-bottom:1px solid var(--border)}
+  #qbio .at-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:17px;cursor:pointer;line-height:1;z-index:3}
+  #qbio .at-close:hover{border-color:var(--border-strong)}
+  #qbio .qb-eyebrow{font-family:var(--font-m);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--nerve)}
+  #qbio .qb-title{font-size:23px;font-weight:700;line-height:1.05;margin-top:6px;letter-spacing:-.01em}
+  #qbio .qb-note{font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+  #qbio .qb-body{padding:18px 24px 110px;overflow-y:auto;flex:1}
+  .qb-card{background:rgba(6,9,18,.55);border:1px solid var(--border);border-radius:13px;padding:14px 15px;margin-bottom:15px}
+  .qb-card .qc-h{font-family:var(--font-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .qb-card .qc-h b{color:var(--text);font-size:13px;letter-spacing:0;text-transform:none;font-weight:700}
+  .qb-card .qc-row{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;line-height:1.7;color:var(--text-muted)}
+  .qb-card .qc-row b{color:var(--text);font-family:var(--font-m);font-size:11.5px}
+  .qb-card .qc-math{font-family:var(--font-m);font-size:11px;color:var(--nerve);background:rgba(0,0,0,.22);border-radius:7px;padding:6px 9px;margin:6px 0;line-height:1.5;word-break:break-word}
+  .qb-card .qc-plain{font-size:11px;line-height:1.55;color:var(--text-muted);margin-top:4px}
+  .qb-card svg{display:block;width:100%;height:auto;overflow:visible;margin-top:4px}
+  .qb-stat{font-family:var(--font-m);font-size:9px;letter-spacing:.05em;padding:2px 7px;border-radius:6px;border:1px solid currentColor;text-transform:uppercase}
+  .qb-stat.verified{color:var(--audit)}
+  .qb-stat.proposed{color:var(--brain)}
+  .qb-stat.narrative{color:var(--warn)}
+  .qb-sec-h{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin:22px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .qb-compass{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .qb-compass svg{width:128px;flex:0 0 auto;margin:0}
+  .qb-leader{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;font-size:11.5px;line-height:1.5;padding:7px 0;border-bottom:1px solid rgba(120,150,210,.1)}
+  .qb-leader .ql-name{color:var(--text);font-weight:600}
+  .qb-leader .ql-work{color:var(--text-muted)}
+  .qb-src{display:block;font-size:11px;color:var(--nerve);text-decoration:none;padding:5px 0;border-bottom:1px solid rgba(120,150,210,.1);word-break:break-word}
+  .qb-src:hover{color:var(--text)}
+  .qb-src .qs-tag{font-family:var(--font-m);font-size:8.5px;margin-left:6px}
+  .qb-thm{border-left:2px solid var(--audit);padding-left:11px;margin-bottom:11px}
+  .qb-thm .qt-id{font-family:var(--font-m);font-size:10px;color:var(--audit);font-weight:700}
+  .qb-thm .qt-lean{font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);line-height:1.5;margin-top:3px;word-break:break-word}
+  .qb-thm .qt-plain{font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:3px}
+  .qb-disc{border:1px solid var(--warn);border-radius:11px;padding:12px 14px;margin-top:8px;
+    background:rgba(255,126,182,.07);font-size:11px;line-height:1.55;color:var(--text)}
+  .qb-disc b{color:var(--warn)}
+  /* per-organ Λ-v5 mini block injected into the organ panel */
+  .qb-organ{border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin:14px 0;background:rgba(90,209,255,.05)}
+  .qb-organ .qo-h{font-family:var(--font-m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--nerve);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .qb-organ .qo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:11px;color:var(--text-muted)}
+  .qb-organ .qo-grid b{color:var(--text);font-family:var(--font-m)}
+  .qb-organ .qo-verdict{margin-top:9px;font-family:var(--font-m);font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;text-align:center}
+  .qb-organ .qo-verdict.exec{color:var(--audit);background:rgba(158,240,192,.1);border:1px solid rgba(158,240,192,.4)}
+  .qb-organ .qo-verdict.recharge{color:var(--warn);background:rgba(255,126,182,.08);border:1px solid rgba(255,126,182,.4)}
+  .qb-organ svg{margin-top:8px}
+  #btn-qbio.active{color:var(--nerve);border-color:rgba(90,209,255,.5);background:rgba(90,209,255,.09)}
+  @media (min-width:681px) and (max-width:1024px){ #qbio{width:min(460px,74vw)} }
+  @media (max-width:680px){
+    #qbio{top:auto;left:0;right:0;bottom:0;width:100%;height:auto;max-height:88vh;
+      border-left:none;border-top:1px solid var(--border-strong);border-radius:18px 18px 0 0;transform:translateY(102%)}
+    #qbio.open{transform:translateY(0)}
+    #qbio .qb-body{padding-bottom:40px}
+    #qbio .qb-head::before{content:"";display:block;width:40px;height:4px;border-radius:99px;background:var(--border-strong);margin:0 auto 10px}
+  }
+
   /* --- floating 3D organ leader-line labels --- */
   #labels{position:fixed;inset:0;z-index:15;pointer-events:none;overflow:hidden}
   .olabel{position:absolute;transform:translate(-50%,-50%);font-family:var(--font-m);font-size:10px;
@@ -933,6 +996,8 @@
     <button class="btn" id="btn-forecast" aria-expanded="false" aria-controls="forecast" title="Honest proof-maturity timeline + roadmap">⌁ forecast</button>
     <button class="btn" id="btn-tour" aria-pressed="false" title="Guided tour: fly organ-to-organ with narration (pausable)">▷ guided tour</button>
     <button class="btn active" id="btn-labels" aria-pressed="true" title="Toggle floating organ labels (leader lines)">⌗ labels</button>
+    <!-- v5 quantum-bio layer (additive · verified model mirroring a11oy /api/a11oy/v1/qbio) -->
+    <button class="btn" id="btn-qbio" aria-expanded="false" aria-controls="qbio" title="Quantum-Bio Layer (v5): coherence · bioenergetic charge · Λ-v5 closure floor · radical-pair compass">⌬ quantum-bio (v5)</button>
   </div>
 
   <!-- v5: floating 3D organ leader-line labels (positioned by app.js each frame) -->
@@ -1051,6 +1116,17 @@
       <div class="fc-note" id="forecast-note"></div>
     </div>
     <div class="fc-body" id="forecast-body"></div>
+  </aside>
+
+  <!-- ============ v5 QUANTUM-BIO LAYER panel (additive) ============ -->
+  <aside id="qbio" aria-hidden="true" aria-label="Quantum-Bio Layer (v5)">
+    <div class="qb-head">
+      <button class="at-close" id="qbio-close" aria-label="close quantum-bio layer">×</button>
+      <div class="qb-eyebrow">verified model · mirrors a11oy /api/a11oy/v1/qbio</div>
+      <div class="qb-title">Quantum-Bio Layer (v5)</div>
+      <div class="qb-note" id="qbio-note"></div>
+    </div>
+    <div class="qb-body" id="qbio-body"></div>
   </aside>
 
   <!-- Organ panel -->
