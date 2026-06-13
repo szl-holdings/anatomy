@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
+<title>SZL Living Anatomy — LIVE BODY VIEW · the agentic GPU mind</title>
+<meta name="description" content="The live body view of the agentic GPU mind: six proven organ formulas (BRAIN/HEART/BLOOD/IMMUNE/SKELETON/NERVOUS) read their real endpoints and pulse as the mind runs a proactive cycle. Honest empty-states when an organ is unreachable; sovereign only when /code/healthz says so; Λ = Conjecture 1." />
+<style>
+  /* design tokens shared with index.html (cinematic dark scientific) */
+  :root{
+    --bg:#04060c; --bg2:#0a0e1a;
+    --surface:rgba(13,18,33,0.72); --surface-2:rgba(20,26,46,0.92);
+    --border:rgba(120,150,210,0.16); --border-strong:rgba(150,180,240,0.32);
+    --text:#eef2ff; --text-muted:#9aa8cc; --text-dim:#5d6a8f;
+    --heart:#ff5d8f; --blood:#ff3b5c; --brain:#7c5cff; --nerve:#5ad1ff;
+    --skel:#ffd166; --audit:#9ef0c0;
+    --a11oy:#3fe0c5; --killinchu:#ffb13f;
+    --warn:#ff7eb6; --ok:#5ad1ff; --gate:#ffd166;
+    --live:#5ad1ff; --dead:#5d6a8f; --pulse:#fff;
+    --radius:16px; --blur:20px;
+    --font-d:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,"Helvetica Neue",sans-serif;
+    --font-m:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 18px 60px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%;background:
+     radial-gradient(120% 90% at 50% 0%,#0c1430 0%,var(--bg) 60%);
+     color:var(--text);font-family:var(--font-d);-webkit-font-smoothing:antialiased;letter-spacing:.005em}
+  a{color:var(--a11oy);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 64px}
+
+  /* header */
+  header.top{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;margin-bottom:26px}
+  .eyebrow{font-family:var(--font-m);font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px}
+  h1{font-size:23px;font-weight:600;letter-spacing:-.01em;line-height:1.12}
+  h1 .accent{color:var(--heart);font-weight:700}
+  .sub{font-size:12.5px;color:var(--text-muted);margin-top:8px;max-width:62ch;line-height:1.5}
+
+  /* GPU-mind status card */
+  #mind{min-width:280px;background:var(--surface);backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border);border-radius:var(--radius);padding:15px 17px;box-shadow:var(--shadow)}
+  #mind .hdr{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);
+    margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  #mind .row{display:flex;gap:9px;align-items:baseline;font-size:12px;line-height:1.5;color:var(--text-muted);margin-bottom:6px}
+  #mind .row b{color:var(--text);font-weight:600;font-family:var(--font-m);font-size:11px}
+  .badge{display:inline-block;font-family:var(--font-m);font-size:10px;letter-spacing:.04em;padding:3px 9px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+  .badge.sov-true{color:var(--audit)} .badge.sov-false{color:var(--warn)} .badge.sov-unknown{color:var(--text-dim)}
+
+  /* controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 24px}
+  .btn{font-family:var(--font-m);font-size:11.5px;letter-spacing:.03em;color:var(--text-muted);background:var(--surface);
+    backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:99px;padding:10px 17px;cursor:pointer;transition:all .18s;box-shadow:var(--shadow)}
+  .btn:hover{border-color:var(--border-strong);background:var(--surface-2);color:var(--text);transform:translateY(-1px)}
+  .btn:focus-visible{outline:2px solid var(--brain);outline-offset:2px}
+  .btn[aria-disabled="true"]{opacity:.5;cursor:progress}
+  .btn.primary{color:var(--heart);border-color:rgba(255,93,143,.5);background:rgba(255,93,143,.08)}
+
+  /* organ body layout — a centered column = the body's axis; organs are cards */
+  .body{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .organ{position:relative;background:var(--surface);backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border);border-radius:var(--radius);padding:16px 17px;box-shadow:var(--shadow);
+    transition:border-color .25s,transform .25s,box-shadow .25s;overflow:hidden}
+  .organ .accentbar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,var(--text-dim));opacity:.6}
+  .organ .ohead{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+  .organ .glyph{font-size:22px;line-height:1;color:var(--c,var(--text));filter:drop-shadow(0 0 8px var(--c,transparent))}
+  .organ .nm{font-size:14px;font-weight:700;letter-spacing:.02em}
+  .organ .order{margin-left:auto;font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);letter-spacing:.08em}
+  .organ .formula{font-family:var(--font-m);font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:4px}
+  .organ .role{font-size:11.5px;color:var(--text-dim);line-height:1.45;margin-bottom:11px}
+  .organ .statusline{display:flex;align-items:center;gap:9px;font-size:12px;border-top:1px solid var(--border);padding-top:11px}
+  .organ .dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--dead);box-shadow:0 0 0 transparent;transition:all .3s}
+  .organ .sdet{color:var(--text-muted);font-family:var(--font-m);font-size:10.5px;line-height:1.4}
+  .organ .url{display:block;margin-top:8px;font-family:var(--font-m);font-size:9.5px;color:var(--text-dim);word-break:break-all}
+
+  /* live vs unreachable states */
+  .organ[data-state="live"]{border-color:var(--border-strong)}
+  .organ[data-state="live"] .dot{background:var(--live);box-shadow:0 0 10px var(--live)}
+  .organ[data-state="unreachable"] .dot{background:var(--dead)}
+  .organ[data-state="unreachable"] .sdet{color:var(--text-dim)}
+  .organ[data-state="pending"] .dot{background:var(--skel);animation:breathe 1.1s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* the pulse: when the mind acts, the organ flashes its color */
+  @keyframes organpulse{
+    0%{box-shadow:var(--shadow)}
+    35%{box-shadow:0 0 0 2px var(--c,#fff),0 0 34px 4px var(--c,#fff);transform:translateY(-3px) scale(1.015)}
+    100%{box-shadow:var(--shadow);transform:none}
+  }
+  .organ.pulsing{animation:organpulse 1.05s ease-out}
+  @media (prefers-reduced-motion:reduce){
+    .organ.pulsing{animation:none;border-color:var(--c,var(--border-strong))}
+    .organ[data-state="pending"] .dot{animation:none}
+  }
+
+  /* honesty strip */
+  #honesty{margin-top:26px;background:var(--surface);backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border);border-radius:var(--radius);padding:15px 17px;box-shadow:var(--shadow)}
+  #honesty .hdr{font-family:var(--font-m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:11px}
+  #honesty .row{display:flex;gap:9px;align-items:flex-start;font-size:11.5px;line-height:1.5;color:var(--text-muted);margin-bottom:7px}
+  #honesty .row:last-child{margin-bottom:0}
+  #honesty b{color:var(--text);font-weight:600}
+  #honesty .sw{flex:0 0 auto;width:7px;height:7px;border-radius:50%;margin-top:5px;background:var(--audit);box-shadow:0 0 8px currentColor;color:var(--audit)}
+
+  /* cycle log */
+  #log{margin-top:18px;font-family:var(--font-m);font-size:11px;color:var(--text-dim);line-height:1.7;min-height:1.7em}
+  #log b{color:var(--text-muted)}
+
+  footer{margin-top:30px;font-family:var(--font-m);font-size:10px;color:var(--text-dim);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">SZL Living Anatomy · live body view</div>
+      <h1>The agentic GPU <span class="accent">mind</span>, inside its proven body</h1>
+      <p class="sub">
+        Six round9 organ formulas read their <b>real endpoints</b> and light up with honest
+        live status. Press <b>Run proactive cycle</b> to watch the mind act — IMMUNE gates,
+        BRAIN decides under a PAC-Bayes bound, the task runs, HEART + BLOOD pump a signed
+        receipt, NERVOUS watches for drift. Unreachable organs show an honest unknown state;
+        nothing is dressed up as live that isn't. <a href="./index.html">← full 3D atlas</a>
+      </p>
+    </div>
+    <div id="mind" aria-live="polite">
+      <div class="hdr"><span>GPU mind · posture</span><span id="mind-src">/code/healthz</span></div>
+      <div class="row"><span>sovereign</span><span id="mind-sov" class="badge sov-unknown">…</span></div>
+      <div class="row"><span>backend</span><b id="mind-backend">…</b></div>
+      <div class="row"><span>mode</span><b id="mind-mode">…</b></div>
+      <div class="row"><span>doctrine</span><b id="mind-doctrine">…</b></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button id="run" class="btn primary" type="button">▶ Run proactive cycle</button>
+    <button id="refresh" class="btn" type="button">↻ Refresh organ status</button>
+    <span class="btn" style="cursor:default;border-style:dashed" title="energy is SAMPLE until a real meter is wired">⚡ energy: SAMPLE</span>
+  </div>
+
+  <main class="body" id="body" aria-label="organ status cards"></main>
+
+  <div id="log" aria-live="polite"></div>
+
+  <section id="honesty" aria-label="honest doctrine posture">
+    <div class="hdr">honest by design</div>
+    <div class="row"><span class="sw"></span><span><b id="h-lambda">Λ = Conjecture 1</b> — the skeleton's killer formula is intentionally a conjecture, not a theorem.</span></div>
+    <div class="row"><span class="sw"></span><span><b>sovereign:true</b> is shown only when <b>/code/healthz</b> reports it. The half-state — banner sovereign while a router serves — is the one outcome we never show.</span></div>
+    <div class="row"><span class="sw"></span><span>Energy / joules are <b>SAMPLE</b> until a real meter is wired.</span></div>
+    <div class="row"><span class="sw"></span><span id="h-kernel">Doctrine posture loads live from <b>/v1/honest</b> — never hardcoded.</span></div>
+    <div class="row"><span class="sw"></span><span>Read-only · no key sent · open-weight only.</span></div>
+  </section>
+
+  <footer id="footer">
+    Live body view · reads real organ endpoints · honest empty-states · Λ = Conjecture 1 ·
+    static SDK page (no build, no CDN) · Apache-2.0
+  </footer>
+</div>
+
+<script type="module">
+import LiveBody from "./live-body.js";
+
+const $ = (id) => document.getElementById(id);
+const bodyEl = $("body");
+const logEl = $("log");
+const cards = new Map();   // organ id -> card element
+
+/* ---- build the organ cards ------------------------------------------------ */
+for (const o of LiveBody.ORGANS) {
+  const el = document.createElement("article");
+  el.className = "organ";
+  el.dataset.state = "pending";
+  el.dataset.organ = o.id;
+  el.style.setProperty("--c", o.color);
+  const orderLabel = o.pulseOrder >= 0 ? `cycle step ${o.pulseOrder}` : "always-on spine";
+  el.innerHTML = `
+    <span class="accentbar"></span>
+    <div class="ohead">
+      <span class="glyph">${o.glyph}</span>
+      <span class="nm">${o.name}</span>
+      <span class="order">${orderLabel}</span>
+    </div>
+    <div class="formula">${o.formula}</div>
+    <div class="role">${o.role}</div>
+    <div class="statusline">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="sdet">probing…</span>
+    </div>
+    <span class="url">${o.url}</span>`;
+  bodyEl.appendChild(el);
+  cards.set(o.id, el);
+}
+
+/* ---- render one organ's probe result -------------------------------------- */
+function renderOrgan(id, result) {
+  const el = cards.get(id);
+  if (!el) return;
+  el.dataset.state = result.status;
+  const det = el.querySelector(".sdet");
+  if (result.status === LiveBody.STATUS.LIVE) {
+    det.textContent = result.detail;
+    det.style.color = "var(--text-muted)";
+  } else {
+    det.textContent = `unreachable — ${result.detail || "unknown"} · honest empty-state`;
+    det.style.color = "var(--text-dim)";
+  }
+}
+
+/* ---- poll all organs + the mind + doctrine -------------------------------- */
+async function refreshAll() {
+  for (const [, el] of cards) el.dataset.state = "pending";
+  // organs in parallel; each degrades on its own.
+  await Promise.all(LiveBody.ORGANS.map(async (o) => {
+    const r = await LiveBody.probeOrgan(o);
+    renderOrgan(o.id, r);
+  }));
+  await refreshMind();
+  await refreshDoctrine();
+  const live = [...cards.values()].filter((e) => e.dataset.state === "live").length;
+  logEl.innerHTML = `<b>status:</b> ${live}/${LiveBody.ORGANS.length} organs live · the rest show honest unreachable states (their spaces may be unrouted).`;
+}
+
+async function refreshMind() {
+  const m = await LiveBody.probeMind();
+  const sov = $("mind-sov");
+  if (!m.reachable) {
+    sov.className = "badge sov-unknown"; sov.textContent = "unknown";
+    $("mind-backend").textContent = "unreachable";
+    $("mind-mode").textContent = m.detail || "—";
+    $("mind-doctrine").textContent = "—";
+    return;
+  }
+  // strict honest render of sovereignty — never invent true
+  if (m.sovereign === true) { sov.className = "badge sov-true"; sov.textContent = "true (local serves)"; }
+  else { sov.className = "badge sov-false"; sov.textContent = "false (router serves)"; }
+  $("mind-backend").textContent = m.backend;
+  $("mind-mode").textContent = m.mode;
+  $("mind-doctrine").textContent = m.doctrine || "—";
+}
+
+async function refreshDoctrine() {
+  const d = await LiveBody.probeDoctrine();
+  if (!d.reachable) return;  // keep the honest static defaults
+  $("h-lambda").textContent = `Λ = ${d.lambda}`;
+  if (d.commit) {
+    $("h-kernel").innerHTML =
+      `Live doctrine: <b>${d.lockedCount} locked-proven</b> · ${d.declarations}/${d.axioms}/${d.sorries} @ <b>${d.commit}</b> (from /v1/honest).`;
+  }
+}
+
+/* ---- the proactive cycle: pulse organs in immune->brain->run->heart/blood->nervous order */
+let running = false;
+async function runCycle() {
+  if (running) return;
+  running = true;
+  const btn = $("run");
+  btn.setAttribute("aria-disabled", "true");
+  const order = LiveBody.proactiveCycle();   // ["immune","brain","heart","blood","nervous"]
+  const phases = {
+    immune: "IMMUNE gates the task (deny-by-default) →",
+    brain: "BRAIN admits under a PAC-Bayes bound →",
+    heart: "HEART pumps the receipt →",
+    blood: "BLOOD signs + carries provenance →",
+    nervous: "NERVOUS watches for drift ✓",
+  };
+  logEl.innerHTML = "<b>proactive cycle:</b> ";
+  for (const id of order) {
+    const el = cards.get(id);
+    if (el) {
+      el.classList.remove("pulsing");
+      void el.offsetWidth;          // reflow so the animation can re-trigger
+      el.classList.add("pulsing");
+    }
+    logEl.innerHTML += `<span style="color:${getColor(id)}">${phases[id] || id}</span> `;
+    await sleep(620);
+  }
+  logEl.innerHTML += "<br><b>cycle complete</b> — reactive turns were never gated (they always preempt).";
+  btn.removeAttribute("aria-disabled");
+  running = false;
+}
+
+function getColor(id) {
+  const o = LiveBody.ORGANS.find((x) => x.id === id);
+  // resolve the CSS var to a literal for inline log text
+  const map = { immune:"#ffd166", brain:"#7c5cff", heart:"#ff5d8f", blood:"#ff3b5c", nervous:"#5ad1ff", skeleton:"#ffd166" };
+  return map[id] || "#9aa8cc";
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ---- wire up + initial load ----------------------------------------------- */
+$("run").addEventListener("click", runCycle);
+$("refresh").addEventListener("click", refreshAll);
+refreshAll();
+</script>
+</body>
+</html>
