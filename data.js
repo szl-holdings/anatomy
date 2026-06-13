@@ -695,6 +695,100 @@
     pushUniq(byKey['ruway'],  ['QB_BECKER']);             // write surface / bioelectric drive
   })();
 
+  /* =====================================================================
+     ============================  v6 AGENTIC-GPU ORGANS  ===============
+     ADDITIVE. 5 new organs grown from the agentic-GPU energy engine
+     (platform PRs #370 harvest, #371 budget, #372 security, #373 runner).
+     Honesty doctrine v11 LOCKED — same rules as all prior blocks:
+       • Locked-proven stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22}.
+       • Λ = Conjecture 1 (advisory, NEVER "proven trust").
+       • Khipu BFT = Conjecture 2 (only conditional proven, Wave23).
+       • Maturity labels (LOCKED/EXPERIMENTAL/CONDITIONAL/AXIOM_GATED/CONJECTURE)
+         NEVER inflated — every new formula is EXPERIMENTAL.
+       • Energy joules are SAMPLE values until on-box NVML is live.
+       • "Sovereign" only on own metal; resource-map tier for flare/space.
+       • No free-energy claims.
+     Quechua identity:
+       KALLPA (energy/power), WAQAYCHAQ (guardian/immune),
+       KAMAY (give-power / schedule), SAMAY (breath),
+       RIKUY (see/perceive) — each paired with plain-English FUNCTION.
+     ===================================================================== */
+
+  /* ---- 5 new EXPERIMENTAL formula cards for the agentic-GPU layer ---- */
+  FORMULAS.AG_LANDAUER = { id:'AG-LANDAUER', name:'Landauer Erasure Floor (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
+    latex:'E_erase >= k_B T ln 2   (per bit erased)',
+    plain:'[EXPERIMENTAL] Every irreversible bit-erasure costs at least k\u2082T\u00b7ln\u202f2 joules (Landauer 1961, Bennett 1982). Sets the MINIMUM energy budget per compute step; actual GPU joules are far above this floor. HONEST: joules here are SAMPLE values \u2014 on-box NVML is not yet wired to this viewer; real-time measurement is platform roadmap. Backs the METABOLISM organ energy-harvest narrative. NOT a locked theorem \u2014 additive EXPERIMENTAL only.',
+    axioms:'physics postulate \u2014 not a Lean theorem; Landauer 1961 Phys.Rev. 183 p.183; Bennett 1982 Int.J.Theor.Phys. 21 p.905',
+    ref:'platform #370 harvest endpoint \u00b7 a11oy.net/api/a11oy/v1/harvest/metrics' };
+
+  FORMULAS.AG_HARVEST = { id:'AG-HARVEST', name:'Harvest Budget Constraint (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
+    latex:'W_batch <= harvest_budget(t)   (wasted-energy bounded batch)',
+    plain:'[EXPERIMENTAL] Batch work admitted is bounded by the available wasted-energy harvest budget at time t (grid curtailment, wind surplus, flare gas, etc.). An engineering inequality \u2014 not a Lean theorem. Backs the METABOLISM and RESPIRATORY organs. HONEST: budget is a platform engineering signal, not a proved energy-conservation law. Platform PR #371.',
+    axioms:'engineering constraint \u2014 not a Lean theorem; platform #371 harvest_budget.py',
+    ref:'platform #371 \u00b7 harvest_budget.py \u00b7 a11oy.net/api/a11oy/v1/harvest/metrics' };
+
+  FORMULAS.AG_EGRESS = { id:'AG-EGRESS', name:'Anti-SSRF Egress Allowlist + Consent Gate (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
+    latex:'egress(url) => url in allowlist  &&  consent_given   (deny-by-default)',
+    plain:'[EXPERIMENTAL] Outbound requests are allowed ONLY if the destination URL is on the static egress allowlist AND explicit swarm-node consent was given. Any call failing either check is rejected at the boundary. Deny-by-default \u2014 the immune layer. Backed by CF-5 (Neyman\u2013Pearson immune gate, EXPERIMENTAL) and L2 (Deny-by-Default Uniqueness, EXPERIMENTAL). Platform PR #372.',
+    axioms:'engineering allowlist policy \u2014 not a Lean theorem; pairs with CF5 Neyman\u2013Pearson (EXPERIMENTAL) and L2 deny-by-default (EXPERIMENTAL)',
+    ref:'platform #372 security \u00b7 CHAPAQ egress inspector \u00b7 szl-sentra repo' };
+
+  FORMULAS.AG_POSTURE = { id:'AG-POSTURE', name:'Energy-Posture Scheduler Signal (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
+    latex:'posture in {negative-price, curtailed, cheap, normal}   =>   batch_admit_gate',
+    plain:'[EXPERIMENTAL] The energy posture \u2014 derived from real-time price/curtailment signals \u2014 is the "hormone" that opens or closes the proactive-batch admission gate. Reactive requests NEVER starve regardless of posture. HONEST: this is a policy signal derived from grid data, not a measured physical quantity. Platform PR #373 runner.',
+    axioms:'engineering policy signal \u2014 not a Lean theorem; ties to aWattar price feed and Energy-Charts curtailment data',
+    ref:'platform #373 runner \u00b7 aWattar API \u00b7 Energy-Charts API \u00b7 szl-platform repo' };
+
+  FORMULAS.AG_OUROBOROS = { id:'AG-OUROBOROS', name:'Ouroboros Soak-Loop Bound (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
+    latex:'soak_cycles <= ouroboros_bound   (no hyperventilation)',
+    plain:'[EXPERIMENTAL] The soak loop (inhale wasted energy \u2192 exhale back to reactive) is bounded by the Ouroboros loop-depth limit \u2014 it cannot hyperventilate (admit unbounded batch). Backs the RESPIRATORY organ. Platform PR #371 harvest_budget + Ouroboros depth bound in szl-platform. HONEST: engineering loop-depth cap, not a proved convergence theorem.',
+    axioms:'engineering loop-depth cap \u2014 not a Lean theorem; pairs with F19 Bekenstein additive scaffolding (LOCKED) as the conceptual budget envelope',
+    ref:'platform #371 \u00b7 Ouroboros loop-bound \u00b7 szl-platform repo' };
+
+  /* ---- 5 new AGENTIC-GPU ORGANS (ADDITIVE to ORGANS array) ---- */
+  ORGANS.push(
+    /* METABOLISM — KALLPA (energy/power): wasted-energy harvest engine */
+    { key:'kallpa', system:'metabolism', quechua:'KALLPA', fn:'wasted-energy harvest (grid/wind/tidal/flare/space feeds)',
+      pos:[0.55,-0.35,0.22], scale:0.22, color:'#f5a623',
+      blurb:'Converts wasted external energy into compute work. Ingests live harvest metrics (grid curtailment, wind surplus, tidal, flare gas, space feeds) from a11oy.net/api/a11oy/v1/harvest/metrics. Ties to F19 Bekenstein additive scaffolding (LOCKED \u2014 monotone entropy budget) and the AG-LANDAUER Landauer floor (EXPERIMENTAL). HONEST: joules here are SAMPLE values \u2014 on-box NVML is not yet wired to this anatomy viewer; real-time energy measurement is a platform roadmap item. Sovereign only on own metal; resource-map tier for flare/space (map, not capture). Platform PR #370.',
+      formulas:['F19','AG_LANDAUER','AG_HARVEST'],
+      energy_note:true },
+
+    /* IMMUNE SYSTEM — WAQAYCHAQ (guardian): egress allowlist + consent-only swarm gate */
+    { key:'waqaychaq', system:'immune', quechua:'WAQAYCHAQ', fn:'deny-by-default egress guard + consent-only swarm gate',
+      pos:[-0.55,-0.35,0.22], scale:0.22, color:'#7ed321',
+      blurb:'Rejects un-allowlisted egress and un-consented swarm nodes. Three layers: (1) anti-SSRF static egress allowlist \u2014 un-allowlisted outbound URL = instant reject; (2) secret-leak guard \u2014 scans outbound payloads for credential patterns; (3) consent-only swarm gate \u2014 a new mesh node must obtain explicit consent before admission. Deny-by-default (L2 EXPERIMENTAL). Backed by CF-5 Neyman\u2013Pearson immune gate (EXPERIMENTAL) \u2014 the most powerful fixed-false-alarm-rate test. Platform PR #372.',
+      formulas:['CF5','L2','AG_EGRESS'] },
+
+    /* ENDOCRINE — KAMAY (give-power / command): energy-posture hormonal scheduler */
+    { key:'kamay', system:'endocrine', quechua:'KAMAY', fn:'energy-posture scheduler \u2014 hormone gates proactive batch admission',
+      pos:[0,-0.75,0.26], scale:0.19, color:'#bd10e0',
+      blurb:'The energy posture (negative-price / curtailed / cheap / normal) is the \"hormone\" that gates proactive batch admission. When posture = negative-price or curtailed, the KAMAY hormone opens wide for batch work; when normal, it narrows. Reactive requests NEVER starve regardless of posture. HONEST: this is a policy signal derived from real-time grid-price and curtailment data \u2014 not a measured joule, not a proved theorem. Ties to the preemptive scheduler (platform PR #373) and the AG-POSTURE engineering signal.',
+      formulas:['AG_POSTURE','AG_HARVEST'] },
+
+    /* RESPIRATORY — SAMAY (breath): soak-loop breath with wasted-energy windows */
+    { key:'samay', system:'respiratory', quechua:'SAMAY', fn:'soak-loop breath \u2014 inhale on wasted_energy=1, exhale to reactive-only',
+      pos:[0,-0.50,0.30], scale:0.20, color:'#4a90e2',
+      blurb:'The soak loop \u201cbreathe\u201d with wasted-energy windows: INHALE (admit Bekenstein-bounded batch) when wasted_energy=1 (curtailed/negative-price); EXHALE (drain to reactive-only) otherwise. Ouroboros-bounded \u2014 the loop cannot hyperventilate (no unbounded batch). Ties to F19 Bekenstein additive scaffolding (LOCKED) as the conceptual entropy-budget envelope, harvest_budget (AG-HARVEST EXPERIMENTAL), and Ouroboros loop-depth cap (AG-OUROBOROS EXPERIMENTAL). Platform PRs #370, #371.',
+      formulas:['F19','AG_HARVEST','AG_OUROBOROS'],
+      samay_note:true },
+
+    /* SENSES / EYES — RIKUY (see/perceive): global external feed perception */
+    { key:'rikuy', system:'senses', quechua:'RIKUY', fn:'global feed perception \u2014 price/renewable/frequency/flare/solar/wind',
+      pos:[0,1.75,0.30], scale:0.18, color:'#50e3c2',
+      blurb:'The body\u2019s perception of wasted energy in the world. Five feed families: (1) aWattar \u2014 day-ahead hourly electricity prices (negative-price detection); (2) Energy-Charts \u2014 renewable fraction + grid frequency (curtailment detection); (3) NASA VIIRS \u2014 flared-gas satellite (resource-map, not capture \u2014 HONEST: identifying stranded-gas locations, no physical capture from orbit); (4) NOAA L1 \u2014 solar-wind data (space-weather context); (5) Open-Meteo \u2014 wind/tidal forecast (renewable intermittency). Tier: resource-map for flare/space (map, not capture); feed-signal for the others. Backs the KAMAY hormone and SAMAY breath timing. HONEST: raw data feeds, not a proved formula.',
+      formulas:['AG_POSTURE','AG_HARVEST'] }
+  );
+
+  /* ---- 5 new AGENTIC-GPU SYSTEMS entries (ADDITIVE to SYSTEMS array) ---- */
+  SYSTEMS.push(
+    { key:'metabolism', name:'METABOLISM',    organ:'KALLPA',     fn:'wasted-energy harvest \u00b7 F19 Bekenstein (LOCKED) + Landauer floor (EXPERIMENTAL) \u00b7 joules SAMPLE until on-box NVML', color:'#f5a623' },
+    { key:'immune',     name:'IMMUNE',        organ:'WAQAYCHAQ',  fn:'deny-by-default egress allowlist + secret-leak guard + consent-only swarm gate \u00b7 Neyman\u2013Pearson (EXPERIMENTAL)', color:'#7ed321' },
+    { key:'endocrine',  name:'ENDOCRINE',     organ:'KAMAY',      fn:'energy-posture hormonal scheduler \u00b7 policy signal, not a measured joule \u00b7 platform PR #373', color:'#bd10e0' },
+    { key:'respiratory',name:'RESPIRATORY',   organ:'SAMAY',      fn:'soak-loop breath \u00b7 inhale on wasted_energy=1, exhale to reactive-only \u00b7 Ouroboros-bounded (EXPERIMENTAL)', color:'#4a90e2' },
+    { key:'senses',     name:'SENSES / EYES', organ:'RIKUY',      fn:'global feed perception \u00b7 aWattar price \u00b7 Energy-Charts \u00b7 NASA VIIRS flare (resource-map) \u00b7 NOAA solar-wind \u00b7 Open-Meteo', color:'#50e3c2' }
+  );
+
   root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS, PUTNAM_2025,
                        QBIO, QBIO_LEADERS, QBIO_SOURCES, QBIO_THEOREMS };
 })(window);
