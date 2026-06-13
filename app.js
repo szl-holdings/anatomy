@@ -234,6 +234,12 @@
             case 'nerve': geo=new THREE.OctahedronGeometry(o.scale,1); break;
             case 'skeleton': geo=new THREE.DodecahedronGeometry(o.scale,0); break;
             case 'audit': geo=new THREE.IcosahedronGeometry(o.scale,0); break;
+            // v6 agentic-GPU organs — distinct geometry per system for visual identity
+            case 'metabolism':  geo=new THREE.TorusKnotGeometry(o.scale*0.72,o.scale*0.22,64,8); break;  // KALLPA: harvest coil
+            case 'immune':      geo=new THREE.IcosahedronGeometry(o.scale,2); break;                      // WAQAYCHAQ: high-res polyhedron = many-face shield
+            case 'endocrine':   geo=new THREE.OctahedronGeometry(o.scale,0); break;                       // KAMAY: 8-face hormone signal node
+            case 'respiratory': geo=new THREE.TorusGeometry(o.scale*0.9,o.scale*0.28,14,32); break;       // SAMAY: breathing ring (torus)
+            case 'senses':      geo=new THREE.DodecahedronGeometry(o.scale,1); break;                     // RIKUY: multi-facet eye / receiver
             default: geo=new THREE.SphereGeometry(o.scale,18,16);
           }
           const mesh=new THREE.Mesh(geo,glowMat(sysColor,0.92)); grp.add(mesh);
@@ -301,6 +307,20 @@
     addVessel({...amaruA,quechua:'YACHAY (a11oy)'},{...organByKey('yuyay'),shared:true,quechua:'YUYAY (\u039b heart)'},aS,0,'#5ad1ff','P3','shared nerve','span lineage \u2014 one nervous mesh through the \u039b heart',1.1);
     addVessel({...organByKey('yuyay'),shared:true,quechua:'YUYAY (\u039b heart)'},{...amaruA,quechua:'YACHAY (killinchu)'},0,kS,'#5ad1ff','P3','shared nerve','span lineage \u2014 \u039b heart \u2192 killinchu cortex',1.1);
     addVessel({...organByKey('overwatch'),quechua:'R0513 (a11oy)'},{...organByKey('overwatch'),quechua:'R0513 (killinchu)'},aS,kS,'#9ef0c0','B2','consensus mesh','n\u22653f+1 Khipu BFT quorum \u2014 cross-body Semantic Quorum (Wave23 conditional safety)',2.0);
+    // v6 agentic-GPU organ vessels (shared — the 5 agentic organs are body-level infrastructure)
+    const kallpa=organByKey('kallpa'), waqaychaq=organByKey('waqaychaq'),
+          kamay=organByKey('kamay'), samay=organByKey('samay'), rikuy=organByKey('rikuy');
+    // SENSES (RIKUY) → ENDOCRINE (KAMAY): perceived feed signals modulate the hormone posture
+    if(rikuy&&kamay) addVessel({...rikuy,quechua:'RIKUY'},{...kamay,quechua:'KAMAY'},0,0,'#50e3c2','AG_POSTURE','sense→hormone','RIKUY feed signals \u2192 KAMAY posture hormone',0.4);
+    // ENDOCRINE (KAMAY) → RESPIRATORY (SAMAY): hormone gates the soak breath
+    if(kamay&&samay) addVessel({...kamay,quechua:'KAMAY'},{...samay,quechua:'SAMAY'},0,0,'#bd10e0','AG_POSTURE','hormone→breath','KAMAY posture \u2192 SAMAY inhale/exhale gate',0.3);
+    // RESPIRATORY (SAMAY) → METABOLISM (KALLPA): breath window opens the harvest
+    if(samay&&kallpa) addVessel({...samay,quechua:'SAMAY'},{...kallpa,quechua:'KALLPA'},0,0,'#4a90e2','AG_HARVEST','breath→harvest','SAMAY inhale window \u2192 KALLPA batch harvest',0.35);
+    // METABOLISM (KALLPA) → YAWAR (receipt bus): harvested work receipted on the append-only bus
+    if(kallpa&&yawarA) addVessel({...kallpa,quechua:'KALLPA'},{...yawarA,quechua:'YAWAR'},0,aS,'#f5a623','F19','harvest receipt','KALLPA harvest work \u2192 YAWAR append-only receipt',0.45);
+    // IMMUNE (WAQAYCHAQ) → CHAPAQ egress (sentra): immune layer fronts the egress inspector
+    const sentraA=organByKey('sentra');
+    if(waqaychaq&&sentraA) addVessel({...waqaychaq,quechua:'WAQAYCHAQ'},{...sentraA,quechua:'CHAPAQ'},0,aS,'#7ed321','AG_EGRESS','immune→egress','WAQAYCHAQ deny-by-default \u2192 CHAPAQ egress (EXPERIMENTAL)',0.4);
   }
 
   /* ---------------- PULSES (receipt-flow along vessels) ------------- */
@@ -404,6 +424,15 @@
       html += `<div class="lambda-honesty"><div class="lh-h">\u039b honesty label</div>
         <p><b>\u039b is Conjecture 1</b>, not a theorem. Unconditional uniqueness under the original A1\u2013A5 axioms is <span class="false">machine-checked FALSE</span> (in-tree counterexample <code>Round13.maxAgg_ne_Lambda</code> satisfies A1\u2013A5 yet is not \u039b). The beating heart aggregates trust by <b>geometric mean</b> across the 13 axes \u2014 conjunctive, never a weighted average. Trust is never 100%.</p>
         <p style="margin-top:8px"><b style="color:var(--audit)">CUT-2 (axiom-free, kernel-clean).</b> <code>lambda_unique_of_separable</code> \u2014 if \u03a6 is separable (slice-multiplicative) and per-axis monotone under A1,A2,A3,A5 then \u03a6 = \u039b. No new axiom. This gets \u039b <b>off bare conjecture</b> (conditionally); the UNCONDITIONAL claim stays Conjecture 1.</p></div>`;
+    }
+    // v6 agentic-GPU honesty notes
+    if(o.energy_note){
+      html += `<div class="lambda-honesty" style="border-color:#f5a623;background:rgba(245,166,35,.07)"><div class="lh-h" style="color:#f5a623">energy honesty</div>
+        <p>Joules shown are <b>SAMPLE values</b> \u2014 on-box NVML is not yet wired to this anatomy viewer. Real-time energy measurement is a platform roadmap item. The Landauer floor (k\u2082T\u00b7ln\u202f2 per bit, EXPERIMENTAL) is the theoretical minimum; actual GPU energy is orders of magnitude higher. F19 Bekenstein additive scaffolding (LOCKED) is the monotone entropy-budget envelope \u2014 NOT the full Bekenstein bound S \u2264 2\u03c0kRE/(\u0127c). Sovereign harvest only on own metal; resource-map tier for flare/space (identifying stranded-gas locations, no physical capture from orbit).</p></div>`;
+    }
+    if(o.samay_note){
+      html += `<div class="lambda-honesty" style="border-color:#4a90e2;background:rgba(74,144,226,.07)"><div class="lh-h" style="color:#4a90e2">soak-loop honesty</div>
+        <p>The INHALE/EXHALE animation is a <b>visual metaphor</b> for the harvest soak cycle \u2014 not a measured joule readout. The Ouroboros loop-depth cap (AG-OUROBOROS, EXPERIMENTAL) is an engineering depth limit, not a proved convergence theorem. F19 Bekenstein additive scaffolding (LOCKED) provides the conceptual entropy-budget envelope; the actual budget signal comes from the harvest endpoint (AG-HARVEST, EXPERIMENTAL).</p></div>`;
     }
     html += `<div class="sec-h">Formulas instilled in this organ</div>`;
     (o.formulas||[]).forEach(fid=>{ html += formulaCard(fid); });
@@ -586,7 +615,19 @@
     organMeshes.forEach((om,i)=>{
       if(!om.organ.beat){ om.grp.rotation.y += dt*0.3; om.grp.rotation.x = Math.sin(t*0.5+i)*0.05;
         if(om.grp.userData.glow && om!==hoverOM && !panel.classList.contains('open')){
-          om.grp.userData.glow.material.opacity = om.glowBase*(0.85+0.15*Math.sin(t*1.3+i));
+          // v6 agentic-GPU: METABOLISM (KALLPA) and RESPIRATORY (SAMAY) pulse at higher
+          // frequency to indicate wasted-energy-active state. This is a VISUAL metaphor
+          // for the harvest/soak cycle — not a real-time NVML readout (joules = SAMPLE).
+          var sys6=om.organ.system;
+          if(sys6==='metabolism'){
+            // faster inhale/exhale pulse: brighter + faster than idle glow
+            om.grp.userData.glow.material.opacity = om.glowBase*(1.05+0.55*Math.sin(t*2.8+i));
+          } else if(sys6==='respiratory'){
+            // breathing ring: slow deep breath (soak inhale/exhale rhythm)
+            om.grp.userData.glow.material.opacity = om.glowBase*(0.80+0.60*Math.abs(Math.sin(t*0.9+i)));
+          } else {
+            om.grp.userData.glow.material.opacity = om.glowBase*(0.85+0.15*Math.sin(t*1.3+i));
+          }
         }
       }
     });
