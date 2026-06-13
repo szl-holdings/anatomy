@@ -87,6 +87,49 @@ see [szl-uds-deployment](https://github.com/szl-holdings/szl-uds-deployment).
 > Stack (USPTO Serial 99831122); SZL Holdings is not affiliated with Defense Unicorns. No
 > production ATO is claimed.
 
+## Live body view — `live-body.html`
+
+A new, **additive** page (`live-body.html` + `live-body.js`, linked from the
+title bar of the 3D atlas) turns the anatomy into the **LIVE BODY VIEW of the
+agentic GPU mind**. It is a standalone static page — same vendored-free,
+no-build, no-CDN posture as `index.html` — reachable directly at
+`…static.hf.space/live-body.html`. It does **not** modify the 3D engine (`app.js`,
+`data.js`), so there are no breaking changes.
+
+Each of the six organs reads its **real endpoint** and lights up with its honest
+live status; press **Run proactive cycle** to watch the GPU mind act
+(IMMUNE → BRAIN → run → HEART/BLOOD → NERVOUS), pulsing each organ in turn:
+
+| Organ | Proven formula (round9) | Live endpoint read |
+|---|---|---|
+| BRAIN | BrainBeliefUpdate (PAC-Bayes McAllester) | amaru `/api/amaru/v1/formulas` |
+| HEART | HeartReceiptSigma (σ-algebra receipt bus) | amaru `/api/amaru/receipts` |
+| BLOOD | BloodDSSEMerkle (Cardano-anchored DSSE) | sentra `/api/sentra/khipu/ledger` |
+| IMMUNE | ImmuneNeymanPearson (deny-by-default gates) | sentra `/api/sentra/v1/gates` |
+| SKELETON | SkeletonLambdaSpine (Lean kernel; Λ=Conj 1) | amaru `/api/amaru/v1/math/lean/theorems` |
+| NERVOUS | NervousShannonAlarm (Λ-signed OTEL drift) | amaru `/api/amaru/overwatch/snapshot` |
+
+The **GPU-mind posture** card reads a11oy `/api/a11oy/code/healthz`
+(`sovereign` / `backend` / `mode`); the honesty strip reads the doctrine lock
+live from a11oy `/api/a11oy/v1/honest`.
+
+**Honest by design (doctrine v11/v12):**
+- `sovereign:true` is shown **only** when `/code/healthz` reports the literal
+  `true` — never synthesized from a truthy value. If the mind is unreachable the
+  card shows `sovereign: false`. The half-state (banner sovereign while a router
+  serves) is the one outcome the view will never render.
+- Energy / joules are labeled **SAMPLE** until a real meter is wired.
+- **Λ is shown as Conjecture 1** (the skeleton's killer formula is intentionally
+  a conjecture), pulled live, never hardcoded as proven.
+- An unreachable endpoint degrades to an honest `unreachable — … · honest
+  empty-state`; no green light is ever fabricated for an organ that did not
+  answer. (Today amaru/sentra spaces may be unrouted → those organs honestly
+  read unreachable; a11oy + the mind posture read live.)
+- Read-only, sends no key, open-weight only.
+
+See `SCREENSHOT_NOTES.md` for the body layout and what a reviewer should see in a
+deploy preview.
+
 ## Verify it yourself
 
 The organism is a map, not the source of truth — every claim it draws is checkable against the
