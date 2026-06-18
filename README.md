@@ -130,6 +130,34 @@ live from a11oy `/api/a11oy/v1/honest`.
 See `SCREENSHOT_NOTES.md` for the body layout and what a reviewer should see in a
 deploy preview.
 
+## Run, test, rollback (operability)
+
+This Space is `sdk: static` — no backend, no build step. To run and test locally:
+
+```bash
+# run: serve the bundle from the repo root with any static server
+python3 -m http.server 8000          # then open http://localhost:8000/index.html
+
+# test: the headless QA harness (Playwright/Chromium) renders all three
+# viewports, asserts 0 console errors, exercises the v4 dissection dock + the
+# v6 yarqa CFD layer, and confirms yarqa is NEVER counted in the locked-8.
+npm i -D playwright && npx playwright install chromium
+node qa_yarqa.js
+```
+
+**Health:** the page is "healthy" when `index.html` renders the 3D atlas with zero
+console errors at all three viewports (the QA assertion). The live-lens panels poll
+a11oy read-only and **degrade to a labeled `offline · static snapshot`** when an
+endpoint is unreachable — an offline endpoint is an expected state, not an outage.
+
+**Rollback (one step):** every deploy is a git commit; to revert the live Space to a
+known-good state, redeploy the previous tag/commit — `git revert <bad-sha>` (or reset
+the HF Space mirror to the prior commit). Because the bundle is fully static and
+self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just
+"serve the older files" — there is no migration or state to unwind.
+
+**Service ownership:** see `.github/CODEOWNERS`.
+
 ## Verify it yourself
 
 The organism is a map, not the source of truth — every claim it draws is checkable against the
