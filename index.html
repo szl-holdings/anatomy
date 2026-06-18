@@ -2,6 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<!-- SAFE-NOW hardening (R2). This Space is sdk:static on HF; HF's static serving
+     only honors COOP/COEP/CORP via README custom_headers and does NOT pass through
+     arbitrary response headers (no _headers file, no CSP/HSTS/Referrer at the edge).
+     So we set what the browser actually honors from a <meta http-equiv>: an enforced,
+     non-breaking CSP + nosniff + Referrer-Policy. HSTS and CSP frame-ancestors are
+     intentionally NOT set here because browsers IGNORE them in <meta> — putting them
+     here would be security theater (doctrine v11: never fabricate). Embed protection
+     instead relies on HF's edge COOP and the README disable_embedding posture.
+     The CSP keeps 'unsafe-inline' for script/style: the 3D atlas ships heavy inline
+     JS + inline styles + WebGL canvas, so a strict nonce CSP would white-screen it.
+     What this still buys: locks resource ORIGINS (no rogue external script/CDN/img),
+     object-src 'none', base-uri 'self', and an explicit connect-src allow-list. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://szlholdings-a11oy.hf.space https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space https://szlholdings-sentra.hf.space; object-src 'none'; base-uri 'self'; form-action 'self'" />
+<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
 <title>SZL Agent Body v4 (deepen) — Living Anatomy · Formula Atlas + honest forecast</title>
 <meta name="description" content="The SZL Agent Body v4 — a genuine anatomical organism. Two bodies (a11oy + killinchu) sharing one circulatory (YAWAR receipt bus) + nervous (span lineage) mesh, with proven formulas flowing through the organs and the Λ heart beating at the center." />

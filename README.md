@@ -7,6 +7,9 @@ sdk: static
 app_file: index.html
 pinned: false
 license: apache-2.0
+custom_headers:
+  cross-origin-opener-policy: same-origin-allow-popups
+  cross-origin-resource-policy: cross-origin
 ---
 
 # SZL Living Anatomy 🫀
@@ -157,6 +160,48 @@ self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just
 "serve the older files" — there is no migration or state to unwind.
 
 **Service ownership:** see `.github/CODEOWNERS`.
+
+## Security headers (SAFE-NOW hardening, R2)
+
+This Space is `sdk: static`. Hugging Face's static serving **only** honors
+`cross-origin-opener-policy` / `cross-origin-embedder-policy` /
+`cross-origin-resource-policy` via the README `custom_headers` block — it does
+**not** pass through arbitrary response headers (there is no `_headers` file and
+no edge CSP/HSTS/Referrer-Policy). So hardening is split across the two levers
+that actually take effect, and nothing is set that the browser would silently
+ignore (doctrine v11: never fabricate):
+
+- **README `custom_headers`** (real response headers at the HF edge):
+  - `cross-origin-opener-policy: same-origin-allow-popups`
+  - `cross-origin-resource-policy: cross-origin` (keeps the page loadable inside
+    the legitimate `huggingface.co` / `*.hf.space` embed iframe).
+  - COEP `require-corp` is **intentionally not set** — it would block the page's
+    read-only cross-origin fetches to a11oy/amaru/sentra and buys nothing here
+    (no `SharedArrayBuffer`/wasm).
+- **`<meta http-equiv>` in `index.html` + `live-body.html`** (what the browser
+  honors from markup):
+  - **Content-Security-Policy** (enforced, non-breaking): `default-src 'self'`;
+    `object-src 'none'`; `base-uri 'self'`; an explicit `connect-src` allow-list
+    (self + the four SZL `*.hf.space` origins it reads); `img-src 'self' data:
+    blob:`. `script-src`/`style-src` keep `'unsafe-inline'` **on purpose** — the
+    3D atlas ships heavy inline JS, inline styles, and a WebGL canvas, so a strict
+    nonce/hash CSP would white-screen it. The win is origin-locking: no rogue
+    external script, CDN, or pixel can load.
+  - **X-Content-Type-Options: nosniff** and **Referrer-Policy:
+    strict-origin-when-cross-origin**.
+
+**Why no HSTS / `frame-ancestors` / Report-Only here:** browsers ignore HSTS,
+CSP `frame-ancestors`, and `Content-Security-Policy-Report-Only` when delivered
+via `<meta>`, and the HF static edge won't emit them as real headers — so setting
+them in-repo would be security theater. HF already terminates TLS and redirects to
+HTTPS at the edge. **Embedding is deliberately left enabled** (no
+`X-Frame-Options: DENY`, no `disable_embedding`) so the Space keeps working inside
+the `huggingface.co` / `*.hf.space` iframe.
+
+**CORS:** this Space owns no server endpoints (it is pure static) — there is no
+`*` ACAO to tighten on our side. Its only network activity is **outbound,
+read-only** `fetch(..., { mode:'cors', credentials:'omit' })` GETs to the SZL
+product Spaces; no key, no cookie, no credentials are ever sent.
 
 ## Verify it yourself
 

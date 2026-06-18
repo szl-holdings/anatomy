@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<!-- SAFE-NOW hardening (R2) — see index.html for the full rationale. HF static
+     serving only honors COOP/COEP/CORP via README custom_headers, so we set the
+     browser-honored subset from <meta>: enforced non-breaking CSP + nosniff +
+     Referrer-Policy. HSTS / frame-ancestors are intentionally omitted (browsers
+     ignore them in <meta>; setting them would be fabrication). 'unsafe-inline' is
+     required: this page ships an inline <script type="module"> + inline styles. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://szlholdings-a11oy.hf.space https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space https://szlholdings-sentra.hf.space; object-src 'none'; base-uri 'self'; form-action 'self'" />
+<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
 <title>SZL Living Anatomy — LIVE BODY VIEW · the agentic GPU mind</title>
 <meta name="description" content="The live body view of the agentic GPU mind: six proven organ formulas (BRAIN/HEART/BLOOD/IMMUNE/SKELETON/NERVOUS) read their real endpoints and pulse as the mind runs a proactive cycle. Honest empty-states when an organ is unreachable; sovereign only when /code/healthz says so; Λ = Conjecture 1." />
