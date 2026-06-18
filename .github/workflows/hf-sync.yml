@@ -1,0 +1,93 @@
+# Copyright 2026 SZL Holdings — SPDX-License-Identifier: Apache-2.0
+name: Sync to HuggingFace Space
+
+# Mirrors this repo's served static front-door files to the live Hugging Face
+# Space (SZLHOLDINGS/anatomy) on every push to main, so the Space never drifts
+# behind GitHub. It uses huggingface_hub.create_commit (git-free, no LFS, no
+# orphan-mirror) — the same drift-safe path proven on a11oy/killinchu, which
+# avoids the dangling-LFS / pre-receive / missing-front-matter failures that
+# broke earlier git-push mirrors.
+#
+# It mirrors ONLY the repo's own tracked front-door files (index.html, the JS/CSS,
+# lib/**, README.md). It deliberately NEVER touches the Space-only Dockerfile
+# (the HF Space wraps these static files in its own container and that file does
+# not exist in this repo) nor the Space's .github/ — clobbering either would break
+# the Space build. README.md is uploaded verbatim because it already carries the
+# HF Space front-matter (title/emoji/sdk).
+#
+# Requires repo secret HF_TOKEN (HF write token with org write to SZLHOLDINGS).
+# Without it the job FAILS LOUDLY with a founder-action message — it never fakes
+# a sync.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "index.html"
+      - "live-body.html"
+      - "*.js"
+      - "*.css"
+      - "lib/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hf-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+      - name: Install huggingface_hub
+        run: pip install --quiet "huggingface_hub>=0.25"
+      - name: Mirror front-door files to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SPACE_ID: SZLHOLDINGS/anatomy
+        run: |
+          set -euo pipefail
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "::error::HF_TOKEN secret is not set — cannot sync the Space."
+            echo "::error::Founder action required: add repo secret HF_TOKEN (HF write token, org write to SZLHOLDINGS)."
+            exit 1
+          fi
+          python3 <<'PYEOF'
+          import os, glob
+          from huggingface_hub import HfApi, CommitOperationAdd
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          space = os.environ["SPACE_ID"]
+
+          # Repo's own served front-door files. The Space-only Dockerfile and the
+          # Space's .github/ are intentionally NOT in this set, so they survive.
+          patterns = ["README.md", "index.html", "live-body.html",
+                      "*.js", "*.css", "lib/**/*"]
+          files = []
+          for p in patterns:
+              files += [f for f in glob.glob(p, recursive=True) if os.path.isfile(f)]
+          files = sorted(set(files))
+          if not files:
+              print("No front-door files matched — nothing to sync.")
+              raise SystemExit(0)
+
+          ops = []
+          for f in files:
+              with open(f, "rb") as fh:
+                  ops.append(CommitOperationAdd(path_in_repo=f, path_or_fileobj=fh.read()))
+
+          print("Syncing", len(ops), "file(s) to", space, ":", files)
+          commit = api.create_commit(
+              repo_id=space, repo_type="space", operations=ops,
+              commit_message=f"hf-sync: mirror front-door from GitHub {os.environ.get('GITHUB_SHA','')[:8]}",
+          )
+          print("Space commit:", getattr(commit, "commit_url", commit))
+          PYEOF
