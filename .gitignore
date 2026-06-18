@@ -1,0 +1,23 @@
+# SZL Living Anatomy — static SDK Space (no build step). Keep the tree clean:
+# the only things that should ever land here are the vendored bundle + sources.
+
+# local QA harness (qa_yarqa.js runs under Playwright/Chromium, installed locally)
+node_modules/
+package-lock.json
+qa_*_results.json
+qa_*.png
+
+# python tooling cruft (if a contributor runs scans/linters locally)
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# environment / secrets — never commit
+.env
+.env.*
+
+# editor / OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
