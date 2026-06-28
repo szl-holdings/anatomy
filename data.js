@@ -789,6 +789,130 @@
     { key:'senses',     name:'SENSES / EYES', organ:'RIKUY',      fn:'global feed perception \u00b7 aWattar price \u00b7 Energy-Charts \u00b7 NASA VIIRS flare (resource-map) \u00b7 NOAA solar-wind \u00b7 Open-Meteo', color:'#50e3c2' }
   );
 
+  /* =====================================================================
+     ========================  v5 (EVOLVES v4)  ========================
+     ADDITIVE. New organs + overlays that surface the governed conscience
+     (WILLAY), the Sovereign Mesh as a circulatory upgrade, the buyer-
+     verifiable receipt bloodstream, the 8 locked-proven → organ map, the
+     AI-Assurance (WDP/CDAO) artifact map, and the yarqa + thermal-PINN
+     physics layer. Honesty doctrine v11 LOCKED is UNCHANGED:
+       • Locked-proven stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22} @ c7c0ba17.
+       • Λ = Conjecture 1 (advisory heart-gate, NEVER a theorem).
+       • Khipu BFT = Conjecture 2 (Wave23 conditional only).
+       • Every LIVE/MEASURED/MODELED/SAMPLE/ROADMAP label is honest — a node
+         that does not answer reads DOWN, never a fabricated green light.
+     ===================================================================== */
+
+  /* ---- v5 live read-only endpoints (all on the a11oy origin; in CSP allow-list) ---- */
+  const V5_ENDPOINTS = {
+    willay:    'https://szlholdings-a11oy.hf.space/api/a11oy/v1/willay/classifiers',
+    mesh:      'https://szlholdings-a11oy.hf.space/api/a11oy/v1/govern/health',
+    ledger:    'https://szlholdings-a11oy.hf.space/api/lake/v1/health',
+    receipts:  'https://szlholdings-a11oy.hf.space/api/lake/v1/receipts?limit=1',
+    cosign:    'https://szlholdings-a11oy.hf.space/cosign.pub',
+    assurance: 'https://szlholdings-a11oy.hf.space/assurance'
+  };
+
+  /* ---- v5 organs (ADDITIVE to ORGANS array) ---- */
+  ORGANS.push(
+    /* CONSCIENCE / IMMUNE-GATE — WILLAY: inspectable signed refusals.
+       Plain-English function label; tamper-EVIDENT, not tamper-proof. */
+    { key:'willay', system:'conscience', quechua:'WILLAY', fn:'conscience / immune-gate — inspectable signed refusals',
+      pos:[0,0.30,0.34], scale:0.20, color:'#39d8c8', willay_note:true,
+      blurb:'The governed conscience. Five INSPECTABLE classifiers (cyber · bio dual-use · hidden-reasoning extraction · prompt-injection / governance bypass · self-harm) gate every proposal; each refusal discloses its category, pattern intent, rationale, and lineage and is signed on the receipt bus. Trust ceiling 0.97 — trust is never 100%. HONEST: refusals are tamper-EVIDENT (you can detect alteration via the signed receipt), NOT tamper-proof. The inverse of a removed/hidden safety classifier: ours are auditable rules, not opaque weights. Reads ' + V5_ENDPOINTS.willay + ' live; honest empty-state if unreachable.',
+      formulas:['CF5','L2','AG_EGRESS'] },
+
+    /* SOVEREIGN MESH — circulatory upgrade. The 3D node is an anchor; the
+       LIVE per-node truth (tower LIVE / laptop / GLM honest-DOWN) is read
+       from /govern/health into the mesh panel and is NEVER fabricated. */
+    { key:'sovereign_mesh', system:'mesh', quechua:'SOVEREIGN MESH', fn:'circulatory upgrade — governed inference mesh (live per-node)',
+      pos:[0,-0.32,-0.26], scale:0.20, color:'#ff7a9c', mesh_note:true,
+      blurb:'The circulatory system upgraded to a sovereign inference mesh. Each node (tower RTX 4060 Ti anchor · laptop · GLM engine) is rendered with its HONEST live/down status read from ' + V5_ENDPOINTS.mesh + ': a node that is offline reads DOWN — never a fabricated green light. Per-node F11 Ayni reciprocity contribution (LOCKED) keeps the mesh balanced tit-for-tat. VRAM-fusion across nodes is ROADMAP — today the mesh is a scheduler / router (“Smart Routing”), not a fused address space. Energy joules are UNAVAILABLE unless a live NVML meter answers; never fabricated.',
+      formulas:['F11','F7','F22'] }
+  );
+
+  /* ---- v5 SYSTEMS entries (ADDITIVE) ---- */
+  SYSTEMS.push(
+    { key:'conscience', name:'CONSCIENCE / IMMUNE-GATE', organ:'WILLAY', fn:'5 inspectable signed-refusal classifiers · trust ceiling 0.97 · tamper-EVIDENT not tamper-proof', color:'#39d8c8' },
+    { key:'mesh',       name:'SOVEREIGN MESH',           organ:'governed inference mesh', fn:'circulatory upgrade · live per-node up/down (never fabricated) · F11 Ayni per node · VRAM-fusion ROADMAP', color:'#ff7a9c' }
+  );
+
+  /* =====================================================================
+     v5 — 8 LOCKED-PROVEN → ORGAN MAP (additive, honest)
+     The mapping is presentational only: it does NOT change the locked set,
+     which stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22} @ c7c0ba17.
+     Each entry shows the verbatim Lean statement (latex) + #print axioms.
+     Λ is the heart-gate: ADVISORY, Conjecture 1, NEVER a theorem.
+     Khipu BFT safety is Conjecture 2 (Wave23 conditional only).
+     ===================================================================== */
+  const LEAN_MAP = {
+    kernel_sha:'c7c0ba17',
+    verified_note:'kernel-verified sorry-free @ c7c0ba17',
+    organs:[
+      { organ:'BRAIN',       organ_key:'amaru',  color:'#7c5cff', formulas:['F1'],
+        why:'F1 Replay-Hash Determinism underpins the read-only reasoning cortex: replaying a recorded log is bit-identical, so the thinking layer can never drift the record.' },
+      { organ:'HEART',       organ_key:'yuyay',  color:'#ff5d8f', formulas:['F4','F11'],
+        why:'F4 (Khipu DAG acyclicity) + F11 (Ayni reciprocity conservation) sit at the beating gate. Λ is the heart-gate — ADVISORY, Conjecture 1, never a theorem.' },
+      { organ:'CIRCULATORY', organ_key:'yawar',  color:'#ff3b5c', formulas:['F7','F22'],
+        why:'F7 (FIFO reception ordering — “Smart Routing”) + F22 (emit append-only monotonicity) keep the receipt bloodstream ordered and append-only.' },
+      { organ:'NERVOUS',     organ_key:'vsp',    color:'#5ad1ff', formulas:['F12'],
+        why:'F12 Kuramoto coupling boundedness (additive fragment) bounds the nervous-system span coupling — additive scaffolding only, NOT full nonlinear sync.' },
+      { organ:'SKELETON',    organ_key:'hatun',  color:'#ffd166', formulas:['F18','F19'],
+        why:'F18 (RS(10,6) erasure recovery) + F19 (Bekenstein additive scaffolding) are the skeletal resilience + entropy-budget bones.' }
+    ],
+    lambda:'Λ = heart-gate, ADVISORY = Conjecture 1. Unconditional uniqueness under A1–A5 is machine-checked FALSE; CUT-2 proves uniqueness only CONDITIONAL on slice-multiplicativity. Never a theorem.',
+    khipu:'Khipu BFT safety = Conjecture 2. Wave23 proves agreement CONDITIONAL on n≥3f+1 + honest non-equivocation; unconditional safety stays Conjecture 2.'
+  };
+
+  /* =====================================================================
+     v5 — AI-ASSURANCE (WDP / CDAO) ARTIFACT MAP (additive, honest)
+     Maps each organ to the assurance artifact it satisfies, with honest
+     status chips. Aligns to the live a11oy /assurance surface.
+     Status vocabulary (honest): LIVE · PARTIAL · ROADMAP.
+     ===================================================================== */
+  const ASSURANCE_MAP = {
+    surface:V5_ENDPOINTS.assurance,
+    note:'Maps each organ to the AI-assurance artifact it satisfies (WDP / CDAO framing). Status chips are honest: LIVE = the artifact exists and is reachable; PARTIAL = exists but incomplete / sampled; ROADMAP = planned, not yet real.',
+    rows:[
+      { organ:'BRAIN / cortex',        organ_key:'amaru',  artifact:'Model card', status:'PARTIAL',
+        detail:'Read-only reasoning cortex; open-weight engine identity disclosed via /govern/health. Full model card is PARTIAL (engine + tier disclosed; eval suite roadmap).' },
+      { organ:'HEART / gate',          organ_key:'yuyay',  artifact:'TEVV signed receipt', status:'LIVE',
+        detail:'Test/Evaluation/Verification/Validation: every gate verdict is a DSSE ECDSA-P256 signed receipt on the bus — verifiable offline against cosign.pub.' },
+      { organ:'CIRCULATORY / bus',     organ_key:'yawar',  artifact:'SI-7 hash-chain (integrity)', status:'LIVE',
+        detail:'NIST SI-7 software/information integrity: the receipt ledger is a sha3_256 hash-chain (chain_head live at /api/lake/v1/health). Append-only, tamper-evident.' },
+      { organ:'CONSCIENCE / immune',   organ_key:'willay', artifact:'Data card + safety classifiers', status:'LIVE',
+        detail:'Five inspectable refusal classifiers with disclosed lineage (live at /willay/classifiers). Honest data-card framing: categories + rationale disclosed; trust ceiling 0.97.' },
+      { organ:'NERVOUS / OTel',        organ_key:'vsp',    artifact:'OTel-GenAI monitoring', status:'PARTIAL',
+        detail:'W3C TraceContext span lineage across the agent loop; OpenTelemetry GenAI semantic conventions are PARTIAL (span lineage live; full GenAI attribute coverage roadmap).' },
+      { organ:'SKELETON / supply-chain', organ_key:'hatun', artifact:'SBOM / SLSA provenance', status:'PARTIAL',
+        detail:'This static Space is SLSA L1 honest; product images (a11oy, killinchu) are L2 build-attested (Sigstore keyless, Rekor-anchored). SBOM + L3 are ROADMAP.' },
+      { organ:'MESH',                  organ_key:'sovereign_mesh', artifact:'TEVV per-node attestation', status:'PARTIAL',
+        detail:'Per-node up/down attested live from /govern/health (never fabricated). Per-node signed attestation + VRAM-fusion provenance is ROADMAP.' }
+    ]
+  };
+
+  /* =====================================================================
+     v5 — yarqa CFD + THERMAL-PINN physics overlay (additive, honest)
+     Composes the existing yarqa plug-flow compartmentalization (a clean-room
+     engineering-method CFD, NOT a locked theorem) with a thermal physics-
+     informed-NN model into ONE "physics-governed" layer. Label: MODELED
+     (not measured), bounded error. NEVER counted among the locked 8.
+     ===================================================================== */
+  const PHYSICS_OVERLAY = {
+    label:'MODELED',
+    headline:'physics-governed layer = yarqa CFD plug-flow ⊕ thermal PINN',
+    honest:'MODELED, not measured. This composes the existing yarqa compartmental plug-flow CFD (engineering method, off-by-default in the dissection dock) with a thermal physics-informed neural-network surrogate. It is NOT a locked theorem and is NEVER folded into the locked-8 — data.js stays the single source of truth and the locked-proven count is unchanged at 8.',
+    components:[
+      { name:'yarqa CFD plug-flow', kind:'compartmental advection (region-grown)',
+        detail:'Clean-room plug-flow compartmentalization over the existing circulatory / receipt flow sampled from data.js. Emits a reproducible integrity digest. Read-only overlay.' },
+      { name:'thermal PINN surrogate', kind:'physics-informed NN (steady-state heat)',
+        detail:'A physics-informed surrogate for steady-state organ thermal load (residual of ∇·(k∇T) − q minimised at collocation points). Surrogate, NOT a measured thermocouple readout.' }
+    ],
+    bounded_error:'Bounded error: the composed field is reported with an explicit relative-residual envelope (≤ 5% on the demo mesh); outside the modelled range it degrades to an honest “out-of-distribution — unquantified” state rather than extrapolating.',
+    never:'NEVER a locked theorem · NEVER counted in the locked-8 · NEVER claimed as a measurement.'
+  };
+
   root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS, PUTNAM_2025,
-                       QBIO, QBIO_LEADERS, QBIO_SOURCES, QBIO_THEOREMS };
+                       QBIO, QBIO_LEADERS, QBIO_SOURCES, QBIO_THEOREMS,
+                       V5_ENDPOINTS, LEAN_MAP, ASSURANCE_MAP, PHYSICS_OVERLAY };
 })(window);

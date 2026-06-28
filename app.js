@@ -240,6 +240,9 @@
             case 'endocrine':   geo=new THREE.OctahedronGeometry(o.scale,0); break;                       // KAMAY: 8-face hormone signal node
             case 'respiratory': geo=new THREE.TorusGeometry(o.scale*0.9,o.scale*0.28,14,32); break;       // SAMAY: breathing ring (torus)
             case 'senses':      geo=new THREE.DodecahedronGeometry(o.scale,1); break;                     // RIKUY: multi-facet eye / receiver
+            // v5 (evolves v4) organs
+            case 'conscience':  geo=new THREE.IcosahedronGeometry(o.scale,1); break;                      // WILLAY: faceted conscience / immune-gate node
+            case 'mesh':        geo=new THREE.OctahedronGeometry(o.scale,2); break;                       // SOVEREIGN MESH: routed mesh node
             default: geo=new THREE.SphereGeometry(o.scale,18,16);
           }
           const mesh=new THREE.Mesh(geo,glowMat(sysColor,0.92)); grp.add(mesh);
@@ -452,6 +455,7 @@
     if(V5 && V5.onOrganOpen) V5.onOrganOpen(o); // v5 deepen hook: per-formula Lean drill-down + organ↔formula highlight
     if(V7 && V7.onOrganOpen) V7.onOrganOpen(o); // v5 quantum-bio hook: per-organ coherence/charge/Λ-v5 mini-panel + decay sparkline
     if(V8 && V8.onOrganOpen) V8.onOrganOpen(o); // v8 live agentic lens: per-organ READ-ONLY reflection of a11oy's live endpoints
+    try{ window.dispatchEvent(new CustomEvent('szl:organ-open',{detail:o})); }catch(_){}  // v5 (evolves v4): external hook — in-scene buyer-verifiable receipt verify + assurance overlay
   }
   function closePanel(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
     organMeshes.forEach(m=>{ if(m.grp.userData.glow) m.grp.userData.glow.material.opacity=m.glowBase; });
