@@ -30,6 +30,42 @@ The governed-AI organ substrate shared by **a11oy** (governed-AI command body) a
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
 with the Λ heart at the center.
 
+## What's new in v5 — conscience, sovereign mesh, verifiable receipts (evolves v4)
+
+v5 **evolves** v4 (it does not replace it): the entire v4 engine (`data.js` / `app.js`,
+dissection dock, live-body, yarqa CFD) is preserved. A single additive module
+(`v5_organs.js`, same vendored-free / 0-CDN / no-build posture) layers on six new,
+honestly-labeled capabilities — all read-only against the live a11oy origin:
+
+- **WILLAY — conscience / immune-gate organ (NEW).** Five **inspectable** signed-refusal
+  classifiers (cyber · bio dual-use · hidden-reasoning extraction · prompt-injection /
+  governance bypass · self-harm), trust ceiling 0.97, read live from
+  `/api/a11oy/v1/willay/classifiers`. Honest label: refusals are **tamper-EVIDENT, not
+  tamper-proof** — auditable rules, the inverse of a removed/hidden classifier.
+- **Sovereign Mesh — circulatory upgrade.** Per-node up/**DOWN** read live from
+  `/api/a11oy/v1/govern/health` — a node that is offline reads DOWN, **never a fabricated
+  green light**. F11 Ayni reciprocity per node; **VRAM-fusion is ROADMAP** (the mesh is a
+  scheduler / router today).
+- **Buyer-verifiable receipt in-scene.** A "Verify offline" action reuses Tier-1 **WebCrypto
+  ECDSA-P256-SHA256** over the DSSE PAE against `/cosign.pub` — verified entirely in your
+  browser, no trust in us required. Plus a live **receipt bloodstream** counter reading the
+  unified ledger (`/api/lake/v1/health`: `total_receipts`, `sha3_256` chain head).
+- **8 locked-proven → organ map.** F1→BRAIN, F4+F11→HEART, F7+F22→CIRCULATORY, F12→NERVOUS,
+  F18+F19→SKELETON — each showing the verbatim Lean statement + `#print axioms`,
+  **kernel-verified sorry-free @ c7c0ba17**. Λ is the heart-gate: **advisory, Conjecture 1**,
+  never a theorem. Khipu BFT = Conjecture 2.
+- **AI-Assurance (WDP / CDAO) overlay.** Maps each organ to the assurance artifact it
+  satisfies (model card · data card · SBOM/SLSA · SI-7 hash-chain · TEVV signed receipt ·
+  OTel-GenAI) with honest **LIVE / PARTIAL / ROADMAP** status chips; links the live
+  `/assurance` surface.
+- **yarqa CFD + thermal-PINN physics layer.** Composes the existing yarqa plug-flow
+  compartmentalization with a thermal physics-informed-NN surrogate into one
+  "physics-governed" layer, labeled **MODELED** (not measured), bounded error. Never a locked
+  theorem; never folded into the locked-8.
+
+Locked-proven stays **exactly 8** {F1,F4,F7,F11,F12,F18,F19,F22} @ `c7c0ba17`; the doctrine
+footer is unchanged. Still sovereign: ONLY the vendored `lib/three.min.js`, zero runtime CDN.
+
 ## What's new in v4 — dissection tools
 
 v4 **evolves** v3 (it does not replace it): the entire v3 engine, organs, formulas,
@@ -222,4 +258,4 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a11oy.net](https://a11oy.net)**
 
-<sub>v4 dissection tools (evolves v3) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
+<sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
