@@ -719,13 +719,13 @@
     latex:'E_erase >= k_B T ln 2   (per bit erased)',
     plain:'[EXPERIMENTAL] Every irreversible bit-erasure costs at least k\u2082T\u00b7ln\u202f2 joules (Landauer 1961, Bennett 1982). Sets the MINIMUM energy budget per compute step; actual GPU joules are far above this floor. HONEST: joules here are SAMPLE values \u2014 on-box NVML is not yet wired to this viewer; real-time measurement is platform roadmap. Backs the METABOLISM organ energy-harvest narrative. NOT a locked theorem \u2014 additive EXPERIMENTAL only.',
     axioms:'physics postulate \u2014 not a Lean theorem; Landauer 1961 Phys.Rev. 183 p.183; Bennett 1982 Int.J.Theor.Phys. 21 p.905',
-    ref:'platform #370 harvest endpoint \u00b7 a11oy.net/api/a11oy/v1/harvest/metrics' };
+    ref:'platform #370 harvest endpoint \u00b7 a-11-oy.com/api/a11oy/v1/harvest/metrics' };
 
   FORMULAS.AG_HARVEST = { id:'AG-HARVEST', name:'Harvest Budget Constraint (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
     latex:'W_batch <= harvest_budget(t)   (wasted-energy bounded batch)',
     plain:'[EXPERIMENTAL] Batch work admitted is bounded by the available wasted-energy harvest budget at time t (grid curtailment, wind surplus, flare gas, etc.). An engineering inequality \u2014 not a Lean theorem. Backs the METABOLISM and RESPIRATORY organs. HONEST: budget is a platform engineering signal, not a proved energy-conservation law. Platform PR #371.',
     axioms:'engineering constraint \u2014 not a Lean theorem; platform #371 harvest_budget.py',
-    ref:'platform #371 \u00b7 harvest_budget.py \u00b7 a11oy.net/api/a11oy/v1/harvest/metrics' };
+    ref:'platform #371 \u00b7 harvest_budget.py \u00b7 a-11-oy.com/api/a11oy/v1/harvest/metrics' };
 
   FORMULAS.AG_EGRESS = { id:'AG-EGRESS', name:'Anti-SSRF Egress Allowlist + Consent Gate (EXPERIMENTAL)', maturity:'EXPERIMENTAL',
     latex:'egress(url) => url in allowlist  &&  consent_given   (deny-by-default)',
@@ -750,7 +750,7 @@
     /* METABOLISM — KALLPA (energy/power): wasted-energy harvest engine */
     { key:'kallpa', system:'metabolism', quechua:'KALLPA', fn:'wasted-energy harvest (grid/wind/tidal/flare/space feeds)',
       pos:[0.55,-0.35,0.22], scale:0.22, color:'#f5a623',
-      blurb:'Converts wasted external energy into compute work. Ingests live harvest metrics (grid curtailment, wind surplus, tidal, flare gas, space feeds) from a11oy.net/api/a11oy/v1/harvest/metrics. Ties to F19 Bekenstein additive scaffolding (LOCKED \u2014 monotone entropy budget) and the AG-LANDAUER Landauer floor (EXPERIMENTAL). HONEST: joules here are SAMPLE values \u2014 on-box NVML is not yet wired to this anatomy viewer; real-time energy measurement is a platform roadmap item. Sovereign only on own metal; resource-map tier for flare/space (map, not capture). Platform PR #370.',
+      blurb:'Converts wasted external energy into compute work. Ingests live harvest metrics (grid curtailment, wind surplus, tidal, flare gas, space feeds) from a-11-oy.com/api/a11oy/v1/harvest/metrics. Ties to F19 Bekenstein additive scaffolding (LOCKED \u2014 monotone entropy budget) and the AG-LANDAUER Landauer floor (EXPERIMENTAL). HONEST: joules here are SAMPLE values \u2014 on-box NVML is not yet wired to this anatomy viewer; real-time energy measurement is a platform roadmap item. Sovereign only on own metal; resource-map tier for flare/space (map, not capture). Platform PR #370.',
       formulas:['F19','AG_LANDAUER','AG_HARVEST'],
       energy_note:true },
 
