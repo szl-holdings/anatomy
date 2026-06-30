@@ -1,22 +1,22 @@
 /* =============================================================================
- * live-body.js — SZL Living Anatomy · LIVE BODY VIEW of the agentic GPU mind
+ * live-body.js — SZL Living Anatomy · BODY v1 ENGINE (the living face)
  * =============================================================================
- * The agentic GPU (RTX 5000 @ betterwithage) is the MIND; the six round9 ORGAN
- * formulas are the BODY. This page reads each organ's REAL endpoint and lights
- * the organ up with its honest live status. When the GPU mind runs a proactive
- * cycle (immune -> brain -> run -> heart/blood -> nervous) the organs pulse in
- * that order so you can watch the mind act.
+ * The Sovereign Org rendered as ONE living governed organism. This module is the
+ * HONEST DATA SPINE for live-body.html's Three.js scene. It reads the SAME live
+ * a11oy endpoints the unified console reads and exposes them as honest records.
  *
- * DOCTRINE (never violated, honest by design):
- *   - sovereign:true is shown ONLY when /api/a11oy/code/healthz reports it. The
- *     half-state (banner sovereign while a router serves) is the ONE
- *     unacceptable outcome, so we read `sovereign` straight from healthz and
- *     never synthesize it.
- *   - Energy / joules are labeled SAMPLE until a real meter is wired.
- *   - Λ is shown as Conjecture 1 (the skeleton's killer formula is intentionally
- *     a conjecture), pulled from /api/a11oy/v1/honest, never hardcoded as proven.
- *   - Unreachable endpoint => honest "unknown / unreachable" empty-state. We
- *     never fabricate a green light for an organ we could not reach.
+ * CRITICAL DISCIPLINE (binding — honest by construction, never a screensaver):
+ *   - Every pulse travelling a vessel corresponds to a REAL receipt on the chain
+ *     (/api/a11oy/v1/ledger). We never synthesize a receipt.
+ *   - Every organ glows LIVE only on a real 2xx+JSON probe; otherwise it dims to an
+ *     honest UNREACHABLE state. We never fabricate a green light.
+ *   - sovereign:true is shown ONLY when /code/healthz reports the literal true.
+ *   - Λ is advisory and its uniqueness is Conjecture 1 — pulled live from
+ *     /v1/lambda + /v1/honest, never hardcoded as proven.
+ *   - Verticals (insurance/defense/finance/realestate), SLSA skeletal integrity,
+ *     and drift have NO live endpoint on this Space today, so they render in an
+ *     explicit ROADMAP / N-A state — limbs do NOT fake-pulse and the skeleton does
+ *     NOT claim a verified SLSA level. Honest absence over decorative motion.
  *   - Read-only. No key is sent. open-weight only.
  *
  * No build step, no framework, no CDN — a plain ES module that runs as a static
@@ -24,212 +24,262 @@
  * ============================================================================ */
 "use strict";
 
-/* ---- endpoint hosts (read-only, real) ------------------------------------ */
-const HOST = {
-  amaru: "https://szlholdings-amaru.hf.space",
-  sentra: "https://szlholdings-sentra.hf.space",
-  a11oy: "https://szlholdings-a11oy.hf.space",
+/* ---- the single live host the console reads (verified live this session) --- */
+const HOST = "https://szlholdings-a11oy.hf.space";
+
+/* Real, verified endpoints (curl-checked 2026-06-30):
+ *   /api/a11oy/v1/ledger      -> {count, receipts:[{seq,action,receipt_id}]}  (THE chain)
+ *   /api/a11oy/v1/lambda      -> {trust_axes,axes[],lambda,lambda_floor,pass,uniqueness}
+ *   /api/a11oy/code/healthz   -> {sovereign,backend,mode,doctrine_state,...}
+ *   /api/a11oy/v1/honest      -> {doctrine_lock:{lambda,locked_formula_ids,...}}
+ *   /api/a11oy/readyz         -> {status,operator:{operator_running,...}}
+ *   /api/a11oy/v1/govern/health-> {engines_live,engines_total,mesh[]}            */
+const EP = {
+  ledger:  HOST + "/api/a11oy/v1/ledger",
+  lambda:  HOST + "/api/a11oy/v1/lambda",
+  healthz: HOST + "/api/a11oy/code/healthz",
+  honest:  HOST + "/api/a11oy/v1/honest",
+  readyz:  HOST + "/api/a11oy/readyz",
+  govern:  HOST + "/api/a11oy/v1/govern/health",
 };
 
-/* The GPU-mind posture endpoint (verified live: returns sovereign/backend/mode). */
-const MIND_HEALTHZ = HOST.a11oy + "/api/a11oy/code/healthz";
-/* The doctrine/Λ posture (verified live: Λ=Conjecture 1, locked-8, axioms/sorries). */
-const DOCTRINE_HONEST = HOST.a11oy + "/api/a11oy/v1/honest";
+/* ---- KANCHAY palette (canonical brand · purple BANNED) -------------------- */
+const KANCHAY = {
+  void:    "#080c14",
+  proof:   "#3af4c8",   // teal — proven / live
+  lattice: "#5b8dee",   // blue — structure / vessels
+  gold:    "#d7b96b",   // gold — Λ / heartbeat accent
+  warn:    "#e0795b",   // ember — denied / down
+  dim:     "#3a4456",   // honest unreachable / dormant
+  text:    "#e9eef7",
+};
 
-/* ---- the six organs, each a proven round9 formula + its live endpoint ------ */
-/* `pulseOrder` is the proactive-cycle order: immune -> brain -> run ->
- * heart/blood -> nervous. `summarize` turns a raw JSON body into a short honest
- * status line; it must tolerate partial/odd shapes (degrade, never throw). */
+/* ---- status vocabulary ---------------------------------------------------- */
+const STATUS = {
+  LIVE: "live",               // endpoint answered 2xx with usable JSON
+  UNREACHABLE: "unreachable", // network / non-2xx / not-JSON — honest unknown
+  PENDING: "pending",         // not yet polled
+};
+
+/* ---- the 4 console organs, each a REAL probe ------------------------------ *
+ * These are the organs the unified console shows (Reasoning/Policy/Operator/
+ * Receipts). Each maps to a real endpoint that proves it is alive; LIVE only on
+ * a real 2xx+JSON answer, otherwise an honest UNREACHABLE dim. `pos` is a normalized
+ * body-space anchor [x,y,z] the scene uses to place the organ. */
 const ORGANS = [
   {
-    id: "immune", name: "IMMUNE", glyph: "⛨", pulseOrder: 0,
-    color: "var(--gate)",
-    formula: "ImmuneNeymanPearson — deny-by-default gates (most-powerful test)",
-    role: "rejects unsafe / overclaiming work before the mind acts",
-    url: HOST.sentra + "/api/sentra/v1/gates",
+    id: "reasoning", name: "REASONING", glyph: "✸", color: KANCHAY.proof,
+    pos: [0, 1.15, 0],
+    probe: "lambda",
+    role: "scores Λ (13-axis) + recommends the decision under uncertainty",
+    actions: ["lambda.score", "decision.recommend"],
     summarize: (j) => {
-      const gates = j.gates || j.items || (Array.isArray(j) ? j : null);
-      if (Array.isArray(gates)) return `${gates.length} deny-by-default gates armed`;
-      if (typeof j.count === "number") return `${j.count} gates armed`;
-      return "gates responding";
+      if (typeof j.lambda === "number")
+        return `Λ ${j.lambda.toFixed(5)} ${j.pass ? "≥" : "<"} floor ${j.lambda_floor} · ${j.trust_axes || (j.axes||[]).length}-axis`;
+      return "reasoning responding";
     },
   },
   {
-    id: "brain", name: "BRAIN", glyph: "✸", pulseOrder: 1,
-    color: "var(--brain)",
-    formula: "BrainBeliefUpdate — PAC-Bayes McAllester generalization bound",
-    role: "decides which proactive work to admit under uncertainty",
-    url: HOST.amaru + "/api/amaru/v1/formulas",
+    id: "policy", name: "POLICY", glyph: "⛨", color: KANCHAY.gold,
+    pos: [-1.15, 0.15, 0.1],
+    probe: "honest",
+    role: "the deny-by-default gate (F12) — rejects unsafe / overclaiming work",
+    actions: ["gate.evaluate"],
     summarize: (j) => {
-      const fs = j.formulas || j.items || (Array.isArray(j) ? j : null);
-      const hasPac = JSON.stringify(j).toLowerCase().includes("pac_bayes");
-      if (Array.isArray(fs)) return `${fs.length} formulas · pac_bayes ${hasPac ? "present" : "—"}`;
-      return hasPac ? "pac_bayes_mcallester present" : "formulas responding";
+      const lk = j.doctrine_lock || {};
+      const ids = lk.locked_formula_ids || [];
+      const f12 = ids.includes("F12");
+      return `${lk.locked_formula_count ?? ids.length} locked · F12 gate ${f12 ? "armed" : "—"}`;
     },
   },
   {
-    id: "heart", name: "HEART", glyph: "❤", pulseOrder: 3,
-    color: "var(--heart)",
-    formula: "HeartReceiptSigma — σ-algebra receipt bus",
-    role: "pumps a verifiable receipt for every GPU action (the heartbeat)",
-    url: HOST.amaru + "/api/amaru/receipts",
+    id: "operator", name: "OPERATOR", glyph: "⌁", color: KANCHAY.lattice,
+    pos: [1.15, 0.15, 0.1],
+    probe: "readyz",
+    role: "approves + executes admitted work; the hands of the organism",
+    actions: ["operator.approve"],
+    summarize: (j) => {
+      const op = j.operator || {};
+      if (op.operator_running === true) return `operator running · ${j.status || "ready"}`;
+      if (j.status) return `status: ${j.status}`;
+      return "operator responding";
+    },
+  },
+  {
+    id: "receipts", name: "RECEIPTS", glyph: "❤", color: KANCHAY.warn,
+    pos: [0, -1.15, 0],
+    probe: "ledger",
+    role: "signs + replays a verifiable receipt for every action (the heartbeat)",
+    actions: ["receipt.sign", "replay.verify"],
     summarize: (j) => {
       const rs = j.receipts || j.items || (Array.isArray(j) ? j : null);
-      if (Array.isArray(rs)) return `${rs.length} receipts on the bus`;
-      if (typeof j.count === "number") return `${j.count} receipts`;
-      return "receipt bus beating";
-    },
-  },
-  {
-    id: "blood", name: "BLOOD", glyph: "🜂", pulseOrder: 4,
-    color: "var(--blood)",
-    formula: "BloodDSSEMerkle — Cardano-anchored DSSE provenance",
-    role: "signs + carries provenance to every organ",
-    /* /khipu/sign is a write/POST endpoint; we only health-probe its host
-     * read-only here (a GET returns method-not-allowed/health, never signs). */
-    url: HOST.sentra + "/api/sentra/khipu/ledger",
-    summarize: (j) => {
-      const l = j.ledger || j.entries || j.items || (Array.isArray(j) ? j : null);
-      if (Array.isArray(l)) return `${l.length} signed entries in the khipu`;
-      return "provenance signer reachable";
-    },
-  },
-  {
-    id: "skeleton", name: "SKELETON", glyph: "⊟", pulseOrder: -1,
-    color: "var(--skel)",
-    formula: "SkeletonLambdaSpine — the Lean kernel (Λ = Conjecture 1)",
-    role: "the proof spine — every claim traces here; Λ stays a conjecture",
-    url: HOST.amaru + "/api/amaru/v1/math/lean/theorems",
-    summarize: (j) => {
-      const t = j.theorems || j.items || (Array.isArray(j) ? j : null);
-      if (Array.isArray(t)) return `${t.length} kernel theorems · Λ = Conjecture 1`;
-      return "lean spine reachable · Λ = Conjecture 1";
-    },
-  },
-  {
-    id: "nervous", name: "NERVOUS", glyph: "⌁", pulseOrder: 5,
-    color: "var(--nerve)",
-    formula: "NervousShannonAlarm — Λ-signed OTEL drift alarm",
-    role: "senses drift / half-state and fires the self-heal alarm",
-    url: HOST.amaru + "/api/amaru/overwatch/snapshot",
-    summarize: (j) => {
-      const drift = j.drift ?? j.alarm ?? null;
-      if (drift === true) return "DRIFT detected — self-heal armed";
-      if (drift === false) return "no drift · posture steady";
-      if (j.status) return `overwatch: ${String(j.status)}`;
-      return "proprioception reachable";
+      const n = Array.isArray(rs) ? rs.length : (typeof j.count === "number" ? j.count : null);
+      return n != null ? `${n} receipts on the chain` : "receipt bus reachable";
     },
   },
 ];
 
-/* ---- status vocabulary ---------------------------------------------------- */
-const STATUS = {
-  LIVE: "live",         // endpoint answered 2xx with usable JSON
-  UNREACHABLE: "unreachable", // network / non-2xx / not-JSON — honest unknown
-  PENDING: "pending",   // not yet polled
+/* Which organ a receipt action originates from (so a pulse leaves the right
+ * organ and travels to RECEIPTS/heart). Unknown actions default to receipts. */
+const ACTION_SOURCE = {
+  "gate.evaluate": "policy",
+  "lambda.score": "reasoning",
+  "decision.recommend": "reasoning",
+  "operator.approve": "operator",
+  "receipt.sign": "receipts",
+  "replay.verify": "receipts",
 };
+function organForAction(action) {
+  if (!action) return "receipts";
+  const a = String(action).toLowerCase();
+  if (ACTION_SOURCE[a]) return ACTION_SOURCE[a];
+  // honest heuristic for verbs we haven't enumerated
+  if (a.startsWith("gate")) return "policy";
+  if (a.startsWith("lambda") || a.includes("decision") || a.includes("reason")) return "reasoning";
+  if (a.includes("operator") || a.includes("approve") || a.includes("execute")) return "operator";
+  return "receipts";
+}
+/* An action is a DENIAL (rejected pulse) only when it honestly says so. */
+function isDenied(action) {
+  const a = String(action || "").toLowerCase();
+  return a.includes("deny") || a.includes("denied") || a.includes("reject") || a.includes("block");
+}
 
-/* fetch one organ endpoint, honestly. Never throws; returns a status record.
- * No credentials, no custom headers (keeps it a simple CORS GET, sends no key). */
-async function probeOrgan(organ, timeoutMs = 9000) {
+/* The 4 verticals = limbs. NO live throughput endpoint exists on this Space, so
+ * they render in an honest ROADMAP state and only pulse if a real receipt with a
+ * "<vertical>|<action>" verb appears on the chain. Never fake-pulsed. */
+const VERTICALS = [
+  { id: "insurance",  name: "INSURANCE",  pos: [-1.7, -0.7, 0.0], color: KANCHAY.proof },
+  { id: "defense",    name: "DEFENSE",    pos: [ 1.7, -0.7, 0.0], color: KANCHAY.lattice },
+  { id: "finance",    name: "FINANCE",    pos: [-1.7,  0.9, 0.0], color: KANCHAY.gold },
+  { id: "realestate", name: "REALESTATE", pos: [ 1.7,  0.9, 0.0], color: KANCHAY.warn },
+];
+
+/* ---- one honest GET (never throws; no creds, no custom headers => simple CORS) */
+async function getJSON(url, timeoutMs = 9000) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const res = await fetch(organ.url, {
+    const res = await fetch(url, {
       method: "GET", mode: "cors", credentials: "omit",
       signal: ctl.signal, cache: "no-store",
     });
     clearTimeout(t);
-    if (!res.ok) {
-      return { status: STATUS.UNREACHABLE, detail: `HTTP ${res.status}`, raw: null };
-    }
+    if (!res.ok) return { ok: false, why: `HTTP ${res.status}` };
     const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("json")) {
-      // HF returns its own HTML 404 page for unrouted spaces — honest unknown.
-      return { status: STATUS.UNREACHABLE, detail: "no JSON (space unrouted?)", raw: null };
-    }
-    const j = await res.json();
-    let detail;
-    try { detail = organ.summarize(j); }
-    catch { detail = "responding (shape unrecognized)"; }
-    return { status: STATUS.LIVE, detail, raw: j };
+    if (!ct.includes("json")) return { ok: false, why: "no JSON (route unmatched?)" };
+    return { ok: true, json: await res.json() };
   } catch (e) {
     clearTimeout(t);
-    const why = (e && e.name === "AbortError") ? "timeout" : "network/CORS";
-    return { status: STATUS.UNREACHABLE, detail: why, raw: null };
+    return { ok: false, why: (e && e.name === "AbortError") ? "timeout" : "network/CORS" };
   }
 }
 
-/* fetch the GPU-mind posture (sovereign/backend/mode). Honest: sovereign is
- * whatever healthz says, defaulting to FALSE (never claim sovereignty we can't
- * confirm — that is the half-state we must never show). */
-async function probeMind(timeoutMs = 9000) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  try {
-    const res = await fetch(MIND_HEALTHZ, {
-      method: "GET", mode: "cors", credentials: "omit",
-      signal: ctl.signal, cache: "no-store",
-    });
-    clearTimeout(t);
-    if (!res.ok) return { reachable: false, sovereign: false, detail: `HTTP ${res.status}` };
-    const j = await res.json();
+/* probe one organ honestly -> {status, detail, raw} */
+async function probeOrgan(organ, timeoutMs = 9000) {
+  const r = await getJSON(EP[organ.probe], timeoutMs);
+  if (!r.ok) return { status: STATUS.UNREACHABLE, detail: r.why, raw: null };
+  let detail;
+  try { detail = organ.summarize(r.json); }
+  catch { detail = "responding (shape unrecognized)"; }
+  return { status: STATUS.LIVE, detail, raw: r.json };
+}
+
+/* fetch the REAL receipt chain. Returns normalized receipts (or honest empty). */
+async function fetchLedger(timeoutMs = 9000) {
+  const r = await getJSON(EP.ledger, timeoutMs);
+  if (!r.ok) return { reachable: false, why: r.why, count: 0, receipts: [] };
+  const j = r.json;
+  const raw = j.receipts || j.items || (Array.isArray(j) ? j : []);
+  const receipts = (Array.isArray(raw) ? raw : []).map((x, i) => {
+    const action = x.action || x.verb || x.kind || "receipt";
     return {
-      reachable: true,
-      sovereign: j.sovereign === true,   // strict: only the literal true
-      backend: j.backend || j.inference || "unknown",
-      mode: j.mode || "unknown",
-      doctrine: j.doctrine || "",
-      raw: j,
+      seq: typeof x.seq === "number" ? x.seq : i,
+      action,
+      id: x.receipt_id || x.id || x.hash || String(i),
+      organ: organForAction(action),
+      denied: isDenied(action),
     };
-  } catch (e) {
-    clearTimeout(t);
-    const why = (e && e.name === "AbortError") ? "timeout" : "network/CORS";
-    return { reachable: false, sovereign: false, detail: why };
-  }
+  });
+  return { reachable: true, count: j.count ?? receipts.length, receipts };
 }
 
-/* fetch the doctrine / Λ posture for the honesty strip. */
-async function probeDoctrine(timeoutMs = 9000) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  try {
-    const res = await fetch(DOCTRINE_HONEST, {
-      method: "GET", mode: "cors", credentials: "omit",
-      signal: ctl.signal, cache: "no-store",
-    });
-    clearTimeout(t);
-    if (!res.ok) return { reachable: false };
-    const j = await res.json();
-    const lk = j.doctrine_lock || {};
-    return {
-      reachable: true,
-      lambda: lk.lambda || "Conjecture 1",
-      commit: lk.commit || "",
-      lockedCount: lk.locked_formula_count ?? 8,
-      axioms: lk.axioms, sorries: lk.sorries, declarations: lk.declarations,
-      doctrine: lk.doctrine || "",
-    };
-  } catch {
-    clearTimeout(t);
-    return { reachable: false };
-  }
+/* fetch Λ posture (heartbeat driver). Honest: uniqueness stays Conjecture 1. */
+async function fetchLambda(timeoutMs = 9000) {
+  const r = await getJSON(EP.lambda, timeoutMs);
+  if (!r.ok) return { reachable: false, why: r.why };
+  const j = r.json;
+  return {
+    reachable: true,
+    lambda: typeof j.lambda === "number" ? j.lambda : null,
+    floor: typeof j.lambda_floor === "number" ? j.lambda_floor : 0.90,
+    pass: j.pass === true,
+    axes: Array.isArray(j.axes) ? j.axes : [],
+    aggregate: j.aggregate || "",
+    uniqueness: j.uniqueness || "Conjecture 1",
+    raw: j,
+  };
 }
 
-/* expose the engine for the page + for the (browser-only) self-check */
+/* fetch the GPU-mind posture (sovereign strict; default FALSE — never invent true) */
+async function fetchMind(timeoutMs = 9000) {
+  const r = await getJSON(EP.healthz, timeoutMs);
+  if (!r.ok) return { reachable: false, sovereign: false, why: r.why };
+  const j = r.json;
+  return {
+    reachable: true,
+    sovereign: j.sovereign === true,
+    backend: j.backend || j.inference || "unknown",
+    mode: j.mode || "unknown",
+    doctrine: j.doctrine_state ? `${j.doctrine || ""} ${j.doctrine_state}`.trim() : (j.doctrine || ""),
+    raw: j,
+  };
+}
+
+/* fetch doctrine / Λ lock for the honesty strip. */
+async function fetchDoctrine(timeoutMs = 9000) {
+  const r = await getJSON(EP.honest, timeoutMs);
+  if (!r.ok) return { reachable: false };
+  const lk = (r.json && r.json.doctrine_lock) || {};
+  return {
+    reachable: true,
+    lambda: lk.lambda || "Conjecture 1",
+    commit: lk.commit || "",
+    lockedCount: lk.locked_formula_count ?? 8,
+    lockedIds: lk.locked_formula_ids || [],
+    declarations: lk.declarations, axioms: lk.axioms, sorries: lk.sorries,
+    state: lk.state || "",
+  };
+}
+
+/* fetch mesh/engine health — the only REAL drift-ish signal available today:
+ * engines_total - engines_live antibodies. honest immune intensity in [0,1]. */
+async function fetchImmune(timeoutMs = 9000) {
+  const r = await getJSON(EP.govern, timeoutMs);
+  if (!r.ok) return { reachable: false, intensity: 0, detail: r.why };
+  const j = r.json;
+  const total = typeof j.engines_total === "number" ? j.engines_total : 0;
+  const live = typeof j.engines_live === "number" ? j.engines_live : total;
+  const down = Math.max(0, total - live);
+  return {
+    reachable: true,
+    intensity: total > 0 ? down / total : 0,   // real fraction of mesh down
+    down, live, total,
+    detail: down > 0 ? `${down}/${total} mesh engines down — antibodies active` : `mesh ${live}/${total} healthy`,
+  };
+}
+
+/* ---- the engine surface --------------------------------------------------- */
 const LiveBody = {
-  HOST, MIND_HEALTHZ, DOCTRINE_HONEST, ORGANS, STATUS,
-  probeOrgan, probeMind, probeDoctrine,
-  /* the canonical proactive-cycle order, by organ id, for the pulse animation */
-  proactiveCycle() {
-    return ORGANS
-      .filter((o) => o.pulseOrder >= 0)
-      .sort((a, b) => a.pulseOrder - b.pulseOrder)
-      .map((o) => o.id);
-  },
+  HOST, EP, KANCHAY, STATUS, ORGANS, VERTICALS,
+  organForAction, isDenied,
+  probeOrgan, fetchLedger, fetchLambda, fetchMind, fetchDoctrine, fetchImmune,
 };
 
-/* ESM + global, so live-body.html can use it either way without a bundler. */
 if (typeof window !== "undefined") window.LiveBody = LiveBody;
 export default LiveBody;
-export { HOST, ORGANS, STATUS, probeOrgan, probeMind, probeDoctrine };
+export {
+  HOST, EP, KANCHAY, STATUS, ORGANS, VERTICALS,
+  organForAction, isDenied,
+  probeOrgan, fetchLedger, fetchLambda, fetchMind, fetchDoctrine, fetchImmune,
+};
