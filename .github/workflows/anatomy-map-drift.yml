@@ -1,0 +1,40 @@
+name: Anatomy-map drift guard
+
+# szl-holdings/anatomy is the standalone SZL Anatomy deck: its GitHub source
+# (data.js + index.html) is synced (hf-sync.yml) to the SZLHOLDINGS/anatomy HF
+# Space. The SAME honesty doctrine is also shipped from a11oy (/console) and
+# killinchu (/elite) on independent pipelines, so an edit to this source can
+# silently DRIFT from the others -- and until now it was only validated once it
+# had deployed to HF and the weekly central sweep ran.
+#
+# This delegates to the org-shared reusable guard in szl-holdings/.github, so an
+# edit to this repo's map source is validated IMMEDIATELY against the canonical
+# locked-8 ladder {F1,F4,F7,F11,F12,F18,F19,F22} and the Λ=Conjecture-1 honesty
+# label -- instead of waiting for the HF sync + the central sweep. Path-scoped to
+# the files the anatomy-src surface actually reads so unrelated pushes stay quiet.
+# The central weekly sweep (szl-holdings/.github anatomy-map-drift.yml) remains
+# the cross-surface backstop, and also cross-checks this source against its
+# deployed HF mirror.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data.js"
+      - "index.html"
+      - ".github/workflows/anatomy-map-drift.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "data.js"
+      - "index.html"
+      - ".github/workflows/anatomy-map-drift.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  anatomy-map-drift:
+    uses: szl-holdings/.github/.github/workflows/reusable-anatomy-map-drift.yml@633bb10bba717a321f2c153b185756b257e62293  # main
+    secrets: inherit
