@@ -20,6 +20,10 @@
         honest LIVE / PARTIAL / ROADMAP status chips.
      6. yarqa CFD + thermal-PINN physics layer — composed "physics-governed"
         overlay, labeled MODELED (not measured), bounded error.
+     7. GPU-Sovereign Stack (SUBSTRATE) — the VERTICAL compute anatomy:
+        owned GPU fabric → runtime → sovereign mesh → open-weight model →
+        native governance → buyer-verifiable receipts. Live layers read
+        /govern/health and degrade to DOWN, never a fabricated green light.
 
    Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 8; Λ is
    never a theorem; nothing here is folded into the locked-8.
@@ -289,13 +293,52 @@
     b.innerHTML=h;
   }
 
+  /* ===================================================================
+     7. GPU-SOVEREIGN STACK (SUBSTRATE) — vertical compute anatomy.
+        Static layer model from D.STACK_LAYER; live layers (runtime, mesh)
+        light up from EP.mesh /govern/health and degrade to DOWN when
+        unreachable — never a fabricated green light. The frontier layer is
+        buyer-verifiable in-scene via the shared WebCrypto verify card.
+     =================================================================== */
+  function renderStack(b){
+    var S=D.STACK_LAYER||{};
+    if(!S.layers){ b.innerHTML=emptyState('Stack-layer data not loaded.'); return; }
+    function paint(mesh){
+      var engLive=mesh&&mesh.engines_live, engTot=mesh&&mesh.engines_total;
+      var meshUp=!!(mesh && ((engLive>0) || (mesh.mesh && mesh.mesh.some && mesh.mesh.some(function(n){return n.live;}))));
+      var h='';
+      h+='<div class="v5-card"><div class="v5-h">'+esc(S.headline||'GPU-Sovereign Stack')+' <span class="v5-chip live">SUBSTRATE</span></div>';
+      h+='<p>'+esc(S.thesis||'')+'</p></div>';
+      (S.layers||[]).forEach(function(L){
+        var chip=L.chip||'roadmap', posture=String(L.posture||'');
+        if(L.live_key){
+          if(mesh==null){ chip='down'; posture='UNREACHABLE'; }
+          else if(L.live_key==='mesh'){ chip=meshUp?'live':'down'; posture=meshUp?'LIVE':'DOWN'; }
+          else if(L.live_key==='engine'){ chip=(engLive>0)?'live':'down'; posture=(engLive>0)?('LIVE · '+esc(engLive)+'/'+esc(engTot)+' engines'):'DOWN'; }
+        }
+        h+='<div class="v5-card"><div class="v5-h"><span><span style="opacity:.55;font-family:var(--font-m,monospace);font-size:11px">'+esc(L.tier)+'</span> '+esc(L.name)+'</span> <span class="v5-chip '+chip+'">'+posture+'</span></div>';
+        h+='<div class="v5-sub">leaders: '+esc(L.leaders||'')+'</div>';
+        h+='<p>'+esc(L.szl||'')+'</p>';
+        if(L.honest) h+='<div class="v5-sub" style="margin-top:7px;color:var(--warn,#ff7eb6)">honest · '+esc(L.honest)+'</div>';
+        h+='</div>';
+      });
+      h+='<div class="v5-note"><div class="nh">push the frontier</div>'+esc(S.frontier||'')+'</div>';
+      h+='<div class="v5-note"><div class="nh">never</div>'+esc(S.never||'')+'</div>';
+      h+=verifyCardHTML();
+      b.innerHTML=h;
+      wireVerify(b.querySelector('.v5-verify'));
+    }
+    getJSON(EP.mesh).then(function(d){ paint(d); }).catch(function(){ paint(null); });
+  }
+
   /* ---------------- buttons (wired to ids placed in index.html) ---------------- */
   var BTNS=[
     {id:'btn-v5-willay',    view:'willay',    title:'WILLAY — conscience / immune-gate', render:renderWillay},
     {id:'btn-v5-mesh',      view:'mesh',      title:'Sovereign Mesh — circulatory upgrade', render:renderMesh},
     {id:'btn-v5-proofs',    view:'proofs',    title:'8 locked-proven → organs', render:renderProofs},
     {id:'btn-v5-assurance', view:'assurance', title:'AI-Assurance (WDP / CDAO)', render:renderAssurance},
-    {id:'btn-v5-physics',   view:'physics',   title:'yarqa CFD + thermal PINN (MODELED)', render:renderPhysics}
+    {id:'btn-v5-physics',   view:'physics',   title:'yarqa CFD + thermal PINN (MODELED)', render:renderPhysics},
+    {id:'btn-v5-stack',     view:'stack',     title:'SUBSTRATE — GPU-Sovereign Stack', render:renderStack}
   ];
   function syncButtons(){ BTNS.forEach(function(cfg){ var btn=document.getElementById(cfg.id); if(btn){ var on=openView===cfg.view; btn.classList.toggle('active',on); btn.setAttribute('aria-expanded',on?'true':'false'); } }); }
   function wireButtons(){ BTNS.forEach(function(cfg){ var btn=document.getElementById(cfg.id); if(btn) btn.addEventListener('click',function(){ openPanel(cfg.view,cfg.title,cfg.render); }); }); }

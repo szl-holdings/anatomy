@@ -62,6 +62,14 @@ honestly-labeled capabilities — all read-only against the live a11oy origin:
   compartmentalization with a thermal physics-informed-NN surrogate into one
   "physics-governed" layer, labeled **MODELED** (not measured), bounded error. Never a locked
   theorem; never folded into the locked-8.
+- **GPU-Sovereign Stack — SUBSTRATE (NEW).** The *vertical* compute anatomy that complements the
+  horizontal Sovereign Mesh: owned GPU fabric → runtime → mesh / router → open-weight model →
+  native governance → buyer-verifiable receipts. Framed against how the leaders present sovereign
+  compute (chip → cloud → model), made our own by promoting governance and verifiable receipts to
+  first-class layers. Every layer carries an honest posture chip; live layers read
+  `/govern/health` and degrade to **DOWN**, never a fabricated green light. Energy is **SAMPLE**
+  until a real NVML meter; VRAM-fusion and on-metal **TEE attestation are ROADMAP**. Adds nothing
+  to the locked-8.
 
 Locked-proven stays **exactly 8** {F1,F4,F7,F11,F12,F18,F19,F22} @ `c7c0ba17`; the doctrine
 footer is unchanged. Still sovereign: ONLY the vendored `lib/three.min.js`, zero runtime CDN.
@@ -258,4 +266,4 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a-11-oy.com](https://a-11-oy.com)**
 
-<sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
+<sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>

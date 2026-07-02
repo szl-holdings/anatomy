@@ -912,7 +912,51 @@
     never:'NEVER a locked theorem · NEVER counted in the locked-8 · NEVER claimed as a measurement.'
   };
 
+  /* =====================================================================
+     v5 — GPU-SOVEREIGN STACK (SUBSTRATE) overlay (additive, honest)
+     The VERTICAL compute anatomy that complements the horizontal Sovereign
+     Mesh organ: owned GPU fabric → runtime → mesh / router → open-weight
+     model → native governance → buyer-verifiable receipts. Framed against
+     how the leaders present sovereign compute (chip → cloud → model), made
+     our own. Every layer carries an HONEST posture chip; live layers read
+     /govern/health and degrade to DOWN when unreachable — never a fabricated
+     green light. Adds NOTHING to the locked-8 and never relabels Λ.
+     ===================================================================== */
+  const STACK_LAYER = {
+    headline:'GPU-Sovereign Stack — the vertical substrate anatomy',
+    thesis:'Compute IS sovereignty: the organism runs on a ground GPU fabric we own and govern — not rented from a hyperscaler. The leaders present this as a chip → cloud → model cake; we make it our own by promoting governance and buyer-verifiable receipts to first-class layers and labelling every layer honestly.',
+    live_source:V5_ENDPOINTS.mesh,
+    layers:[
+      { tier:'L0', name:'Metal & energy — owned GPU fabric', posture:'REAL', chip:'live',
+        leaders:'Hyperscalers frame Layer-0 (power, PUE, cooling) as the binding constraint; sovereign clouds argue that sovereign AI cannot be built on rented compute.',
+        szl:'A real ground fabric operates today — an RTX-class tower anchor plus nodes, on the metal, with no hyperscaler tenancy. Node liveness is read live from /govern/health.',
+        honest:'Energy / joules are SAMPLE — UNAVAILABLE until a live NVML meter answers. Never a fabricated wattage.' },
+      { tier:'L1', name:'Runtime — open-weight inference engine', posture:'LIVE', chip:'live', live_key:'engine',
+        leaders:'The runtime (KV-cache, continuous batching, paged attention, tensor / pipeline parallelism) is where the neoclouds compete on tokens per second.',
+        szl:'Open-weight engines served on our own metal; engine count and tier read live. No closed-API dependency sits in the hot path.',
+        honest:'A node that does not answer reads DOWN — never a fabricated green light.' },
+      { tier:'L2', name:'Sovereign mesh — scheduler / router', posture:'LIVE', chip:'live', live_key:'mesh',
+        leaders:'Vendors sell a fused multi-GPU address space; sovereign meshes today are smart routers across independent nodes.',
+        szl:'Per-node F11 Ayni reciprocity (LOCKED) balances the mesh tit-for-tat. Open the Sovereign Mesh organ for live per-node up / DOWN.',
+        honest:'VRAM-fusion across nodes is ROADMAP — today the mesh is a scheduler / router, not a fused address space.' },
+      { tier:'L3', name:'Model — open weights, disclosed', posture:'PARTIAL', chip:'partial',
+        leaders:'NVIDIA packages models as NIM microservices; the model layer is weights + quantization + format + adapters.',
+        szl:'Open-weight only — engine identity and tier disclosed via /govern/health. The full model card (eval suite) is PARTIAL, not yet complete.',
+        honest:'Open-weight and disclosed — no opaque closed model is dressed up as ours.' },
+      { tier:'L4', name:'Governance — native, not bolted on', posture:'LOCKED', chip:'locked',
+        leaders:'A governed inference stack wraps every layer with access control, guardrails and audit logs — usually added after the fact.',
+        szl:'Governance is the HEART, not a wrapper: the YUYAY 13-axis conjunctive gate (deny-by-default) plus the WILLAY conscience adjudicate every inference before it runs; trust ceiling 0.97. Λ = Conjecture 1 — advisory, never a theorem.',
+        honest:'Trust is never 100% and no AGI is claimed. The gate is advisory-honest, not an infallible oracle.' },
+      { tier:'L5', name:'Verifiable compute — the frontier', posture:'PARTIAL', chip:'partial',
+        leaders:'The 2026 frontier is proving a result was produced correctly without trusting the operator — TEE attestation (H100 / H200 confidential computing), ZK proofs, or signed receipts.',
+        szl:'Every governed decision emits a DSSE ECDSA-P256 receipt on an append-only hash-chain — verifiable OFFLINE in your browser, right here, no trust in us required. Hardware TEE / remote attestation of the GPU node is ROADMAP.',
+        honest:'Receipts are LIVE and buyer-verifiable now; on-metal TEE attestation is ROADMAP — labelled, not fabricated.' }
+    ],
+    frontier:'Where we push the frontier: most stacks bolt governance and audit on top of rented compute. We invert it — own the metal, make governance the beating heart, and make every output buyer-verifiable at the edge. Sovereignty you can check, not take on faith.',
+    never:'NEVER a fabricated green light · energy NEVER fabricated (SAMPLE until NVML) · VRAM-fusion and TEE attestation honestly ROADMAP · the locked set stays exactly 8 · Λ never a theorem.'
+  };
+
   root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS, PUTNAM_2025,
                        QBIO, QBIO_LEADERS, QBIO_SOURCES, QBIO_THEOREMS,
-                       V5_ENDPOINTS, LEAN_MAP, ASSURANCE_MAP, PHYSICS_OVERLAY };
+                       V5_ENDPOINTS, LEAN_MAP, ASSURANCE_MAP, PHYSICS_OVERLAY, STACK_LAYER };
 })(window);
