@@ -36,7 +36,7 @@
 
   /* ---------------- small DOM + fetch helpers ---------------- */
   function el(tag, attrs, html){ var e=document.createElement(tag); if(attrs){for(var k in attrs){ if(k==='class')e.className=attrs[k]; else e.setAttribute(k,attrs[k]); }} if(html!=null)e.innerHTML=html; return e; }
-  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function getJSON(url){ return fetch(url,{mode:'cors',credentials:'omit',cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
   function getText(url){ return fetch(url,{mode:'cors',credentials:'omit',cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); }); }
 
