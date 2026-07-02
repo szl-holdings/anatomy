@@ -2979,13 +2979,20 @@
         if(to)clearTimeout(to); if(!r||!r.ok)return null; return await r.json();
       }catch(e){ if(to)clearTimeout(to); return null; }
     }
+    let _lastCouncilKey=null;
+    function setCouncil(names){                 // v10 polish: rebuild the ring ONLY when the roster actually changes (kills the 30s GPU/DOM churn)
+      const key=names.join('\u241f');
+      if(key===_lastCouncilKey) return;
+      _lastCouncilKey=key;
+      buildCouncil(names);
+    }
     async function pollRoster(){
       const j=await pull(BASE+'/v1/ayllu/roster');
-      if(!j){ buildCouncil(COUNCIL_FALLBACK); renderPanel(null,false); return; }
+      if(!j){ setCouncil(COUNCIL_FALLBACK); renderPanel(null,false); return; }
       let people=j.personas||j.roster||[]; if(!Array.isArray(people))people=[];
       let names=people.map(p=>(p&&(p.name||p.persona||p.id))||String(p)).filter(Boolean);
-      if(!names.length)names=COUNCIL_FALLBACK;
-      buildCouncil(names); renderPanel(j,true);
+      if(!names.length){ setCouncil(COUNCIL_FALLBACK); renderPanel(null,false); return; }  // v10 polish/honesty: an EMPTY live roster is shown as declared snapshot, never fallback names under a "live" chip
+      setCouncil(names); renderPanel(j,true);
     }
 
     function tick(dt,t){
@@ -2997,7 +3004,7 @@
     }
 
     /* ---- boot: honest declared state first, then upgrade live ---- */
-    buildCouncil(COUNCIL_FALLBACK);
+    setCouncil(COUNCIL_FALLBACK);
     buildEstate();
     renderPanel(null,false);
     pollRoster();
