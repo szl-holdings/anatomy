@@ -3038,3 +3038,27 @@
     qbio: (V7&&V7.api)?V7.api():null
   };
 })();
+
+
+/* ---- v10 deep-link: embedders can default the camera via #hash (or ?view=) — e.g. #estate = zoom-out to the whole estate. Additive & backward-compatible; unknown/empty values are ignored so the default organism (home) view stands. ---- */
+(function(){
+  function currentView(){
+    var h=(location.hash||'').replace(/^#/,'').toLowerCase().trim();
+    if(!h){ try{ h=((new URLSearchParams(location.search)).get('view')||'').toLowerCase().trim(); }catch(e){ h=''; } }
+    return h;
+  }
+  function applyView(v){
+    var A=(window.__anatomy&&window.__anatomy.v10&&window.__anatomy.v10.api)||null;
+    if(!A) return false;
+    if(v==='estate'   && A.goEstate){   A.goEstate();   return true; }
+    if(v==='council'  && A.goCouncil){  A.goCouncil();  return true; }
+    if(v==='organism' && A.goOrganism){ A.goOrganism(); return true; }
+    return false;
+  }
+  var v0=currentView();
+  if(v0==='estate'||v0==='council'||v0==='organism'){
+    var tries=0;
+    setTimeout(function go(){ if(applyView(v0)||tries++>=40) return; setTimeout(go,100); }, 300);
+  }
+  addEventListener('hashchange', function(){ applyView(currentView()); });
+})();
