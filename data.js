@@ -947,7 +947,7 @@
         leaders:'A governed inference stack wraps every layer with access control, guardrails and audit logs — usually added after the fact.',
         szl:'Governance is the HEART, not a wrapper: the YUYAY 13-axis conjunctive gate (deny-by-default) plus the WILLAY conscience adjudicate every inference before it runs; trust ceiling 0.97. Λ = Conjecture 1 — advisory, never a theorem.',
         honest:'Trust is never 100% and no AGI is claimed. The gate is advisory-honest, not an infallible oracle.' },
-      { tier:'L5', name:'Verifiable compute — the frontier', posture:'PARTIAL', chip:'partial',
+      { tier:'L5', name:'Verifiable compute — the frontier', posture:'PARTIAL', chip:'partial', receipt_key:'ledger',
         leaders:'The 2026 frontier is proving a result was produced correctly without trusting the operator — TEE attestation (H100 / H200 confidential computing), ZK proofs, or signed receipts.',
         szl:'Every governed decision emits a DSSE ECDSA-P256 receipt on an append-only hash-chain — verifiable OFFLINE in your browser, right here, no trust in us required. Hardware TEE / remote attestation of the GPU node is ROADMAP.',
         honest:'Receipts are LIVE and buyer-verifiable now; on-metal TEE attestation is ROADMAP — labelled, not fabricated.' }

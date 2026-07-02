@@ -303,22 +303,31 @@
   function renderStack(b){
     var S=D.STACK_LAYER||{};
     if(!S.layers){ b.innerHTML=emptyState('Stack-layer data not loaded.'); return; }
-    function paint(mesh){
+    function paint(mesh, ledger){
       var engLive=mesh&&mesh.engines_live, engTot=mesh&&mesh.engines_total;
-      var meshUp=!!(mesh && ((engLive>0) || (mesh.mesh && mesh.mesh.some && mesh.mesh.some(function(n){return n.live;}))));
+      var nodes=(mesh&&mesh.mesh&&mesh.mesh.length)||0;
+      var nodesLive=(mesh&&mesh.mesh&&mesh.mesh.filter)?mesh.mesh.filter(function(n){return n.live;}).length:0;
+      var meshUp=!!(mesh && ((engLive>0) || nodesLive>0));
+      var rcpt=ledger&&ledger.total_receipts, rcptAlg=(ledger&&ledger.chain_alg)||'sha3_256', rcptHead='';
+      if(ledger&&ledger.organs){ for(var k in ledger.organs){ var ch=ledger.organs[k]&&ledger.organs[k].chain_head; if(ch){ rcptHead=ch; break; } } }
       var h='';
       h+='<div class="v5-card"><div class="v5-h">'+esc(S.headline||'GPU-Sovereign Stack')+' <span class="v5-chip live">SUBSTRATE</span></div>';
       h+='<p>'+esc(S.thesis||'')+'</p></div>';
       (S.layers||[]).forEach(function(L){
-        var chip=L.chip||'roadmap', posture=String(L.posture||'');
+        var chip=L.chip||'roadmap', posture=String(L.posture||''), extra='';
         if(L.live_key){
           if(mesh==null){ chip='down'; posture='UNREACHABLE'; }
-          else if(L.live_key==='mesh'){ chip=meshUp?'live':'down'; posture=meshUp?'LIVE':'DOWN'; }
+          else if(L.live_key==='mesh'){ chip=meshUp?'live':'down'; posture=meshUp?('LIVE · '+esc(nodesLive)+'/'+esc(nodes)+' nodes'):('DOWN · 0/'+esc(nodes)+' nodes'); }
           else if(L.live_key==='engine'){ chip=(engLive>0)?'live':'down'; posture=(engLive>0)?('LIVE · '+esc(engLive)+'/'+esc(engTot)+' engines'):'DOWN'; }
+        }
+        if(L.receipt_key==='ledger'){
+          if(ledger && rcpt!=null){ chip='live'; posture='LIVE · '+esc(rcpt)+' receipts'; extra='ledger · '+esc(rcpt)+' receipts · '+esc(rcptAlg)+(rcptHead?' · head '+esc(rcptHead.slice(0,12))+'…':'')+' — verify any one below, offline'; }
+          else { extra='ledger unreachable — receipt count not shown; nothing fabricated'; }
         }
         h+='<div class="v5-card"><div class="v5-h"><span><span style="opacity:.55;font-family:var(--font-m,monospace);font-size:11px">'+esc(L.tier)+'</span> '+esc(L.name)+'</span> <span class="v5-chip '+chip+'">'+posture+'</span></div>';
         h+='<div class="v5-sub">leaders: '+esc(L.leaders||'')+'</div>';
         h+='<p>'+esc(L.szl||'')+'</p>';
+        if(extra) h+='<div class="v5-sub" style="margin-top:6px;color:var(--ok,#39d98a)">'+extra+'</div>';
         if(L.honest) h+='<div class="v5-sub" style="margin-top:7px;color:var(--warn,#ff7eb6)">honest · '+esc(L.honest)+'</div>';
         h+='</div>';
       });
@@ -328,7 +337,8 @@
       b.innerHTML=h;
       wireVerify(b.querySelector('.v5-verify'));
     }
-    getJSON(EP.mesh).then(function(d){ paint(d); }).catch(function(){ paint(null); });
+    Promise.all([ getJSON(EP.mesh).catch(function(){return null;}), getJSON(EP.ledger).catch(function(){return null;}) ])
+      .then(function(r){ paint(r[0], r[1]); });
   }
 
   /* ---------------- buttons (wired to ids placed in index.html) ---------------- */
