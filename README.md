@@ -1,8 +1,8 @@
 ---
 title: SZL Living Anatomy
 emoji: 🫀
-colorFrom: indigo
-colorTo: pink
+colorFrom: blue
+colorTo: gray
 sdk: docker
 app_port: 7860
 pinned: false
@@ -16,12 +16,14 @@ license: apache-2.0
 > flows through them, and where each proof and conjecture honestly sits.
 
 > **The living substrate · 5 systems · Λ heart · DSSE Khipu receipt bus · honest by design**
+>
+> **Shared, embeddable 3D scene** — rendered inside the a11oy and killinchu consoles; a visualization component, not a separate governance console.
 
 [![SLSA L1 honest (static viz)](https://img.shields.io/badge/SLSA-L1%20honest%20(static%20viz)-c9b787?style=flat-square)](https://github.com/szl-holdings/szl-uds-deployment)
 [![doctrine-v11](https://img.shields.io/badge/doctrine-v11%20LOCKED-0B1F3A?style=flat-square)](https://github.com/szl-holdings/.github/tree/main/doctrine)
 [![License](https://img.shields.io/badge/license-Apache--2.0-5fb3a3?style=flat-square)](https://github.com/szl-holdings/anatomy)
-[![Λ Conjecture 1](https://img.shields.io/badge/%CE%9B-Conjecture%201-B79BD6?style=flat-square)](https://github.com/szl-holdings/lutar-lean/blob/main/BOUNTY.md)
-[![Khipu Conjecture 2](https://img.shields.io/badge/Khipu%20BFT-Conjecture%202-B79BD6?style=flat-square)](https://github.com/szl-holdings/khipu-consensus)
+[![Λ Conjecture 1](https://img.shields.io/badge/%CE%9B-Conjecture%201-7d8aa0?style=flat-square)](https://github.com/szl-holdings/lutar-lean/blob/main/BOUNTY.md)
+[![Khipu Conjecture 2](https://img.shields.io/badge/Khipu%20BFT-Conjecture%202-7d8aa0?style=flat-square)](https://github.com/szl-holdings/khipu-consensus)
 
 The governed-AI organ substrate shared by **a11oy** (governed-AI command body) and
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
