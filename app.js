@@ -2929,9 +2929,9 @@
     /* ---- zoom presets (reuse the existing custom camera + flyTo tween) ---- */
     let mode='organism';
     function setFog(d){ if(scene.fog && scene.fog.density!=null) scene.fog.density=d; }
-    function goCouncil(){  mode='council';  setFog(ORIG_FOG); flyTo(new THREE.Vector3(0,3.0,0), 7.5); setActive('council'); }
+    function goCouncil(){  mode='council';  intro.active=false; setFog(ORIG_FOG); flyTo(new THREE.Vector3(0,3.0,0), 7.5); setActive('council'); }
     function goOrganism(){ mode='organism'; setFog(ORIG_FOG); flyTo(HOME.target.clone(), HOME.r);      setActive('organism'); }
-    function goEstate(){   mode='estate';   setFog(0.009);    flyTo(new THREE.Vector3(0,0.3,0), 30); autoRotate=true; setActive('estate'); }
+    function goEstate(){   mode='estate';   intro.active=false; setFog(0.009);    flyTo(new THREE.Vector3(0,0.3,0), 30); autoRotate=true; setActive('estate'); }
 
     /* ---- controls (injected into the existing #controls hud) ---- */
     const controls=document.getElementById('controls'); const btns={};
