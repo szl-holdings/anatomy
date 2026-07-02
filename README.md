@@ -7,9 +7,6 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-custom_headers:
-  cross-origin-opener-policy: same-origin-allow-popups
-  cross-origin-resource-policy: cross-origin
 ---
 
 # SZL Living Anatomy 🫀
@@ -125,7 +122,8 @@ Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
 ~185 experimental CI-green · trust never 100% · no AGI.
 
-**Supply-chain posture:** this Space is a static visualization (`sdk: static`) — SLSA L1 honest.
+**Supply-chain posture:** this Space is a fully static visualization served by a thin
+Docker wrapper (`sdk: docker`; a static file server, no application backend) — SLSA L1 honest.
 The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
 (container provenance via attest-build-provenance, Sigstore keyless, Rekor-anchored; L3 roadmap) —
 see [szl-uds-deployment](https://github.com/szl-holdings/szl-uds-deployment).
@@ -179,7 +177,9 @@ deploy preview.
 
 ## Run, test, rollback (operability)
 
-This Space is `sdk: static` — no backend, no build step. To run and test locally:
+This Space is a static bundle served by a thin Docker wrapper (`sdk: docker`; a
+`python http.server` on port 7860) — no application backend, and the bundle itself is
+static and offline-capable. To run and test locally:
 
 ```bash
 # run: serve the bundle from the repo root with any static server
@@ -207,15 +207,14 @@ self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just
 
 ## Security headers (SAFE-NOW hardening, R2)
 
-This Space is `sdk: static`. Hugging Face's static serving **only** honors
-`cross-origin-opener-policy` / `cross-origin-embedder-policy` /
-`cross-origin-resource-policy` via the README `custom_headers` block — it does
-**not** pass through arbitrary response headers (there is no `_headers` file and
-no edge CSP/HSTS/Referrer-Policy). So hardening is split across the two levers
-that actually take effect, and nothing is set that the browser would silently
-ignore (doctrine v11: never fabricate):
+This Space serves a fully static bundle via a thin Docker wrapper (`sdk: docker`;
+a `python http.server` on port 7860). Under `sdk: docker` Hugging Face does **not**
+apply a README `custom_headers` block (that lever is static-SDK only), so the
+cross-origin headers are emitted by the container's own static server. Hardening is
+split across the two levers that actually take effect, and nothing is set that the
+browser would silently ignore (doctrine v11: never fabricate):
 
-- **README `custom_headers`** (real response headers at the HF edge):
+- **Response headers emitted by the Space's static server** (set on every response):
   - `cross-origin-opener-policy: same-origin-allow-popups`
   - `cross-origin-resource-policy: cross-origin` (keeps the page loadable inside
     the legitimate `huggingface.co` / `*.hf.space` embed iframe).
@@ -236,16 +235,17 @@ ignore (doctrine v11: never fabricate):
 
 **Why no HSTS / `frame-ancestors` / Report-Only here:** browsers ignore HSTS,
 CSP `frame-ancestors`, and `Content-Security-Policy-Report-Only` when delivered
-via `<meta>`, and the HF static edge won't emit them as real headers — so setting
+via `<meta>`, and the static server does not emit them as real headers — so setting
 them in-repo would be security theater. HF already terminates TLS and redirects to
 HTTPS at the edge. **Embedding is deliberately left enabled** (no
 `X-Frame-Options: DENY`, no `disable_embedding`) so the Space keeps working inside
 the `huggingface.co` / `*.hf.space` iframe.
 
-**CORS:** this Space owns no server endpoints (it is pure static) — there is no
-`*` ACAO to tighten on our side. Its only network activity is **outbound,
-read-only** `fetch(..., { mode:'cors', credentials:'omit' })` GETs to the SZL
-product Spaces; no key, no cookie, no credentials are ever sent.
+**CORS:** the Space's static server exposes only read-only file GETs and owns no
+application endpoints — there is no `*` ACAO to tighten on our side. Its only
+network activity is **outbound, read-only** `fetch(..., { mode:'cors',
+credentials:'omit' })` GETs to the SZL product Spaces; no key, no cookie, no
+credentials are ever sent.
 
 ## Verify it yourself
 
