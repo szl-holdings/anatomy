@@ -909,7 +909,53 @@
         detail:'A physics-informed surrogate for steady-state organ thermal load (residual of ∇·(k∇T) − q minimised at collocation points). Surrogate, NOT a measured thermocouple readout.' }
     ],
     bounded_error:'Bounded error: the composed field is reported with an explicit relative-residual envelope (≤ 5% on the demo mesh); outside the modelled range it degrades to an honest “out-of-distribution — unquantified” state rather than extrapolating.',
-    never:'NEVER a locked theorem · NEVER counted in the locked-8 · NEVER claimed as a measurement.'
+    never:'NEVER a locked theorem · NEVER counted in the locked-8 · NEVER claimed as a measurement.',
+
+    /* -------------------------------------------------------------------
+       LTC-derived state-dependent breathing overlay (ADDITIVE 2026-07-03).
+       Own-code reimplementation of the *pattern* from Liquid Time-Constant
+       Networks (Hasani, Lechner, Amini, Rus, Grosu; arXiv:2006.04439;
+       Apache-2.0). We reimplement ONLY the bounded first-order state-
+       dependent dynamics form — a "liquid" effective time-constant
+       tau_eff = 1/(1/tau + g), where a per-organ drift/anomaly signal g in
+       (0,1) shortens tau (organ breathes faster / reacts sooner) and a calm
+       organ lengthens it toward tau_base. This is a VIZ / modelling upgrade:
+       a rendered breathing rate, NOT a measurement and NOT a theorem. It is
+       NEVER folded into the locked-8 and NEVER relabels Λ.
+       ------------------------------------------------------------------- */
+    ltc_timescale:{
+      label:'LTC-derived · advisory · experimental',
+      citation:'pattern from Liquid Time-Constant Networks (arXiv:2006.04439, Apache-2.0); own-code reimplementation, no source vendored',
+      headline:'state-dependent organ breathing rate — liquid time-constant',
+      honest:'ADVISORY / experimental viz overlay. Each organ renders a breathing rate whose effective time-constant is state-dependent: a drifting / anomalous organ shortens tau (breathes faster), a calm organ lengthens tau toward its base. This is a MODELLED render, NOT a measured cadence and NOT a locked theorem; it is NEVER counted in the locked-8 and NEVER moves Λ off Conjecture 1.',
+      model:'tau_eff = 1 / (1/tau + g), with the fixed bounded gate g = sigmoid(drive) in (0,1) and tau clamped to [tau_min, tau_max]. Bounded by construction: tau_eff stays in (0, tau] so the render can never hyperventilate or freeze.',
+      tau_min:0.001,
+      tau_max:1000,
+      tau_units:'seconds (render cadence; advisory)',
+      drive:'The per-organ drive is the organ’s own honest liveness/drift signal where a live probe answers, and an explicit SAMPLE constant where none exists yet. A DOWN or unreachable probe reads as HIGH drift (organ breathes fast) — never a fabricated calm.',
+      organs:[
+        { organ_key:'willay', organ:'WILLAY / conscience', tau_base:8.0,
+          stress_source:'live', probe:V5_ENDPOINTS.willay,
+          detail:'Refusal-classifier surface. Drive = observed classifier activity / reachability from the live probe; a spike in refusals shortens tau (breathes faster). Unreachable ⇒ HIGH drift, not a fabricated calm.' },
+        { organ_key:'sovereign_mesh', organ:'SOVEREIGN MESH / circulatory', tau_base:6.0,
+          stress_source:'live', probe:V5_ENDPOINTS.mesh,
+          detail:'Per-node up/down from /govern/health. Drive rises as nodes read DOWN; a degraded mesh shortens tau. Never a fabricated green light — a silent mesh reads as HIGH drift.' },
+        { organ_key:'yawar', organ:'CIRCULATORY / receipt bus', tau_base:5.0,
+          stress_source:'live', probe:V5_ENDPOINTS.ledger,
+          detail:'Receipt hash-chain health. Drive = chain-head staleness / emit-rate anomaly from the live ledger probe; a stalled chain shortens tau.' },
+        { organ_key:'samay', organ:'RESPIRATORY / soak-loop breath', tau_base:12.0,
+          stress_source:'sample', sample_drive:0.35,
+          detail:'Soak-loop breath already breathes on wasted-energy windows; the LTC overlay adds an advisory state-dependent cadence. No dedicated live drift probe yet ⇒ honest SAMPLE drive, not fabricated telemetry.' },
+        { organ_key:'yuyay', organ:'HEART / gate', tau_base:4.0,
+          stress_source:'sample', sample_drive:0.25,
+          detail:'Gate cadence. Λ stays ADVISORY / Conjecture 1 — this overlay renders a breathing rate only and NEVER upgrades the heart-gate to a theorem. No live per-decision drift feed here yet ⇒ honest SAMPLE drive.' },
+        { organ_key:'amaru', organ:'BRAIN / cortex', tau_base:10.0,
+          stress_source:'sample', sample_drive:0.20,
+          detail:'Read-only reasoning cortex. No live drift probe ⇒ honest SAMPLE drive; the cortex breathes slowly (long tau) unless a future telemetry feed raises its drive.' }
+      ],
+      bounded:'Bounded by construction: g in (0,1) and tau in [tau_min, tau_max] ⇒ tau_eff in (0, tau]. The render is a contraction toward the observed drive — it cannot blow up.',
+      never:'NEVER a measurement · NEVER a locked theorem · NEVER counted in the locked-8 · NEVER relabels Λ off Conjecture 1 · a DOWN probe reads as high drift, never a fabricated calm.'
+    }
   };
 
   /* =====================================================================
