@@ -7,6 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
+short_description: 3D navigable map of the governed-AI organ substrate
 ---
 
 # SZL Living Anatomy 🫀
@@ -269,3 +270,21 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a-11-oy.com](https://a-11-oy.com)**
 
 <sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
+
+---
+
+## ◇ Part of the SZL Holdings estate — *governed AI you can prove*
+
+One sovereign substrate, many organs — every decision carries a signed, checkable receipt.
+
+**[◇ Holographic Estate — the showcase](https://szlholdings-holographic.static.hf.space)** ·
+[🛡️ a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) ·
+[🧬 IMMUNE](https://huggingface.co/spaces/SZLHOLDINGS/immune) ·
+[🦅 killinchu](https://huggingface.co/spaces/SZLHOLDINGS/killinchu) ·
+[🫀 anatomy](https://huggingface.co/spaces/SZLHOLDINGS/anatomy) ·
+[🌌 cosmos](https://huggingface.co/spaces/SZLHOLDINGS/cosmos) ·
+[🛰️ SDA](https://huggingface.co/spaces/SZLHOLDINGS/sda) ·
+[🌊 yarqa](https://huggingface.co/spaces/SZLHOLDINGS/yarqa) ·
+[🤗 all Spaces](https://huggingface.co/SZLHOLDINGS)
+
+<sub>Doctrine v11 · Λ = Conjecture 1, never green · honest by design · public data only.</sub>
