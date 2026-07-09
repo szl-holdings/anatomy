@@ -61,7 +61,9 @@ CONTENT_SECURITY_POLICY = (
     "https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space "
     "https://szlholdings-sentra.hf.space; "
     "form-action 'self'; "
-    "frame-ancestors 'self' https://huggingface.co https://*.hf.space https://*.huggingface.co"
+    "frame-ancestors 'self' https://huggingface.co https://*.hf.space https://*.huggingface.co "
+    # a11oy's own domains may embed the anatomy (the landing's living-body iframe).
+    "https://a-11-oy.com https://*.a-11-oy.com https://a11oy.net https://*.a11oy.net"
 )
 
 
