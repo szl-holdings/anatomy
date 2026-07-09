@@ -8,6 +8,13 @@ app_port: 7860
 pinned: false
 license: apache-2.0
 short_description: 3D navigable map of the governed-AI organ substrate
+tags:
+  - visualization
+  - threejs
+  - governance
+  - receipts
+  - honest-by-design
+  - szl-holdings
 ---
 
 # SZL Living Anatomy 🫀
@@ -292,4 +299,4 @@ One sovereign substrate, many organs — every decision carries a signed, checka
 [✅ receipt verifier](https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier) ·
 [📦 receipts bench](https://huggingface.co/datasets/SZLHOLDINGS/governed-receipts-bench)
 
-<sub>Doctrine v11 · Λ = Conjecture 1, never green · honest by design · public data only.</sub>
+<sub>Doctrine v11 · Λ = Conjecture 1 (advisory — never "green"/theorem; open) · honest by design · public data only.</sub>
