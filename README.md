@@ -287,4 +287,9 @@ One sovereign substrate, many organs — every decision carries a signed, checka
 [🌊 yarqa](https://huggingface.co/spaces/SZLHOLDINGS/yarqa) ·
 [🤗 all Spaces](https://huggingface.co/SZLHOLDINGS)
 
+**Governed-receipt cluster** — the open receipt format, an offline verifier, and a conformance bench (the DSSE Khipu receipts this organism depicts conform to this spec):
+[📐 governed-receipt-spec](https://github.com/szl-holdings/governed-receipt-spec) ·
+[✅ receipt verifier](https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier) ·
+[📦 receipts bench](https://huggingface.co/datasets/SZLHOLDINGS/governed-receipts-bench)
+
 <sub>Doctrine v11 · Λ = Conjecture 1, never green · honest by design · public data only.</sub>
