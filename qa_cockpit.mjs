@@ -23,13 +23,18 @@ async function loadModule() {
   // `window`). Load it in node by copying to a temp .mjs and importing it — no
   // fragile source-stripping, and the real module code is exercised verbatim.
   const src = fs.readFileSync(path.join(ROOT, "covenant-cockpit.js"), "utf8");
-  const tmp = path.join(os.tmpdir(), `cc-qa-${process.pid}.mjs`);
+  // Write the temp module into a per-run PRIVATE directory (mkdtemp: random
+  // name, mode 0700) instead of a predictable path in the shared temp dir, so it
+  // cannot be pre-created, swapped, or read by another local user before we
+  // import it (CodeQL js/insecure-temporary-file).
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cc-qa-"));
+  const tmp = path.join(tmpDir, "covenant-cockpit.mjs");
   fs.writeFileSync(tmp, src);
   try {
     const mod = await import(pathToFileURL(tmp).href);
     return mod.default;
   } finally {
-    try { fs.unlinkSync(tmp); } catch { /* best-effort cleanup */ }
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best-effort cleanup */ }
   }
 }
 
