@@ -37,6 +37,36 @@ The governed-AI organ substrate shared by **a11oy** (governed-AI command body) a
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
 with the Λ heart at the center.
 
+## Evidence Bay — the proof boundary
+
+The 3D organism now has a machine-readable evidence boundary without replacing its
+visual language. Open **Evidence Bay** from the atlas to inspect every major surface
+through the same five-part contract: **Purpose · Try · Evidence · Limits · Reproduce**.
+
+- Transport, evidence, verification, and authority are separate dimensions. A
+  `RUNNING` Space is not treated as proof of model quality, freshness, or safety.
+- The deployed bundle emits a deterministic SHA-256 integrity receipt. Its local
+  verifier recomputes every declared file and deliberately returns
+  `STRUCTURAL-ONLY` because the public visualization has no signing key.
+- Live A11OY, Killinchu, and receipt-verifier dependencies are probed separately
+  and timestamped. Missing contracts stay `MISSING` or `UNAVAILABLE`; no green is
+  synthesized from an unrelated endpoint.
+- Formula claims link to their source files. This Space presents a declared
+  snapshot—it does not run Lean—and Λ remains Conjecture 1.
+- `/.well-known/szl-source.json` exposes the declared GitHub base, measured HF
+  revision, artifact-set digest, and the remaining GitHub-sync state.
+
+Machine-readable routes:
+
+| Route | Meaning |
+|---|---|
+| `/api/anatomy/v1/manifest` | Contract, state vocabulary, doctrine boundary |
+| `/api/anatomy/v1/capabilities` | Five-part capability shell and provenance |
+| `/api/anatomy/v1/evidence?refresh=1` | Fresh dependency contract probes |
+| `/api/anatomy/v1/receipt` | Deterministic local artifact receipt |
+| `POST /api/anatomy/v1/verify/receipt` | Replay local integrity; structural only |
+| `/.well-known/szl-source.json` | GitHub ↔ HF deployment-source attestation |
+
 ## What's new in v5 — conscience, sovereign mesh, verifiable receipts (evolves v4)
 
 v5 **evolves** v4 (it does not replace it): the entire v4 engine (`data.js` / `app.js`,
@@ -251,11 +281,11 @@ HTTPS at the edge. **Embedding is deliberately left enabled** (no
 `X-Frame-Options: DENY`, no `disable_embedding`) so the Space keeps working inside
 the `huggingface.co` / `*.hf.space` iframe.
 
-**CORS:** the Space's static server exposes only read-only file GETs and owns no
-application endpoints — there is no `*` ACAO to tighten on our side. Its only
-network activity is **outbound, read-only** `fetch(..., { mode:'cors',
-credentials:'omit' })` GETs to the SZL product Spaces; no key, no cookie, no
-credentials are ever sent.
+**CORS:** the evidence endpoints are public, read-only inspection contracts and
+return `Access-Control-Allow-Origin: *` so A11OY and the wider estate can ingest
+them. The only POST is a pure receipt recomputation; it cannot sign, store, fetch
+user-controlled URLs, or mutate state. Outbound dependency probes use a fixed
+allowlist in `server.py`; no key, cookie, or credential is sent.
 
 ## Verify it yourself
 
@@ -265,8 +295,12 @@ live products it depicts:
 ```bash
 # Confirm the live doctrine posture the heart reports
 curl -s https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest | jq .kernel_commit   # => "c7c0ba17"
-# Pull a signed receipt from the edge organ and verify it offline
-curl -s https://szlholdings-killinchu.hf.space/cosign.pub -o cosign.pub
+# Inspect and replay the Anatomy bundle receipt (result is STRUCTURAL-ONLY, not signed)
+curl -s https://szlholdings-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
+curl -s -X POST -H "Content-Type: application/json" --data-binary @anatomy-receipt.json \
+  https://szlholdings-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
+# Open the independent browser verifier for signed governed receipts
+open https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier
 ```
 
 Read the thesis → [szl-papers](https://github.com/szl-holdings/szl-papers) ·
@@ -274,7 +308,7 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 ---
 
-Canonical source mirror: `szl-holdings/anatomy` (GitHub) ↔ `SZLHOLDINGS/anatomy` (HF Space) · **[a-11-oy.com](https://a-11-oy.com)**
+Declared source base: `szl-holdings/anatomy` (GitHub) → `SZLHOLDINGS/anatomy` (HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
 
 <sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
 
