@@ -102,7 +102,10 @@ async function runViewport(browser, url, vp){
   await new Promise(rr=>server.listen(0,rr));
   const port = server.address().port;
   const url = `http://localhost:${port}/index.html`;
-  const browser = await chromium.launch({ args:['--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist','--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
+    args:['--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']
+  });
 
   let totalErrors = 0;
   for(const vp of VIEWPORTS){
