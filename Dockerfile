@@ -7,7 +7,7 @@
 # sdk:docker HF does NOT apply the README custom_headers block (that lever is
 # static-SDK only), and ADDS the previously-missing CSP/HSTS/nosniff/Referrer
 # headers plus a clean "szl" Server banner. Same files, same port 7860.
-FROM python:3.12-slim
+FROM public.ecr.aws/docker/library/python:3.12-slim
 WORKDIR /app
 COPY . /app
 EXPOSE 7860
