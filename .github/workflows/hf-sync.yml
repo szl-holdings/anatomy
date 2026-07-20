@@ -1,19 +1,16 @@
 # Copyright 2026 SZL Holdings — SPDX-License-Identifier: Apache-2.0
 name: Sync to HuggingFace Space
 
-# Mirrors this repo's served static front-door files to the live Hugging Face
+# Mirrors this repo's served files and Docker runtime to the live Hugging Face
 # Space (SZLHOLDINGS/anatomy) on every push to main, so the Space never drifts
 # behind GitHub. It uses huggingface_hub.create_commit (git-free, no LFS, no
 # orphan-mirror) — the same drift-safe path proven on a11oy/killinchu, which
 # avoids the dangling-LFS / pre-receive / missing-front-matter failures that
 # broke earlier git-push mirrors.
 #
-# It mirrors ONLY the repo's own tracked front-door files (index.html, the JS/CSS,
-# lib/**, README.md). It deliberately NEVER touches the Space-only Dockerfile
-# (the HF Space wraps these static files in its own container and that file does
-# not exist in this repo) nor the Space's .github/ — clobbering either would break
-# the Space build. README.md is uploaded verbatim because it already carries the
-# HF Space front-matter (title/emoji/sdk).
+# It mirrors only the tracked runtime and front-door files required by this
+# Docker Space. The Space's .github/ directory remains untouched. README.md is
+# uploaded verbatim because it carries the HF Space front-matter.
 #
 # Requires repo secret HF_TOKEN (HF write token with org write to SZLHOLDINGS).
 # Without it the job FAILS LOUDLY with a founder-action message — it never fakes
@@ -24,6 +21,9 @@ on:
     branches: [main]
     paths:
       - "README.md"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "server.py"
       - "index.html"
       - "live-body.html"
       - "*.js"
@@ -41,15 +41,15 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
       - name: Install huggingface_hub
-        run: pip install --quiet "huggingface_hub>=0.25"
-      - name: Mirror front-door files to the Space
+        run: pip install --quiet "huggingface_hub==1.23.0"
+      - name: Mirror runtime and front-door files to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SPACE_ID: SZLHOLDINGS/anatomy
@@ -61,15 +61,19 @@ jobs:
             exit 1
           fi
           python3 <<'PYEOF'
-          import os, glob
+          import glob
+          import json
+          import os
+          import time
+          import urllib.request
           from huggingface_hub import HfApi, CommitOperationAdd
 
           api = HfApi(token=os.environ["HF_TOKEN"])
           space = os.environ["SPACE_ID"]
 
-          # Repo's own served front-door files. The Space-only Dockerfile and the
-          # Space's .github/ are intentionally NOT in this set, so they survive.
-          patterns = ["README.md", "index.html", "live-body.html",
+          # Runtime and served files. The Space's .github/ remains untouched.
+          patterns = ["README.md", "Dockerfile", ".dockerignore", "server.py",
+                      "index.html", "live-body.html",
                       "*.js", "*.css", "lib/**/*"]
           files = []
           for p in patterns:
@@ -90,4 +94,39 @@ jobs:
               commit_message=f"hf-sync: mirror front-door from GitHub {os.environ.get('GITHUB_SHA','')[:8]}",
           )
           print("Space commit:", getattr(commit, "commit_url", commit))
+
+          target_sha = commit.oid
+          deadline = time.monotonic() + 480
+          while time.monotonic() < deadline:
+              info = api.space_info(space)
+              runtime = api.get_space_runtime(space)
+              stage = getattr(runtime.stage, "value", str(runtime.stage))
+              print("Observed Space:", info.sha, stage)
+              if info.sha == target_sha:
+                  if stage == "RUNNING":
+                      break
+                  if stage in {"BUILD_ERROR", "RUNTIME_ERROR", "CONFIG_ERROR"}:
+                      raise RuntimeError(f"Space reached {stage} at target revision {target_sha}")
+              time.sleep(10)
+          else:
+              raise TimeoutError(f"Space did not reach RUNNING at {target_sha} within 480 seconds")
+
+          base = "https://szlholdings-anatomy.hf.space"
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(base + "/healthz", timeout=10) as response:
+                      health = json.load(response)
+                  with urllib.request.urlopen(
+                      base + "/.well-known/szl-source.json?refresh=1", timeout=10
+                  ) as response:
+                      source = json.load(response)
+                  assert health["transport_state"] == "REACHABLE"
+                  assert health["verification_state"] == "STRUCTURAL_ONLY"
+                  assert source["deployment"]["hf_revision"] == target_sha
+                  print("Verified live Space revision and health:", target_sha)
+                  break
+              except Exception as error:
+                  if attempt == 11:
+                      raise RuntimeError("Public Space verification failed") from error
+                  time.sleep(5)
           PYEOF

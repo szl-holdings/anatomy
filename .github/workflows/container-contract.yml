@@ -1,0 +1,43 @@
+name: Container contract
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  container-contract:
+    name: Build and exercise pinned Space image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v6.0.0
+        with:
+          python-version: "3.12"
+      - name: Run server contract tests
+        run: python -m unittest discover -s tests -v
+      - name: Build pinned Space image
+        run: docker build --tag anatomy-space-ci .
+      - name: Start Space image
+        run: docker run --detach --name anatomy-space-ci --publish 7860:7860 anatomy-space-ci
+      - name: Verify live container contract
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:7860/healthz > health.json; then
+              python -c "import json; data=json.load(open('health.json', encoding='utf-8')); assert data['transport_state']=='REACHABLE'; assert data['verification_state']=='STRUCTURAL_ONLY'"
+              test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7860/this-route-must-not-exist)" = "404"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs anatomy-space-ci
+          exit 1
+      - name: Stop Space image
+        if: always()
+        run: docker rm --force anatomy-space-ci || true
