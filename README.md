@@ -68,6 +68,23 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
 - `/.well-known/szl-source.json` exposes the declared GitHub base, measured HF
   revision, artifact-set digest, and the remaining GitHub-sync state.
 
+## v6 — alive-proof layer (ratchet 2026-07-21)
+
+The **⛬ alive-proof (v6)** control closes the loop between the map and the
+running substrate. It fetches the latest anatomy alive-harness run from the
+restored public sink ([`SZLHOLDINGS/test-results`](https://huggingface.co/datasets/SZLHOLDINGS/test-results)),
+verifies the run's DSSE (PAE v1) ECDSA-P256 signature **in the browser**
+against the pinned, committed org key
+([`hatun-mcp/PUBKEY_szlholdings-ec-p256.pem`](https://github.com/szl-holdings/hatun-mcp/blob/main/PUBKEY_szlholdings-ec-p256.pem)),
+and only then displays the run — verdict, live assertion counts, per-layer
+results, and the formula-gate pass rate, all **derived from the signed
+evidence**, never hand-typed. Runs are signed by the live Hatun MCP gateway
+(`dsse_sign`, keyid `szlholdings-ec-p256`) and published by a fail-closed
+publisher that verifies before and after upload. If the sink is unreachable or
+a signature fails, the panel says so — no fabricated green light. A signed
+GREEN run proves liveness, not doctrine upgrades: locked-proven stays exactly
+8 and Λ remains Conjecture 1.
+
 Machine-readable routes:
 
 | Route | Meaning |
