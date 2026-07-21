@@ -1,6 +1,7 @@
 ---
 title: SZL Living Anatomy
 emoji: 🫀
+thumbnail: "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/main/og-card.png"
 colorFrom: blue
 colorTo: gray
 sdk: docker
