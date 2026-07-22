@@ -19,19 +19,20 @@
     wave910_sha: '66735bf',  // Wave9 PR #199 merged here; Wave10 PR #200 branched from it
     experimental_decls: 1323, experimental_axioms: 23, experimental_axioms_unique: 22, experimental_sorries: 307,
     toolchain: 'Lean v4.13.0 (locked) / v4.18.0 (Mathlib pinned) · main @ 044eb098',
-    locked_proven: ['F1', 'F4', 'F7', 'F11', 'F12', 'F18', 'F19', 'F22'],
-    experimental_count_approx: 119,  // waves 5–18 instilled card set (EXPERIMENTAL · CI-green, never folded into locked 8)
+    locked_proven: ['F1', 'F11', 'F12', 'F18', 'F19'],
+    experimental_not_locked: ['F4', 'F7', 'F22'],
+    experimental_count_approx: 119,  // waves 5–18 instilled card set (EXPERIMENTAL / NOT LOCKED; outside the locked five)
     waves_merged: 'Wave5–23 (CF-1..28 + CUT-1 fwd + CUT-2 + Wave23 conditional BFT safety)',  // Wave15 CF-22, Wave16 CF-24/25/26, Wave17 CF-23/27/28, Wave18 CUT-1 forward fragment
     cut2: 'Wave12 CUT-2 lambda_unique_of_separable — Λ uniqueness PROVEN CONDITIONAL on slice-multiplicativity, axiom-free, kernel-clean. Unconditional Λ stays Conjecture 1.',
     bft_conditional: 'Wave23 khipu_quorum_safety_conditional — Khipu BFT safety (Conjecture 2) agreement / no-split-brain PROVEN CONDITIONAL on {n>=3f+1, honest non-equivocation}, axiom-clean (PR #214, merged main @ 43bcabb7). Unconditional BFT safety stays Conjecture 2 at the sharp boundary.',
     slsa: 'Static space: SLSA L1 honest · product images (a11oy, killinchu) L2 build-attested (container provenance, Sigstore keyless) · L3 roadmap',
-    gpd: 'Governed Post-Determinism — SZL\u2019s own framework. The 5 organs ARE the participant-general model: the BRAIN reasons (divergent reasoning paths are OK), the HEART / YUYAY 13-axis gate certifies semantic admissibility (deny-by-default), the SKELETON / Khipu BFT quorum = Semantic Quorum Assurance (Wave23 conditional safety theorem; unconditional = Conjecture 2), and the CIRCULATORY / YAWAR append-only receipt bus = Epistemic State Replication + Verifiable Semantic Rollback (receipts/replay live; full ESR semantics = open R&D / roadmap). The unit of agreement shifts from identical output to certified semantic admissibility. Grounded entirely in SZL\u2019s prior DOI-stamped published work (Zenodo, Apr\u2013May 2026): The Loop Is the Product v1/v2 (10.5281/zenodo.19867281, .19934129), Lineage-Aware RAG v5 (.20020846), Sealed Constitutional Guardrails v6 (.20020845), Lutar Omega Formalism v4 (.20020841), SZL Doctrine v2 — 9 Canonical Axes (.20174600). Locked-proven = exactly 8 (locked_count_eight; F4/F7/F22 joined the original 5 on 2026-06-10); \u039b = Conjecture 1.'
+    gpd: 'Governed Post-Determinism — SZL\u2019s own framework. The 5 organs ARE the participant-general model: the BRAIN reasons (divergent reasoning paths are OK), the HEART / YUYAY 13-axis gate certifies semantic admissibility (deny-by-default), the SKELETON / Khipu BFT quorum = Semantic Quorum Assurance (Wave23 conditional safety theorem; unconditional = Conjecture 2), and the CIRCULATORY / YAWAR append-only receipt bus = Epistemic State Replication + Verifiable Semantic Rollback (receipts/replay live; full ESR semantics = open R&D / roadmap). The unit of agreement shifts from identical output to certified semantic admissibility. Grounded entirely in SZL\u2019s prior DOI-stamped published work (Zenodo, Apr\u2013May 2026): The Loop Is the Product v1/v2 (10.5281/zenodo.19867281, .19934129), Lineage-Aware RAG v5 (.20020846), Sealed Constitutional Guardrails v6 (.20020845), Lutar Omega Formalism v4 (.20020841), SZL Doctrine v2 — 9 Canonical Axes (.20174600). Locked-proven = exactly 5 {F1,F11,F12,F18,F19}; F4/F7/F22 are EXPERIMENTAL / NOT LOCKED; \u039b = Conjecture 1.'
   };
 
   /* ---- Maturity → chip styling ---- */
   const MATURITY = {
     LOCKED:        { label: 'LOCKED · kernel-verified', color: '#ffd166', desc: 'Sorry-free, Lean-core axioms only [propext, Classical.choice, Quot.sound]. Frozen @ c7c0ba17.' },
-    EXPERIMENTAL:  { label: 'EXPERIMENTAL · CI-green', color: '#5ad1ff', desc: 'Kernel-checked by CI on main @ 7885fd9. Additive — never folded into the locked 8.' },
+    EXPERIMENTAL:  { label: 'EXPERIMENTAL / NOT LOCKED', color: '#5ad1ff', desc: 'Kernel-checked by CI on main. Additive and explicitly outside the locked five.' },
     AXIOM_GATED:   { label: 'AXIOM-GATED (disclosed)', color: '#c9a0ff', desc: 'Sorry-free given one declared, cited idealization (axiom listed in #print axioms).' },
     CONDITIONAL:   { label: 'CONDITIONAL · axiom-free', color: '#9ef0c0', desc: 'A kernel-clean THEOREM proven CONDITIONAL on a stated stronger hypothesis (no new axiom). Honestly NOT an unconditional result.' },
     CONJECTURE:    { label: 'CONJECTURE 1', color: '#ff7eb6', desc: 'Not a theorem. Conditional only within strengthened classes; unconditional uniqueness machine-checked FALSE.' }
@@ -42,7 +43,7 @@
      converts to Unicode glyphs. axioms = verbatim #print axioms line.
      ===================================================================== */
   const FORMULAS = {
-    /* ---------- LOCKED PROVEN (exactly 8) ---------- */
+    /* ---------- LOCKED PROVEN (exactly five) ---------- */
     F1: { id:'F1', name:'Replay-Hash Determinism', maturity:'LOCKED',
       latex:'replay(s0, log) = trace  =>  replay(s0, log) = trace   (bit-identical)',
       plain:'Replaying the SAME recorded log from the same initial state yields a BIT-IDENTICAL trace — no drift. Underpins the Khipu replay-hash gate.',
@@ -69,19 +70,19 @@
       axioms:'f19_* — [propext, Classical.choice, Quot.sound]',
       ref:'lutar-lean @ c7c0ba17 · caveat in Lean docstring' },
 
-    F4: { id:'F4', name:'Khipu DAG Acyclicity Preservation', maturity:'LOCKED',
+    F4: { id:'F4', name:'Khipu DAG Acyclicity Preservation', maturity:'EXPERIMENTAL',
       latex:'acyclic(G)  =>  acyclic(append_fresh_node(G))   (no back-edge cycle)',
-      plain:'Appending a fresh node to the Khipu receipt DAG preserves acyclicity — no receipt can ever cycle back on itself. Newly kernel-verified (joined the locked set 2026-06-10).',
+      plain:'Appending a fresh node to the Khipu receipt DAG preserves acyclicity in the cited experimental proof artifact. EXPERIMENTAL / NOT LOCKED.',
       axioms:'f4_khipu_dag_acyclic_preserved / f4_khipu_no_cycle / f4_khipu_reach_decreases / f4_khipu_append_preserves — no axioms (genuine, non-vacuous)',
       ref:'lutar-lean ProvedFormulas.lean @ c7c0ba17 (lutar-lean #219 + platform #321)' },
-    F7: { id:'F7', name:'Chaski FIFO Reception Ordering', maturity:'LOCKED',
+    F7: { id:'F7', name:'Chaski FIFO Reception Ordering', maturity:'EXPERIMENTAL',
       latex:'drain(enqueue_batch(c, msgs))  =  msgs   (reception order = send order)',
-      plain:'Messages drain from the Chaski channel in exactly the order sent — true FIFO, no reordering. Newly kernel-verified (joined the locked set 2026-06-10).',
+      plain:'Messages drain from the modeled Chaski channel in send order in the cited experimental proof artifact. EXPERIMENTAL / NOT LOCKED.',
       axioms:'f7_chaski_fifo_order / f7_chaski_fifo_positional / f7_chaski_drain_eq — no axioms (genuine, non-vacuous)',
       ref:'lutar-lean ProvedFormulas.lean @ c7c0ba17 (lutar-lean #219 + platform #321)' },
-    F22:{ id:'F22', name:'Khipu Emit Append-Only Monotonicity', maturity:'LOCKED',
+    F22:{ id:'F22', name:'Khipu Emit Append-Only Monotonicity', maturity:'EXPERIMENTAL',
       latex:'emit(ledger)  =>  index(ledger\') > index(ledger)   (strictly increasing)',
-      plain:'Every Khipu emit strictly increases the ledger index — append-only, never rewrites history. Newly kernel-verified (joined the locked set 2026-06-10).',
+      plain:'Every Khipu emit increases the modeled ledger index in the cited experimental proof artifact. EXPERIMENTAL / NOT LOCKED.',
       axioms:'f22_khipu_emit_monotone / f22_emit_appends_length / f22_emit_strictly_greater — no axioms',
       ref:'lutar-lean ProvedFormulas.lean @ c7c0ba17 (lutar-lean #219 + platform #321)' },
 
@@ -138,13 +139,13 @@
       ref:'PR #197 @ 7885fd9 · Wave8/LambdaMono.lean' },
     Ph1:{ id:'Ph1', name:'Axiom-Disclosure Soundness', maturity:'EXPERIMENTAL',
       latex:'axiomsAllowed(S)   =>   every a in S is a Lean kernel axiom',
-      plain:'The axiom-disclosure gate is sound; locked_count_eight proves there are EXACTLY 8 locked entries with kernel-only axioms (= by decide, no axioms). Mechanically enforces "no hidden axioms".',
-      axioms:'Lutar.Wave8.AxiomDisclosure.disclosure_sound — [propext, Quot.sound] · locked_count_eight — no axioms',
+      plain:'The axiom-disclosure gate is sound for the declared locked five; F4/F7/F22 remain EXPERIMENTAL / NOT LOCKED. It mechanically enforces "no hidden axioms".',
+      axioms:'Lutar.Wave8.AxiomDisclosure.disclosure_sound — [propext, Quot.sound]',
       ref:'PR #196 @ b1c840f · Wave8/AxiomDisclosure.lean' },
 
     /* ---------- WAVE 9 + WAVE 10 (experimental, CI-green on main @ 66735bf) ----------
        PR #199 (Wave9) merged @ 66735bf; Wave10 PR #200. EXPERIMENTAL · CI-green —
-       kernel-verified, NEVER folded into the locked 8. Λ stays Conjecture 1.
+       kernel-verified, NEVER folded into the locked five. Λ stays Conjecture 1.
        Live computation surfaces shipped in killinchu /api/killinchu/v1/wave910/*. */
     W9_GERSH:{ id:'MA1', name:'Gershgorin Spectral Non-Degeneracy (incl. ℂ)', maturity:'EXPERIMENTAL',
       latex:'strict diag dominance  =>  0 in no Gershgorin disc  =>  no zero eigenvalue  =>  W nonsingular',
@@ -194,7 +195,7 @@
 
     /* ---------- WAVE 11 (experimental, CI-green on main @ 044eb098) ----------
        PR #201. EXPERIMENTAL · CI-green; #print axioms ⊆ {propext, Classical.choice, Quot.sound}.
-       Never folded into the locked 8. */
+       Never folded into the locked five. */
     CF1:{ id:'CF-1', name:'Graph Auto-Distance Invariance', maturity:'EXPERIMENTAL',
       latex:'phi graph automorphism  =>  d(phi u, phi v) = d(u, v)',
       plain:'A graph automorphism preserves shortest-path distance — relabelling the mesh by a symmetry never changes routing distances. Structural invariant behind topology-aware routing.',
@@ -211,7 +212,7 @@
        (conditional only). Unconditional Λ uniqueness stays Conjecture 1 (machine-checked FALSE). */
     CUT2:{ id:'CUT-2', name:'Λ Conditional Uniqueness (slice-multiplicativity)', maturity:'CONDITIONAL',
       latex:'Φ separable & per-axis multiplicative & monotone & A1A2A3A5  =>  Φ = Λ',
-      plain:'Λ uniqueness is PROVEN as a theorem CONDITIONAL on slice-multiplicativity (separability) — axiom-free and kernel-clean. This gets Λ OFF bare conjecture honestly. UNCONDITIONAL Λ uniqueness under bare A1–A5 stays Conjecture 1 (provably FALSE — maxAgg/min counterexamples). NOT folded into the locked 8.',
+      plain:'Λ uniqueness is PROVEN as a theorem CONDITIONAL on slice-multiplicativity (separability) — axiom-free and kernel-clean. This gets Λ OFF bare conjecture honestly. UNCONDITIONAL Λ uniqueness under bare A1–A5 stays Conjecture 1 (provably FALSE — maxAgg/min counterexamples). NOT folded into the locked five.',
       axioms:'Lutar.Round13.lambda_unique_of_separable — [propext, Classical.choice, Quot.sound] (NO new axiom)',
       ref:'PR #202 @ 044eb098 · Round13/LambdaSeparable.lean' },
     CF13:{ id:'CF-13', name:'DEQ Input-Lipschitz Well-Posedness', maturity:'EXPERIMENTAL',
@@ -300,7 +301,7 @@
        CF-28 recurrent-depth Lipschitz. 24 theorems, axiom-clean. */
     CF23:{ id:'CF-23', name:'Full Binary Pinsker Inequality', maturity:'EXPERIMENTAL',
       latex:'2·(p − q)^2  <=  KL(Bern p ‖ Bern q)   (binary Pinsker)',
-      plain:'The full binary Pinsker inequality — KL ≥ 2·TV² for Bernoulli distributions — the long-sought headline result (previously only a named Lean axiom). Live demo KL=0.0823 ≥ 2·TV²=0.0800. Gives a confidence-margin bound for any binary gate. HONEST: still experimental CI-green tier, NOT folded into the locked 8.',
+      plain:'The full binary Pinsker inequality — KL ≥ 2·TV² for Bernoulli distributions — the long-sought headline result (previously only a named Lean axiom). Live demo KL=0.0823 ≥ 2·TV²=0.0800. Gives a confidence-margin bound for any binary gate. HONEST: still experimental CI-green tier, NOT folded into the locked five.',
       axioms:'Lutar.Wave17.binary_pinsker / binary_inv_sum_ge_four — [propext, Classical.choice, Quot.sound]',
       ref:'PR #207 @ 044eb098 · Wave17/BinaryPinsker.lean' },
     CF27:{ id:'CF-27', name:'monDEQ Strong-Monotonicity ⇒ Unique Equilibrium', maturity:'EXPERIMENTAL',
@@ -320,7 +321,7 @@
        Λ unconditional uniqueness stays Conjecture 1 (machine-checked FALSE). */
     CUT1:{ id:'CUT-1', name:'CUT-1 Forward Fragment (generator unique up to affine)', maturity:'CONDITIONAL',
       latex:'expMidpoint(x,y) = √(xy) ;  generator unique up to affine ;  cut1_conditional_lambda',
-      plain:'The forward fragment of the CUT-1 unconditional-uniqueness program: the generator is unique up to affine reparam, the exponential midpoint equals the geometric mean √(xy), and Λ follows CONDITIONALLY (19 axiom-clean theorems). HONEST OPEN GAP: `dyadic_image_dense` (the dense-domain density step, n-adic recursive construction per Kiss–Shulman 2026) is NOT proven — multi-week roadmap. Λ unconditional uniqueness stays Conjecture 1. NOT folded into the locked 8.',
+      plain:'The forward fragment of the CUT-1 unconditional-uniqueness program: the generator is unique up to affine reparam, the exponential midpoint equals the geometric mean √(xy), and Λ follows CONDITIONALLY (19 axiom-clean theorems). HONEST OPEN GAP: `dyadic_image_dense` (the dense-domain density step, n-adic recursive construction per Kiss–Shulman 2026) is NOT proven — multi-week roadmap. Λ unconditional uniqueness stays Conjecture 1. NOT folded into the locked five.',
       axioms:'Lutar.Wave18.generator_unique_up_to_affine / expMidpoint_eq_geom / cut1_conditional_lambda — [propext, Classical.choice, Quot.sound] · GAP: dyadic_image_dense (open sorry, roadmap)',
       ref:'PR #208 @ 044eb098 · Wave18/CUT1Forward.lean' },
 
@@ -399,7 +400,7 @@
     /* GOVERNANCE / SKELETON anchors */
     { key:'hatun', system:'skeleton', quechua:'HATUN', fn:'sovereign orchestrator + seal (the crown)',
       pos:[0,2.95,0], scale:0.26, color:'#ffd166',
-      blurb:'Sovereign orchestrator (~199 SLOC): long-horizon multi-subagent dispatch, energy-gated (Butler–Volmer), doctrine-gated (YUYAY per cycle), cryptographic receipts on YAWAR. SOVEREIGN SEAL: identity-trace to a HUMAN PRINCIPAL · 10-tripwire egress · byte-deterministic commit · 5× replay verified. The seal also enforces the AXIOM-DISCLOSURE honesty gate (Ph1): exactly 8 locked-proven, no hidden axioms.',
+      blurb:'Sovereign orchestrator (~199 SLOC): long-horizon multi-subagent dispatch, energy-gated (Butler–Volmer), doctrine-gated (YUYAY per cycle), cryptographic receipts on YAWAR. SOVEREIGN SEAL: identity-trace to a HUMAN PRINCIPAL · 10-tripwire egress · byte-deterministic commit · 5× replay verified. The seal also enforces the AXIOM-DISCLOSURE honesty gate (Ph1): exactly 5 locked-proven; F4/F7/F22 EXPERIMENTAL / NOT LOCKED; no hidden axioms.',
       formulas:['Q2','P1','Ph1','W9_GERSH','W10_QUORUM','W9_BDB','CF20','W13_QUORUM','CF1'] },
     { key:'overwatch', system:'audit', quechua:'R0513 / OVERWATCH', fn:'read-only 5-invariant audit',
       pos:[0,0.1,-0.24], scale:0.2, color:'#9ef0c0',
@@ -445,7 +446,8 @@
 
   /* =====================================================================
      PUTNAM 2025 — honest doctrine-v11 kernel verdict (additive)
-     Locked-8 {F1,F4,F7,F11,F12,F18,F19,F22} + Λ = Conjecture 1 are UNCHANGED by this block.
+     Locked-five {F1,F11,F12,F18,F19} + Λ = Conjecture 1 are UNCHANGED by this block.
+     F4/F7/F22 remain EXPERIMENTAL / NOT LOCKED.
      Numbers match the CI kernel run on lutar-lean main exactly.
      ===================================================================== */
   const PUTNAM_2025 = {
@@ -490,8 +492,8 @@
          NOT the formal uniqueness Λ (which stays Conjecture 1, machine-
          checked FALSE unconditional).
        • Jack Kruse light/water/magnetism framing = [NARRATIVE] only.
-       • Adds NO locked theorem — locked-proven stays exactly 8
-         {F1,F4,F7,F11,F12,F18,F19,F22}. Trust never 100%.
+       • Adds NO locked theorem — locked-proven stays exactly 5
+         {F1,F11,F12,F18,F19}; F4/F7/F22 are EXPERIMENTAL / NOT LOCKED. Trust never 100%.
      ===================================================================== */
   const QBIO = (function(){
     'use strict';
@@ -656,7 +658,7 @@
   })();
 
   /* ---- 5 v5 quantum-bio FORMULA CARDS (ADDITIVE to FORMULAS; honest tags).
-     These are NOT locked theorems and are NEVER folded into the locked 8.
+     These are NOT locked theorems and are NEVER folded into the locked five.
      maturity uses the existing MATURITY palette where it fits; the cards'
      plain text carries the explicit VERIFIED/PROPOSED/NARRATIVE status. ---- */
   FORMULAS.QB_COH = { id:'QB-COH', name:'Lindblad Coherence Decay', maturity:'EXPERIMENTAL',
@@ -700,7 +702,7 @@
      ADDITIVE. 5 new organs grown from the agentic-GPU energy engine
      (platform PRs #370 harvest, #371 budget, #372 security, #373 runner).
      Honesty doctrine v11 LOCKED — same rules as all prior blocks:
-       • Locked-proven stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22}.
+       • Locked-proven stays EXACTLY 5 {F1,F11,F12,F18,F19}; F4/F7/F22 are EXPERIMENTAL / NOT LOCKED.
        • Λ = Conjecture 1 (advisory, NEVER "proven trust").
        • Khipu BFT = Conjecture 2 (only conditional proven, Wave23).
        • Maturity labels (LOCKED/EXPERIMENTAL/CONDITIONAL/AXIOM_GATED/CONJECTURE)
@@ -793,10 +795,11 @@
      ========================  v5 (EVOLVES v4)  ========================
      ADDITIVE. New organs + overlays that surface the governed conscience
      (WILLAY), the Sovereign Mesh as a circulatory upgrade, the buyer-
-     verifiable receipt bloodstream, the 8 locked-proven → organ map, the
+     verifiable receipt bloodstream, the 5 locked-proven → organ map, the
      AI-Assurance (WDP/CDAO) artifact map, and the yarqa + thermal-PINN
      physics layer. Honesty doctrine v11 LOCKED is UNCHANGED:
-       • Locked-proven stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22} @ c7c0ba17.
+       • Locked-proven stays EXACTLY 5 {F1,F11,F12,F18,F19} @ c7c0ba17.
+       • F4/F7/F22 are EXPERIMENTAL / NOT LOCKED.
        • Λ = Conjecture 1 (advisory heart-gate, NEVER a theorem).
        • Khipu BFT = Conjecture 2 (Wave23 conditional only).
        • Every LIVE/MEASURED/MODELED/SAMPLE/ROADMAP label is honest — a node
@@ -838,9 +841,10 @@
   );
 
   /* =====================================================================
-     v5 — 8 LOCKED-PROVEN → ORGAN MAP (additive, honest)
+     v5 — 5 LOCKED-PROVEN → ORGAN MAP (additive, honest)
      The mapping is presentational only: it does NOT change the locked set,
-     which stays EXACTLY 8 {F1,F4,F7,F11,F12,F18,F19,F22} @ c7c0ba17.
+     which stays EXACTLY 5 {F1,F11,F12,F18,F19} @ c7c0ba17.
+     F4/F7/F22 are still shown where relevant but are EXPERIMENTAL / NOT LOCKED.
      Each entry shows the verbatim Lean statement (latex) + #print axioms.
      Λ is the heart-gate: ADVISORY, Conjecture 1, NEVER a theorem.
      Khipu BFT safety is Conjecture 2 (Wave23 conditional only).
@@ -852,9 +856,9 @@
       { organ:'BRAIN',       organ_key:'amaru',  color:'#7c5cff', formulas:['F1'],
         why:'F1 Replay-Hash Determinism underpins the read-only reasoning cortex: replaying a recorded log is bit-identical, so the thinking layer can never drift the record.' },
       { organ:'HEART',       organ_key:'yuyay',  color:'#ff5d8f', formulas:['F4','F11'],
-        why:'F4 (Khipu DAG acyclicity) + F11 (Ayni reciprocity conservation) sit at the beating gate. Λ is the heart-gate — ADVISORY, Conjecture 1, never a theorem.' },
+        why:'F4 (Khipu DAG acyclicity, EXPERIMENTAL / NOT LOCKED) + F11 (Ayni reciprocity conservation, LOCKED) inform the beating gate. Λ is the heart-gate — ADVISORY, Conjecture 1, never a theorem.' },
       { organ:'CIRCULATORY', organ_key:'yawar',  color:'#ff3b5c', formulas:['F7','F22'],
-        why:'F7 (FIFO reception ordering — “Smart Routing”) + F22 (emit append-only monotonicity) keep the receipt bloodstream ordered and append-only.' },
+        why:'F7 (FIFO reception ordering) + F22 (emit append-only monotonicity) inform the receipt bloodstream; both are EXPERIMENTAL / NOT LOCKED.' },
       { organ:'NERVOUS',     organ_key:'vsp',    color:'#5ad1ff', formulas:['F12'],
         why:'F12 Kuramoto coupling boundedness (additive fragment) bounds the nervous-system span coupling — additive scaffolding only, NOT full nonlinear sync.' },
       { organ:'SKELETON',    organ_key:'hatun',  color:'#ffd166', formulas:['F18','F19'],
@@ -896,12 +900,12 @@
      Composes the existing yarqa plug-flow compartmentalization (a clean-room
      engineering-method CFD, NOT a locked theorem) with a thermal physics-
      informed-NN model into ONE "physics-governed" layer. Label: MODELED
-     (not measured), bounded error. NEVER counted among the locked 8.
+     (not measured), bounded error. NEVER counted among the locked five.
      ===================================================================== */
   const PHYSICS_OVERLAY = {
     label:'MODELED',
     headline:'physics-governed layer = yarqa CFD plug-flow ⊕ thermal PINN',
-    honest:'MODELED, not measured. This composes the existing yarqa compartmental plug-flow CFD (engineering method, off-by-default in the dissection dock) with a thermal physics-informed neural-network surrogate. It is NOT a locked theorem and is NEVER folded into the locked-8 — data.js stays the single source of truth and the locked-proven count is unchanged at 8.',
+    honest:'MODELED, not measured. This composes the existing yarqa compartmental plug-flow CFD (engineering method, off-by-default in the dissection dock) with a thermal physics-informed neural-network surrogate. It is NOT a locked theorem and is NEVER folded into the locked five — data.js stays the single source of truth and the locked-proven count is unchanged at 5.',
     components:[
       { name:'yarqa CFD plug-flow', kind:'compartmental advection (region-grown)',
         detail:'Clean-room plug-flow compartmentalization over the existing circulatory / receipt flow sampled from data.js. Emits a reproducible integrity digest. Read-only overlay.' },
@@ -909,7 +913,7 @@
         detail:'A physics-informed surrogate for steady-state organ thermal load (residual of ∇·(k∇T) − q minimised at collocation points). Surrogate, NOT a measured thermocouple readout.' }
     ],
     bounded_error:'Bounded error: the composed field is reported with an explicit relative-residual envelope (≤ 5% on the demo mesh); outside the modelled range it degrades to an honest “out-of-distribution — unquantified” state rather than extrapolating.',
-    never:'NEVER a locked theorem · NEVER counted in the locked-8 · NEVER claimed as a measurement.',
+    never:'NEVER a locked theorem · NEVER counted in the locked five · NEVER claimed as a measurement.',
 
     /* -------------------------------------------------------------------
        LTC-derived state-dependent breathing overlay (ADDITIVE 2026-07-03).
@@ -921,13 +925,13 @@
        (0,1) shortens tau (organ breathes faster / reacts sooner) and a calm
        organ lengthens it toward tau_base. This is a VIZ / modelling upgrade:
        a rendered breathing rate, NOT a measurement and NOT a theorem. It is
-       NEVER folded into the locked-8 and NEVER relabels Λ.
+       NEVER folded into the locked five and NEVER relabels Λ.
        ------------------------------------------------------------------- */
     ltc_timescale:{
       label:'LTC-derived · advisory · experimental',
       citation:'pattern from Liquid Time-Constant Networks (arXiv:2006.04439, Apache-2.0); own-code reimplementation, no source vendored',
       headline:'state-dependent organ breathing rate — liquid time-constant',
-      honest:'ADVISORY / experimental viz overlay. Each organ renders a breathing rate whose effective time-constant is state-dependent: a drifting / anomalous organ shortens tau (breathes faster), a calm organ lengthens tau toward its base. This is a MODELLED render, NOT a measured cadence and NOT a locked theorem; it is NEVER counted in the locked-8 and NEVER moves Λ off Conjecture 1.',
+      honest:'ADVISORY / experimental viz overlay. Each organ renders a breathing rate whose effective time-constant is state-dependent: a drifting / anomalous organ shortens tau (breathes faster), a calm organ lengthens tau toward its base. This is a MODELLED render, NOT a measured cadence and NOT a locked theorem; it is NEVER counted in the locked five and NEVER moves Λ off Conjecture 1.',
       model:'tau_eff = 1 / (1/tau + g), with the fixed bounded gate g = sigmoid(drive) in (0,1) and tau clamped to [tau_min, tau_max]. Bounded by construction: tau_eff stays in (0, tau] so the render can never hyperventilate or freeze.',
       tau_min:0.001,
       tau_max:1000,
@@ -954,7 +958,7 @@
           detail:'Read-only reasoning cortex. No live drift probe ⇒ honest SAMPLE drive; the cortex breathes slowly (long tau) unless a future telemetry feed raises its drive.' }
       ],
       bounded:'Bounded by construction: g in (0,1) and tau in [tau_min, tau_max] ⇒ tau_eff in (0, tau]. The render is a contraction toward the observed drive — it cannot blow up.',
-      never:'NEVER a measurement · NEVER a locked theorem · NEVER counted in the locked-8 · NEVER relabels Λ off Conjecture 1 · a DOWN probe reads as high drift, never a fabricated calm.'
+      never:'NEVER a measurement · NEVER a locked theorem · NEVER counted in the locked five · NEVER relabels Λ off Conjecture 1 · a DOWN probe reads as high drift, never a fabricated calm.'
     }
   };
 
@@ -966,7 +970,7 @@
      how the leaders present sovereign compute (chip → cloud → model), made
      our own. Every layer carries an HONEST posture chip; live layers read
      /govern/health and degrade to DOWN when unreachable — never a fabricated
-     green light. Adds NOTHING to the locked-8 and never relabels Λ.
+     green light. Adds NOTHING to the locked five and never relabels Λ.
      ===================================================================== */
   const STACK_LAYER = {
     headline:'GPU-Sovereign Stack — the vertical substrate anatomy',
@@ -999,7 +1003,7 @@
         honest:'Receipts are LIVE and buyer-verifiable now; on-metal TEE attestation is ROADMAP — labelled, not fabricated.' }
     ],
     frontier:'Where we push the frontier: most stacks bolt governance and audit on top of rented compute. We invert it — own the metal, make governance the beating heart, and make every output buyer-verifiable at the edge. Sovereignty you can check, not take on faith.',
-    never:'NEVER a fabricated green light · energy NEVER fabricated (SAMPLE until NVML) · VRAM-fusion and TEE attestation honestly ROADMAP · the locked set stays exactly 8 · Λ never a theorem.'
+    never:'NEVER a fabricated green light · energy NEVER fabricated (SAMPLE until NVML) · VRAM-fusion and TEE attestation honestly ROADMAP · the locked set stays exactly 5 · F4/F7/F22 EXPERIMENTAL / NOT LOCKED · Λ never a theorem.'
   };
 
   root.SZL_ANATOMY = { KERNEL, MATURITY, FORMULAS, ORGANS, SYSTEMS, BODIES, SKELETON_REPOS, PUTNAM_2025,

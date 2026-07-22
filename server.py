@@ -50,7 +50,8 @@ SOURCE_BASE_COMMIT = "9847b3031c1aacdcee9aa8e37ae33d573737a5c4"
 DOCTRINE = "v11"
 LOCK = "749/14/163"
 KERNEL_COMMIT = "c7c0ba17"
-LOCKED_FORMULAS = ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"]
+LOCKED_FORMULAS = ["F1", "F11", "F12", "F18", "F19"]
+EXPERIMENTAL_NOT_LOCKED_FORMULAS = ["F4", "F7", "F22"]
 
 ARTIFACT_PATHS = (
     "index.html",
@@ -107,10 +108,12 @@ CAPABILITIES = [
             "state": "SNAPSHOT",
             "basis": "The Space presents source-linked declarations; it does not run the Lean kernel in this container.",
             "locked_declared": LOCKED_FORMULAS,
+            "experimental_not_locked": EXPERIMENTAL_NOT_LOCKED_FORMULAS,
             "kernel_reference": KERNEL_COMMIT,
         },
         "limits": [
-            "Exactly eight formulas are declared locked in this snapshot.",
+            "Exactly five formulas are declared locked in this snapshot.",
+            "F4, F7, and F22 are EXPERIMENTAL / NOT LOCKED.",
             "Lambda is Conjecture 1, not a theorem.",
             "Current source links and the historical kernel reference are shown separately to avoid false revision equivalence.",
         ],
@@ -297,6 +300,7 @@ def _local_receipt() -> dict[str, object]:
             "doctrine": DOCTRINE,
             "kernel_reference": KERNEL_COMMIT,
             "locked_proven_declared": len(LOCKED_FORMULAS),
+            "experimental_not_locked_declared": EXPERIMENTAL_NOT_LOCKED_FORMULAS,
             "lambda_state": "CONJECTURE_1",
         },
         "evidence": manifest,
@@ -536,6 +540,7 @@ def _manifest() -> dict[str, object]:
             "lock": LOCK,
             "kernel_reference": KERNEL_COMMIT,
             "locked_proven_declared": LOCKED_FORMULAS,
+            "experimental_not_locked_declared": EXPERIMENTAL_NOT_LOCKED_FORMULAS,
             "lambda": "CONJECTURE_1",
         },
         "limits": [

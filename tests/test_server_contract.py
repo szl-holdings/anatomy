@@ -71,7 +71,19 @@ class AnatomyContractTest(unittest.TestCase):
             set(body["state_dimensions"]),
         )
         self.assertEqual("CONJECTURE_1", body["doctrine"]["lambda"])
-        self.assertEqual(8, len(body["doctrine"]["locked_proven_declared"]))
+        self.assertEqual(
+            ["F1", "F11", "F12", "F18", "F19"],
+            body["doctrine"]["locked_proven_declared"],
+        )
+        self.assertEqual(
+            ["F4", "F7", "F22"],
+            body["doctrine"]["experimental_not_locked_declared"],
+        )
+        self.assertTrue(
+            set(body["doctrine"]["locked_proven_declared"]).isdisjoint(
+                body["doctrine"]["experimental_not_locked_declared"]
+            )
+        )
         self.assertEqual("*", headers["Access-Control-Allow-Origin"])
 
     def test_every_capability_has_five_part_shell(self):
@@ -84,6 +96,14 @@ class AnatomyContractTest(unittest.TestCase):
             self.assertEqual("READ_ONLY", capability["authority_state"])
         formula = next(item for item in body["capabilities"] if item["id"] == "anatomy.formula-spine")
         self.assertEqual("SNAPSHOT", formula["evidence"]["state"])
+        self.assertEqual(
+            ["F1", "F11", "F12", "F18", "F19"],
+            formula["evidence"]["locked_declared"],
+        )
+        self.assertEqual(
+            ["F4", "F7", "F22"],
+            formula["evidence"]["experimental_not_locked"],
+        )
         self.assertTrue(all(url.startswith("https://github.com/") for url in formula["provenance"]))
 
     def test_receipt_replays_as_structural_only(self):

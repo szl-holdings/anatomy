@@ -349,8 +349,8 @@
       `<div class="row"><span class="dot" style="background:var(--warn)"></span><div><b>\u039b = Conjecture 1.</b> Unconditional uniqueness under original A1\u2013A5 is machine-checked <span style="color:var(--warn);font-weight:600">FALSE</span>; uniqueness holds only within strengthened classes.</div></div>`+
       `<div class="row"><span class="dot" style="background:var(--audit)"></span><div><b>CUT-2 (Wave12) + CUT-1 forward fragment (Wave18).</b> <code>lambda_unique_of_separable</code> \u2014 \u039b uniqueness PROVEN <b>conditional</b> on slice-multiplicativity, axiom-free &amp; kernel-clean. CUT-1 forward fragment adds 19 axiom-clean theorems but stays CONDITIONAL (open gap <code>dyadic_image_dense</code>, multi-week roadmap). Unconditional stays Conjecture 1. <span class="chip" style="color:var(--audit)">conditional \u00b7 axiom-free</span></div></div>`+
       `<div class="row"><span class="dot" style="background:var(--audit)"></span><div><b>Khipu BFT safety = Conjecture 2.</b> Wave23 <code>khipu_quorum_safety_conditional</code> (node B2) proves agreement / no-split-brain <b>conditional</b> on n\u22653f+1 + honest non-equivocation, axiom-clean. Unconditional BFT safety stays Conjecture 2 at the sharp boundary. <span class="chip" style="color:var(--audit)">conditional \u00b7 axiom-clean</span></div></div>`+
-      `<div class="row"><span class="dot" style="background:var(--skel)"></span><div><b>8 LOCKED-proven</b> {F1,F4,F7,F11,F12,F18,F19,F22} @ ${K.locked_sha} \u2014 never inflated. <span class="chip" style="color:var(--skel)">kernel-verified</span></div></div>`+
-      `<div class="row"><span class="dot" style="background:var(--nerve)"></span><div><b>EXPERIMENTAL tier</b> CI-green on main @ ${K.main_sha} (${K.experimental_decls} decls / ${K.experimental_axioms} axioms / ${K.experimental_sorries} sorries; \u2248${K.experimental_count_approx} instilled cards, ${K.waves_merged}). Additive \u2014 never folded into the locked 8. <span class="chip" style="color:var(--nerve)">CI-green</span></div></div>`+
+      `<div class="row"><span class="dot" style="background:var(--skel)"></span><div><b>${K.locked_proven.length} LOCKED-proven</b> {${K.locked_proven.join(',')}} @ ${K.locked_sha} \u2014 never inflated. <span class="chip" style="color:var(--skel)">kernel-verified</span></div></div>`+
+      `<div class="row"><span class="dot" style="background:var(--nerve)"></span><div><b>EXPERIMENTAL / NOT LOCKED</b> {${K.experimental_not_locked.join(',')}}. CI-green on main @ ${K.main_sha} (${K.experimental_decls} decls / ${K.experimental_axioms} axioms / ${K.experimental_sorries} sorries; \u2248${K.experimental_count_approx} instilled cards, ${K.waves_merged}). Additive and outside the locked five. <span class="chip" style="color:var(--nerve)">CI-green</span></div></div>`+
       `<div class="row"><span class="dot" style="background:var(--audit)"></span><div><b>SLSA L1 honest \u00b7 product images L2 build-attested \u00b7 L3 roadmap.</b> No fabricated metrics \u00b7 no AGI \u00b7 trust never 100%.</div></div>`+
       `<div class="row gpd-row" id="gpd-row"><span class="dot" style="background:var(--brain)"></span><div><b>Governed Post-Determinism (GPD).</b> SZL\u2019s own lens \u2014 the 5 organs are the participant-general model. <span class="chip" style="color:var(--brain)">SZL framework \u00b7 tap to expand</span></div></div>`;
     $('gpd-row').addEventListener('click',openGPD);
@@ -395,7 +395,7 @@
       `<div class="gpd-cell"><span class="gpd-k">CIRCULATORY \u00b7 YAWAR</span><span class="gpd-v">Epistemic State Replication + Verifiable Semantic Rollback (receipts/replay live; full ESR = roadmap)</span></div>`+
       `<div class="gpd-cell"><span class="gpd-k">NERVOUS \u00b7 OTel</span><span class="gpd-v">span lineage carries provenance across the substrate</span></div>`+
     `</div>`;
-    html+=`<div class="lambda-honesty" style="border-color:var(--brain);background:rgba(124,92,255,.08)"><div class="lh-h" style="color:var(--brain)">honest scope</div><p>Locked-proven stays <b>exactly 8</b>. \u039b = Conjecture 1. Khipu BFT safety = Conjecture 2 (Wave23 conditional only). Grounded entirely in SZL\u2019s own DOI-stamped prior art \u2014 no external paper is cited as the source of GPD.</p></div>`;
+    html+=`<div class="lambda-honesty" style="border-color:var(--brain);background:rgba(124,92,255,.08)"><div class="lh-h" style="color:var(--brain)">honest scope</div><p>Locked-proven stays <b>exactly ${K.locked_proven.length}</b> {${K.locked_proven.join(',')}}. F4/F7/F22 are <b>EXPERIMENTAL / NOT LOCKED</b>. \u039b = Conjecture 1. Khipu BFT safety = Conjecture 2 (Wave23 conditional only). Grounded entirely in SZL\u2019s own DOI-stamped prior art \u2014 no external paper is cited as the source of GPD.</p></div>`;
     html+=`<div class="sec-h">SZL prior art (Zenodo, DOI-stamped)</div><div class="gpd-dois">`+
       dois.map(([t,d])=>`<a class="doi" href="https://doi.org/${d}" target="_blank" rel="noopener">${t} <span>${d}</span></a>`).join('')+`</div>`;
     $('p-body').innerHTML=html;
@@ -1124,10 +1124,7 @@
     function forecastDoneEvents(){
       const counts = countByTier();
       const ev = [];
-      // The single dated transition we can honestly assert from data.js:
-      // KERNEL.gpd states "locked-proven = exactly 8 ... F4/F7/F22 joined the original 5 on 2026-06-10".
-      ev.push({ when:'pre 2026-06-10', what:`<b>5 LOCKED-proven.</b> Original locked set before the 2026-06-10 upgrade (the 8 minus F4/F7/F22).` , tag:'done'});
-      ev.push({ when:'2026-06-10', what:`<b>LOCKED 5 → ${K.locked_proven.length}.</b> F4 (Khipu DAG acyclicity), F7 (Chaski FIFO), F22 (Khipu emit monotonicity) upgraded to genuine kernel-verified proofs. Locked set now {${K.locked_proven.join(', ')}} @ <code>${K.locked_sha}</code>. (Source: KERNEL.gpd / KERNEL.locked_proven.)`, tag:'done'});
+      ev.push({ when:'current verified taxonomy', what:`<b>${K.locked_proven.length} LOCKED-proven.</b> {${K.locked_proven.join(', ')}} @ <code>${K.locked_sha}</code>. F4/F7/F22 remain <b>EXPERIMENTAL / NOT LOCKED</b>. (Source: KERNEL.gpd / KERNEL.locked_proven.)`, tag:'done'});
       ev.push({ when:'waves 5–23', what:`<b>${counts.EXPERIMENTAL||0} EXPERIMENTAL · CI-green</b> cards instilled (${esc(K.waves_merged)}), main @ <code>${K.main_sha}</code> — additive, NEVER folded into the locked ${K.locked_proven.length}.`, tag:'done'});
       ev.push({ when:'Wave12', what:`<b>CUT-2 conditional Λ uniqueness.</b> ${esc(K.cut2)}`, tag:'done'});
       ev.push({ when:'Wave23', what:`<b>Khipu BFT conditional safety.</b> ${esc(K.bft_conditional)}`, tag:'done'});
@@ -1164,10 +1161,9 @@
     // sparkline of locked-proven growth (only points we can honestly assert)
     function forecastSpark(){
       const counts = countByTier();
-      // honest two-point locked trajectory from data.js + the live total today
+      // honest single-point snapshot; no unsupported historical promotion is asserted
       const series = [
-        { label:'pre 6-10', v:5,  proj:false },
-        { label:'2026-06-10', v:K.locked_proven.length, proj:false }
+        { label:'verified now', v:K.locked_proven.length, proj:false }
       ];
       const W=460, H=92, pad=22, maxV=Math.max(8, K.locked_proven.length, 10);
       const n=series.length;
@@ -1186,7 +1182,7 @@
       const projX=W-pad, projY=yOf(series[n-1].v); // flat — we do NOT predict a number
       const projLine = `<path d="M${lastX.toFixed(1)} ${lastY.toFixed(1)} L${projX.toFixed(1)} ${projY.toFixed(1)}" stroke="var(--brain)" stroke-width="2" stroke-dasharray="4 4" fill="none" opacity="0.7"></path>`+
         `<text x="${projX.toFixed(1)}" y="${(projY-9).toFixed(1)}" fill="var(--brain)" font-family="ui-monospace,monospace" font-size="8.5" text-anchor="end">ROADMAP (no number claimed)</text>`;
-      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Locked-proven count: 5 then ${K.locked_proven.length}; future is roadmap, no number claimed">`+
+      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Locked-proven count: ${K.locked_proven.length}; future is roadmap, no number claimed">`+
         projLine+
         `<path d="${path.trim()}" stroke="var(--skel)" stroke-width="2.4" fill="none"></path>`+
         dots+`</svg>`;
@@ -1422,11 +1418,12 @@
 
      HONESTY (doctrine v11) — never violated:
        • yarqa is an ENGINEERING METHOD (CFD), NOT a locked theorem. It is
-         NEVER folded into the locked-proven count (stays exactly 8
-         {F1,F4,F7,F11,F12,F18,F19,F22} @ D.KERNEL.locked_sha). No proven /
+         NEVER folded into the locked-proven count (stays exactly 5
+         {F1,F11,F12,F18,F19} @ D.KERNEL.locked_sha). F4/F7/F22 are
+         EXPERIMENTAL / NOT LOCKED. No proven /
          kernel-verified badge — the layer is labeled verbatim
          "yarqa flow compartments — engineering method (CFD)".
-       • It does NOT route the locked-8 governance theorems "through" yarqa,
+       • It does NOT route the locked five governance theorems "through" yarqa,
          and does NOT re-implement the a11oy↔killinchu connection on yarqa —
          it is a read-only VISUALIZATION over the existing circulatory flow.
        • Method clean-room (Jacobs et al. 1991 / reactor-engineering
@@ -1586,7 +1583,7 @@
         method_tier:'engineering method (CFD)',
         claim:'integrity/reproducibility, NOT correctness; NOT a locked theorem',
         yarqa_in_locked_count:false,
-        routes_locked8_through_yarqa:false,
+        routes_locked_five_through_yarqa:false,
         align_threshold:aln,
         n_cells:field.n,
         n_compartments:Object.keys(groups).length,
@@ -1628,7 +1625,7 @@
         '<div style="font-size:11px;line-height:1.45;color:var(--audit);margin:2px 0 6px">'+
           'Plug-flow compartmentalization (<b>yarqa</b>) of the circulatory / YAWAR flow \u2014 an '+
           '<b>engineering method (CFD)</b>, <b>not</b> a locked theorem and never counted among the '+
-          'locked 8. Read-only viz over the existing flow; data.js is the source.'+
+          'locked five. Read-only viz over the existing flow; data.js is the source.'+
         '</div>'+
         '<div class="dz-row"><span class="dz-label" style="flex:0 0 auto">align</span>'+
           '<input type="range" class="dz-range" id="yq-align" min="0" max="0.9" step="0.05" value="0.2" aria-label="yarqa alignment threshold" style="flex:1">'+
@@ -1661,7 +1658,7 @@
       cells: ()=> field? field.n : 0,
       receipt: ()=> lastReceipt,
       yarqaInLockedCount: ()=> false,
-      routesLocked8ThroughYarqa: ()=> false
+      routesLockedFiveThroughYarqa: ()=> false
     };
   })();
   /* =====================  /v6 yarqa flow compartments  ================= */
@@ -1684,7 +1681,8 @@
          constructs. Λ-v5 is an ENGINEERING gate, explicitly NOT the
          formal uniqueness Λ (Conjecture 1, machine-checked FALSE).
        • Jack Kruse light/water/magnetism framing = NARRATIVE only.
-       • Adds NO locked theorem — locked-proven stays exactly 8. Per-organ
+       • Adds NO locked theorem — locked-proven stays exactly 5; F4/F7/F22
+         are EXPERIMENTAL / NOT LOCKED. Per-organ
          pmf INPUTS are a labeled SAMPLE; every shown number is computed.
      ===================================================================== */
   V7 = (function(){
@@ -1770,7 +1768,7 @@
       h += '<div class="qb-disc"><b>Λ-v5 is an ENGINEERING gate · PROPOSED.</b> It is explicitly '+
         '<b>NOT</b> the formal uniqueness Λ, which stays <b>Conjecture 1</b> (unconditional uniqueness '+
         'machine-checked <b>FALSE</b>). This layer adds <b>NO</b> locked theorem — locked-proven stays '+
-        'exactly 8 {F1,F4,F7,F11,F12,F18,F19,F22}. Jack Kruse framing = '+statTag('NARRATIVE')+' only; the '+
+        'exactly 5 {F1,F11,F12,F18,F19}; F4/F7/F22 are EXPERIMENTAL / NOT LOCKED. Jack Kruse framing = '+statTag('NARRATIVE')+' only; the '+
         'load-bearing math is Mitchell / Lane / Wallace / Schulten / Hore '+statTag('VERIFIED')+'. Trust never 100%.</div>';
 
       /* 1. Coherence */
@@ -2202,7 +2200,7 @@
 
     /* ====================================================================
        LIVE VITAL-SIGNS HUD — small always-on overlay polling /v1/honest
-       ~every 20s: kernel commit, locked-8, Λ=Conjecture 1, live/offline.
+       ~every 20s: kernel commit, locked five, Λ=Conjecture 1, live/offline.
        Falls back to D.KERNEL offline. Respects prefers-reduced-motion.
        ==================================================================== */
     let vitalTimer = null;

@@ -15,8 +15,9 @@
        A mismatch is displayed as a key-pin failure, not silently ignored.
      - The Hatun MCP gateway chip goes LIVE only on a real 2xx server-card
        fetch with a parseable tool inventory.
-     - Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 8
-       (F1 F4 F7 F11 F12 F18 F19 F22); Λ is Conjecture 1, never a theorem.
+     - Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 5
+       (F1 F11 F12 F18 F19); F4/F7/F22 are EXPERIMENTAL / NOT LOCKED;
+       Λ is Conjecture 1, never a theorem.
        A signed GREEN harness run proves liveness, not doctrine upgrades.
    Additive, read-only, zero-CDN. No key is sent; open surfaces only.
    ===================================================================== */
@@ -152,7 +153,8 @@
 
     body.appendChild(el('div', 'v6-note',
       '<b>Doctrine boundary (unchanged):</b> a signed GREEN run proves the substrate is ALIVE '
-      + 'and its gates execute — it upgrades NO proof claim. Locked-proven stays exactly 8; '
+      + 'and its gates execute — it upgrades NO proof claim. Locked-proven stays exactly 5; '
+      + 'F4/F7/F22 remain EXPERIMENTAL / NOT LOCKED; '
       + 'Λ remains Conjecture 1. '
       + '<a href="' + SINK + '" target="_blank" rel="noopener" style="color:#5ad1ff">Sink + reproduce-it-yourself instructions →</a>'));
   }

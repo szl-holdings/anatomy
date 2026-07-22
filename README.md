@@ -116,9 +116,10 @@ honestly-labeled capabilities — all read-only against the live a11oy origin:
   ECDSA-P256-SHA256** over the DSSE PAE against `/cosign.pub` — verified entirely in your
   browser, no trust in us required. Plus a live **receipt bloodstream** counter reading the
   unified ledger (`/api/lake/v1/health`: `total_receipts`, `sha3_256` chain head).
-- **8 locked-proven → organ map.** F1→BRAIN, F4+F11→HEART, F7+F22→CIRCULATORY, F12→NERVOUS,
+- **5 locked-proven → organ map.** F1→BRAIN, F11→HEART, F12→NERVOUS,
   F18+F19→SKELETON — each showing the verbatim Lean statement + `#print axioms`,
-  **kernel-verified sorry-free @ c7c0ba17**. Λ is the heart-gate: **advisory, Conjecture 1**,
+  **kernel-verified sorry-free @ c7c0ba17**. F4/F7/F22 remain
+  **EXPERIMENTAL / NOT LOCKED**. Λ is the heart-gate: **advisory, Conjecture 1**,
   never a theorem. Khipu BFT = Conjecture 2.
 - **AI-Assurance (WDP / CDAO) overlay.** Maps each organ to the assurance artifact it
   satisfies (model card · data card · SBOM/SLSA · SI-7 hash-chain · TEVV signed receipt ·
@@ -127,7 +128,7 @@ honestly-labeled capabilities — all read-only against the live a11oy origin:
 - **yarqa CFD + thermal-PINN physics layer.** Composes the existing yarqa plug-flow
   compartmentalization with a thermal physics-informed-NN surrogate into one
   "physics-governed" layer, labeled **MODELED** (not measured), bounded error. Never a locked
-  theorem; never folded into the locked-8.
+  theorem; never folded into the locked five.
 - **GPU-Sovereign Stack — SUBSTRATE (NEW).** The *vertical* compute anatomy that complements the
   horizontal Sovereign Mesh: owned GPU fabric → runtime → mesh / router → open-weight model →
   native governance → buyer-verifiable receipts. Framed against how the leaders present sovereign
@@ -135,9 +136,10 @@ honestly-labeled capabilities — all read-only against the live a11oy origin:
   first-class layers. Every layer carries an honest posture chip; live layers read
   `/govern/health` and degrade to **DOWN**, never a fabricated green light. Energy is **SAMPLE**
   until a real NVML meter; VRAM-fusion and on-metal **TEE attestation are ROADMAP**. Adds nothing
-  to the locked-8.
+  to the locked five.
 
-Locked-proven stays **exactly 8** {F1,F4,F7,F11,F12,F18,F19,F22} @ `c7c0ba17`; the doctrine
+Locked-proven stays **exactly 5** {F1,F11,F12,F18,F19} @ `c7c0ba17`;
+{F4,F7,F22} are **EXPERIMENTAL / NOT LOCKED**. The doctrine
 footer is unchanged. Still sovereign: ONLY the vendored `lib/three.min.js`, zero runtime CDN.
 
 ## What's new in v4 — dissection tools
@@ -153,7 +155,7 @@ bench-grade dissection controls so the body is *easier to dissect*:
 - **Explode view** — an eased 0→1 slider separates the organ groups radially for inspection.
 - **Search / jump** — filter organs + formulas by name/id; selecting one flies the camera and opens its panel.
 - **Always-on visibility HUD** — a compact overlay reading **honest** counts straight from
-  `data.js` (`D.KERNEL`): locked-proven = 8, experimental tier, axioms 14, sorries 163,
+  `data.js` (`D.KERNEL`): locked-proven = 5, experimental/not-locked tier, axioms 14, sorries 163,
   kernel `c7c0ba17`, Λ = Conjecture 1, Khipu BFT = Conjecture 2. Never hardcoded.
 - **Focus mode** — fade the other organs when one is selected, to isolate it.
 - **yarqa flow compartments (CFD) — additive, off by default** — an *engineering-method*
@@ -161,8 +163,8 @@ bench-grade dissection controls so the body is *easier to dissect*:
   (`yarqa`) over the **existing** circulatory / YAWAR flow sampled from `data.js`, draws
   the compartments as a toggleable read-only overlay, and emits a reproducible integrity
   receipt digest. It is **labeled CFD, not a locked theorem, and is never counted among
-  the locked 8** — `data.js` stays the single source of truth and the locked-proven count
-  is unchanged at 8.
+  the locked five** — `data.js` stays the single source of truth and the locked-proven count
+  is unchanged at 5.
 - **Accessibility + mobile** — every new control is keyboard-reachable and ARIA-labeled,
   laid out so it never overlaps the existing HUD/panel, and it respects `prefers-reduced-motion`.
 
@@ -183,9 +185,9 @@ CIRCULATORY/BLOOD · YAWAR (append-only SHA-256 receipt bus) ·
 BRAIN · YACHAY (read-only reasoning cortex) ·
 NERVOUS · OTel/VSP · SKELETON · 12 service repos.
 
-**Honest doctrine:** locked-proven = 8 {F1, F4, F7, F11, F12, F18, F19, F22} @ kernel `c7c0ba17`
-(the no-axiom theorem `locked_count_eight`; F4 Khipu DAG acyclicity, F7 Chaski FIFO ordering,
-F22 Khipu emit append-only monotonicity) ·
+**Honest doctrine:** locked-proven = 5 {F1, F11, F12, F18, F19} @ kernel `c7c0ba17` ·
+F4 Khipu DAG acyclicity, F7 Chaski FIFO ordering, and F22 Khipu emit monotonicity are
+**EXPERIMENTAL / NOT LOCKED** ·
 Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE); conditional Λ axiom-free PROVEN ·
 Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
@@ -256,7 +258,7 @@ python3 -m http.server 8000          # then open http://localhost:8000/index.htm
 
 # test: the headless QA harness (Playwright/Chromium) renders all three
 # viewports, asserts 0 console errors, exercises the v4 dissection dock + the
-# v6 yarqa CFD layer, and confirms yarqa is NEVER counted in the locked-8.
+# v6 yarqa CFD layer, and confirms yarqa is NEVER counted in the locked five.
 npm i -D playwright && npx playwright install chromium
 node qa_yarqa.js
 ```
@@ -339,7 +341,7 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 Declared source base: `szl-holdings/anatomy` (GitHub) → `SZLHOLDINGS/anatomy` (HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
 
-<sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
+<sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 5-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 5 locked-proven + F4/F7/F22 EXPERIMENTAL / NOT LOCKED · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
 
 ---
 

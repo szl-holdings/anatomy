@@ -13,7 +13,7 @@
      3. Buyer-verifiable receipt in-scene — "Verify offline" reuses Tier-1
         WebCrypto ECDSA-P256 against /cosign.pub, plus a live ledger
         bloodstream counter (total_receipts + sha3_256 chain head).
-     4. 8 locked-proven → organ map (verbatim Lean statement + #print axioms,
+     4. 5 locked-proven → organ map (verbatim Lean statement + #print axioms,
         "kernel-verified sorry-free @ c7c0ba17"). Λ = heart-gate, advisory,
         Conjecture 1. Khipu BFT = Conjecture 2.
      5. AI-Assurance (WDP/CDAO) overlay — organ → assurance artifact with
@@ -25,8 +25,9 @@
         native governance → buyer-verifiable receipts. Live layers read
         /govern/health and degrade to DOWN, never a fabricated green light.
 
-   Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 8; Λ is
-   never a theorem; nothing here is folded into the locked-8.
+   Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 5;
+   F4/F7/F22 are EXPERIMENTAL / NOT LOCKED; Λ is
+   never a theorem; F4/F7/F22 are EXPERIMENTAL / NOT LOCKED.
    ===================================================================== */
 (function(root){
   'use strict';
@@ -239,7 +240,7 @@
   });
 
   /* ===================================================================
-     4. 8 locked-proven → organ map (verbatim Lean + axioms)
+     4. 5 locked-proven → organ map (verbatim Lean + axioms)
      =================================================================== */
   function leanStatement(fid){
     var f=D.FORMULAS&&D.FORMULAS[fid]; if(!f) return fid;
@@ -247,8 +248,8 @@
   }
   function renderProofs(b){
     var M=D.LEAN_MAP||{}; var h='';
-    h+='<div class="v5-card"><div class="v5-h">8 locked-proven → organs <span class="v5-chip locked">LOCKED</span></div>';
-    h+='<div class="v5-sub">'+esc(M.verified_note||'')+' · exactly 8 {F1,F4,F7,F11,F12,F18,F19,F22}</div>';
+    h+='<div class="v5-card"><div class="v5-h">5 locked-proven → organs <span class="v5-chip locked">LOCKED</span></div>';
+    h+='<div class="v5-sub">'+esc(M.verified_note||'')+' · exactly 5 {F1,F11,F12,F18,F19} · F4/F7/F22 EXPERIMENTAL / NOT LOCKED</div>';
     h+='<p>Presentational map only — it does NOT change the locked set. Each statement below is kernel-verified sorry-free at '+esc(M.kernel_sha||'c7c0ba17')+'.</p></div>';
     (M.organs||[]).forEach(function(row){
       h+='<div class="v5-card"><div class="v5-h"><span style="color:'+esc(row.color)+'">'+esc(row.organ)+'</span> <span class="v5-chip locked">'+esc(row.formulas.join(' + '))+'</span></div>';
@@ -289,7 +290,7 @@
     });
     h+='<div class="v5-note"><div class="nh">bounded error</div>'+esc(P.bounded_error||'')+'</div>';
     h+='<div class="v5-note"><div class="nh">never</div>'+esc(P.never||'')+'</div>';
-    h+='<div class="v5-sub" style="margin-top:8px">Composes with the existing yarqa flow-compartments overlay in the v4 dissection dock (off by default). data.js stays the single source of truth; locked-proven count unchanged at 8.</div>';
+    h+='<div class="v5-sub" style="margin-top:8px">Composes with the existing yarqa flow-compartments overlay in the v4 dissection dock (off by default). data.js stays the single source of truth; locked-proven count unchanged at 5.</div>';
     b.innerHTML=h;
   }
 
@@ -345,7 +346,7 @@
   var BTNS=[
     {id:'btn-v5-willay',    view:'willay',    title:'WILLAY — conscience / immune-gate', render:renderWillay},
     {id:'btn-v5-mesh',      view:'mesh',      title:'Sovereign Mesh — circulatory upgrade', render:renderMesh},
-    {id:'btn-v5-proofs',    view:'proofs',    title:'8 locked-proven → organs', render:renderProofs},
+    {id:'btn-v5-proofs',    view:'proofs',    title:'5 locked-proven → organs', render:renderProofs},
     {id:'btn-v5-assurance', view:'assurance', title:'AI-Assurance (WDP / CDAO)', render:renderAssurance},
     {id:'btn-v5-physics',   view:'physics',   title:'yarqa CFD + thermal PINN (MODELED)', render:renderPhysics},
     {id:'btn-v5-stack',     view:'stack',     title:'SUBSTRATE — GPU-Sovereign Stack', render:renderStack}
