@@ -68,8 +68,9 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
 - `/.well-known/szl-source.json` exposes the declared GitHub base, measured HF
   revision, artifact-set digest, and the remaining GitHub-sync state. Automated
   deployments add `hf-deploy-manifest.json`, binding the served runtime
-  whitelist to the exact GitHub commit used by the workflow; this is a
-  source-bound deployment claim, not a whole-repository byte-parity claim.
+  whitelist to the exact current protected-main commit rechecked immediately
+  before publication; this is a source-bound deployment claim, not a
+  whole-repository byte-parity claim.
 
 ## v6 — alive-proof layer (ratchet 2026-07-21)
 
