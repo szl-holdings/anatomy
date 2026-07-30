@@ -66,7 +66,10 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
 - Formula claims link to their source files. This Space presents a declared
   snapshot—it does not run Lean—and Λ remains Conjecture 1.
 - `/.well-known/szl-source.json` exposes the declared GitHub base, measured HF
-  revision, artifact-set digest, and the remaining GitHub-sync state.
+  revision, artifact-set digest, and the remaining GitHub-sync state. Automated
+  deployments add `hf-deploy-manifest.json`, binding the served runtime
+  whitelist to the exact GitHub commit used by the workflow; this is a
+  source-bound deployment claim, not a whole-repository byte-parity claim.
 
 ## v6 — alive-proof layer (ratchet 2026-07-21)
 

@@ -4,6 +4,7 @@ import copy
 import json
 import os
 import sys
+import tempfile
 import threading
 import unittest
 import urllib.error
@@ -131,6 +132,41 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertEqual("SZLHOLDINGS/anatomy", body["deployment"]["hf_space"])
         self.assertEqual("a" * 40, body["deployment"]["hf_revision"])
         self.assertEqual("PENDING_GITHUB_SYNC", body["alignment_state"])
+
+    def test_source_attestation_prefers_valid_deploy_manifest(self):
+        previous_manifest = server.DEPLOY_MANIFEST_PATH
+        previous_revision = os.environ.get("SPACE_REPOSITORY_COMMIT")
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "hf-deploy-manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "szl.hf-deploy-manifest/v1",
+                        "source_repository": "szl-holdings/anatomy",
+                        "source_revision": "b" * 40,
+                        "source_path": "",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            server.DEPLOY_MANIFEST_PATH = manifest
+            os.environ["SPACE_REPOSITORY_COMMIT"] = "c" * 40
+            try:
+                status, _, body = self.request("/.well-known/szl-source.json")
+            finally:
+                server.DEPLOY_MANIFEST_PATH = previous_manifest
+                if previous_revision is None:
+                    os.environ.pop("SPACE_REPOSITORY_COMMIT", None)
+                else:
+                    os.environ["SPACE_REPOSITORY_COMMIT"] = previous_revision
+        self.assertEqual(200, status)
+        self.assertEqual("b" * 40, body["source"]["commit"])
+        self.assertEqual(
+            "github-actions-source-bound-deployment",
+            body["source"]["relation"],
+        )
+        self.assertEqual("SOURCE_BOUND_DEPLOYMENT", body["alignment_state"])
+        self.assertEqual("c" * 40, body["deployment"]["hf_revision"])
 
     def test_frontend_and_public_verifier_use_current_contract(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
