@@ -29,6 +29,7 @@ on:
       - "*.js"
       - "*.css"
       - "lib/**"
+      - ".github/workflows/hf-sync.yml"
   workflow_dispatch: {}
 
 permissions:
@@ -87,6 +88,31 @@ jobs:
           for f in files:
               with open(f, "rb") as fh:
                   ops.append(CommitOperationAdd(path_in_repo=f, path_or_fileobj=fh.read()))
+          source_revision = os.environ.get("GITHUB_SHA", "").lower()
+          if len(source_revision) != 40 or any(
+              character not in "0123456789abcdef" for character in source_revision
+          ):
+              raise RuntimeError("GITHUB_SHA is not an exact Git revision")
+          deploy_manifest = {
+              "schema": "szl.hf-deploy-manifest/v1",
+              "source_repository": "szl-holdings/anatomy",
+              "source_revision": source_revision,
+              "source_path": "",
+              "destination": {
+                  "repo_id": space,
+                  "repo_type": "space",
+                  "mode": "runtime-whitelist",
+              },
+              "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+          }
+          ops.append(
+              CommitOperationAdd(
+                  path_in_repo="hf-deploy-manifest.json",
+                  path_or_fileobj=(
+                      json.dumps(deploy_manifest, sort_keys=True, indent=2) + "\n"
+                  ).encode("utf-8"),
+              )
+          )
 
           print("Syncing", len(ops), "file(s) to", space, ":", files)
           commit = api.create_commit(
@@ -123,6 +149,8 @@ jobs:
                   assert health["transport_state"] == "REACHABLE"
                   assert health["verification_state"] == "STRUCTURAL_ONLY"
                   assert source["deployment"]["hf_revision"] == target_sha
+                  assert source["source"]["commit"] == source_revision
+                  assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
                   print("Verified live Space revision and health:", target_sha)
                   break
               except Exception as error:

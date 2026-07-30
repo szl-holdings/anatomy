@@ -24,6 +24,17 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('"BUILD_ERROR"', self.workflow)
         self.assertIn('/.well-known/szl-source.json?refresh=1', self.workflow)
         self.assertIn('source["deployment"]["hf_revision"] == target_sha', self.workflow)
+        self.assertIn('source["source"]["commit"] == source_revision', self.workflow)
+        self.assertIn(
+            'source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"',
+            self.workflow,
+        )
+
+    def test_release_generates_exact_source_manifest(self) -> None:
+        self.assertIn('"schema": "szl.hf-deploy-manifest/v1"', self.workflow)
+        self.assertIn('"source_repository": "szl-holdings/anatomy"', self.workflow)
+        self.assertIn('"source_revision": source_revision', self.workflow)
+        self.assertIn('path_in_repo="hf-deploy-manifest.json"', self.workflow)
 
     def test_release_verifies_public_health(self) -> None:
         self.assertIn('base + "/healthz"', self.workflow)

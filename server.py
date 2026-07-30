@@ -47,6 +47,7 @@ DIRECTORY = Path(os.environ.get("ANATOMY_ROOT", str(Path(__file__).resolve().par
 SPACE_ID = "SZLHOLDINGS/anatomy"
 SOURCE_REPOSITORY = "szl-holdings/anatomy"
 SOURCE_BASE_COMMIT = "9847b3031c1aacdcee9aa8e37ae33d573737a5c4"
+DEPLOY_MANIFEST_PATH = DIRECTORY / "hf-deploy-manifest.json"
 DOCTRINE = "v11"
 LOCK = "749/14/163"
 KERNEL_COMMIT = "c7c0ba17"
@@ -63,6 +64,7 @@ ARTIFACT_PATHS = (
     "live-body.js",
     "lib/szl_verify_widget.js",
     "server.py",
+    "hf-deploy-manifest.json",
 )
 
 FORMULA_LINKS = {
@@ -478,29 +480,69 @@ def _hf_revision(force: bool = False) -> str | None:
     return revision
 
 
+def _source_binding() -> dict[str, object]:
+    fallback: dict[str, object] = {
+        "repository": SOURCE_REPOSITORY,
+        "commit": SOURCE_BASE_COMMIT,
+        "path": "",
+        "relation": "base-plus-hf-overlay",
+        "alignment_state": "PENDING_GITHUB_SYNC",
+        "built_at": None,
+        "limits": [
+            "source.commit is the declared GitHub base; deployment.hf_revision is measured separately.",
+            "No workflow-generated deployment manifest was observed.",
+        ],
+    }
+    try:
+        payload = json.loads(DEPLOY_MANIFEST_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return fallback
+    repository = payload.get("source_repository")
+    revision = payload.get("source_revision")
+    is_full_sha = (
+        isinstance(revision, str)
+        and len(revision) == 40
+        and all(character in "0123456789abcdef" for character in revision.lower())
+    )
+    if (
+        payload.get("schema") != "szl.hf-deploy-manifest/v1"
+        or repository != SOURCE_REPOSITORY
+        or not is_full_sha
+    ):
+        return fallback
+    return {
+        "repository": repository,
+        "commit": revision.lower(),
+        "path": str(payload.get("source_path") or ""),
+        "relation": "github-actions-source-bound-deployment",
+        "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+        "built_at": payload.get("built_at"),
+        "limits": [
+            "The manifest binds this Hugging Face revision to the GitHub commit used by the deployment workflow.",
+            "The deployment uploads a declared runtime whitelist; it does not claim whole-repository byte parity.",
+        ],
+    }
+
+
 def _source_attestation(force: bool = False) -> dict[str, object]:
     revision = _hf_revision(force=force)
     manifest = _artifact_manifest()
+    source_binding = _source_binding()
     return {
         "schema": "szl.deployment-source/v1",
         "source": {
-            "repository": SOURCE_REPOSITORY,
-            "commit": SOURCE_BASE_COMMIT,
-            "path": "",
-            "relation": "base-plus-hf-overlay",
+            key: source_binding[key]
+            for key in ("repository", "commit", "path", "relation")
         },
         "deployment": {
             "hf_space": SPACE_ID,
             "hf_revision": revision,
             "artifact_set_sha256": manifest["artifact_set_sha256"],
         },
-        "built_at": None,
+        "built_at": source_binding["built_at"],
         "observed_at": _utc_now(),
-        "alignment_state": "PENDING_GITHUB_SYNC",
-        "limits": [
-            "source.commit is the declared GitHub base; deployment.hf_revision is the measured HF revision.",
-            "They are intentionally not presented as the same revision.",
-        ],
+        "alignment_state": source_binding["alignment_state"],
+        "limits": source_binding["limits"],
     }
 
 
