@@ -19,24 +19,13 @@ name: Sync to HuggingFace Space
 on:
   push:
     branches: [main]
-    paths:
-      - "README.md"
-      - "Dockerfile"
-      - ".dockerignore"
-      - "server.py"
-      - "index.html"
-      - "live-body.html"
-      - "*.js"
-      - "*.css"
-      - "lib/**"
-      - ".github/workflows/hf-sync.yml"
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: hf-sync-${{ github.ref }}
+  group: anatomy-hf-sync
   cancel-in-progress: false
 
 jobs:
@@ -52,6 +41,7 @@ jobs:
         run: pip install --quiet "huggingface_hub==1.23.0"
       - name: Mirror runtime and front-door files to the Space
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SPACE_ID: SZLHOLDINGS/anatomy
         run: |
@@ -93,6 +83,11 @@ jobs:
               character not in "0123456789abcdef" for character in source_revision
           ):
               raise RuntimeError("GITHUB_SHA is not an exact Git revision")
+          source_ref = os.environ.get("GITHUB_REF")
+          if source_ref != "refs/heads/main":
+              raise RuntimeError(
+                  f"refusing production deploy from non-main ref: {source_ref!r}"
+              )
           deploy_manifest = {
               "schema": "szl.hf-deploy-manifest/v1",
               "source_repository": "szl-holdings/anatomy",
@@ -113,6 +108,29 @@ jobs:
                   ).encode("utf-8"),
               )
           )
+
+          github_repo = os.environ.get("GITHUB_REPOSITORY")
+          if github_repo != "szl-holdings/anatomy":
+              raise RuntimeError(f"unexpected GitHub repository: {github_repo!r}")
+          github_token = os.environ.get("GITHUB_TOKEN", "")
+          if not github_token:
+              raise RuntimeError("GITHUB_TOKEN is not available")
+          request = urllib.request.Request(
+              os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+              + f"/repos/{github_repo}/commits/main",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {github_token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=20) as response:
+              current_main = str(json.load(response).get("sha") or "").lower()
+          if current_main != source_revision:
+              raise RuntimeError(
+                  "refusing stale production deploy at mutation boundary: "
+                  f"current_main={current_main!r} source_revision={source_revision!r}"
+              )
 
           print("Syncing", len(ops), "file(s) to", space, ":", files)
           commit = api.create_commit(

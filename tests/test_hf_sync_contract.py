@@ -10,9 +10,15 @@ class HfSyncContractTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    def test_runtime_files_are_in_trigger_and_upload_contract(self) -> None:
+    def test_runtime_files_are_in_upload_contract(self) -> None:
         for path in ("Dockerfile", ".dockerignore", "server.py"):
-            self.assertGreaterEqual(self.workflow.count(f'"{path}"'), 2, path)
+            self.assertIn(f'"{path}"', self.workflow, path)
+
+    def test_every_main_push_schedules_a_replacement_deploy(self) -> None:
+        push_trigger = self.workflow.split("workflow_dispatch:", 1)[0]
+        self.assertNotIn("paths:", push_trigger)
+        self.assertIn("group: anatomy-hf-sync", self.workflow)
+        self.assertIn("cancel-in-progress: false", self.workflow)
 
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)
@@ -35,6 +41,20 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('"source_repository": "szl-holdings/anatomy"', self.workflow)
         self.assertIn('"source_revision": source_revision', self.workflow)
         self.assertIn('path_in_repo="hf-deploy-manifest.json"', self.workflow)
+
+    def test_release_rechecks_exact_current_main_at_mutation_boundary(self) -> None:
+        for contract in (
+            "GITHUB_TOKEN: ${{ github.token }}",
+            'source_ref != "refs/heads/main"',
+            'github_repo != "szl-holdings/anatomy"',
+            'f"/repos/{github_repo}/commits/main"',
+            "current_main != source_revision",
+        ):
+            self.assertIn(contract, self.workflow)
+        self.assertLess(
+            self.workflow.index("current_main != source_revision"),
+            self.workflow.index("api.create_commit("),
+        )
 
     def test_release_verifies_public_health(self) -> None:
         self.assertIn('base + "/healthz"', self.workflow)
