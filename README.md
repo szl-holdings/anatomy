@@ -39,7 +39,7 @@ tags:
 >
 > **Shared, embeddable 3D scene** — rendered inside the a11oy and killinchu consoles; a visualization component, not a separate governance console.
 
-[![SLSA L1 honest (static viz)](https://img.shields.io/badge/SLSA-L1%20honest%20(static%20viz)-c9b787?style=flat-square)](https://github.com/szl-holdings/szl-uds-deployment)
+[![SLSA L1 honest (static viz)](https://img.shields.io/badge/SLSA-L1%20honest%20(static%20viz)-c9b787?style=flat-square)](https://github.com/szl-holdings/anatomy/actions/workflows/hf-sync.yml)
 [![doctrine-v11](https://img.shields.io/badge/doctrine-v11%20LOCKED-0B1F3A?style=flat-square)](https://github.com/szl-holdings/.github/tree/main/doctrine)
 [![License](https://img.shields.io/badge/license-Apache--2.0-5fb3a3?style=flat-square)](https://github.com/szl-holdings/anatomy)
 [![Λ Conjecture 1](https://img.shields.io/badge/%CE%9B-Conjecture%201-7d8aa0?style=flat-square)](https://github.com/szl-holdings/lutar-lean/blob/main/BOUNTY.md)
@@ -199,7 +199,9 @@ Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 Docker wrapper (`sdk: docker`; a static file server, no application backend) — SLSA L1 honest.
 The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
 (container provenance via attest-build-provenance, Sigstore keyless, Rekor-anchored; L3 roadmap) —
-see [szl-uds-deployment](https://github.com/szl-holdings/szl-uds-deployment).
+see the active canonical successors [a11oy](https://github.com/szl-holdings/a11oy),
+[killinchu](https://github.com/szl-holdings/killinchu), and
+[szl-mesh](https://github.com/szl-holdings/szl-mesh).
 
 > **Non-affiliation.** SZL Holdings' use of "UDS" references Defense Unicorns' Unified Defense
 > Stack (USPTO Serial 99831122); SZL Holdings is not affiliated with Defense Unicorns. No

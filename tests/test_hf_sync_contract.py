@@ -3,12 +3,14 @@ import unittest
 
 
 WORKFLOW = Path(".github/workflows/hf-sync.yml")
+README = Path("README.md")
 
 
 class HfSyncContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
+        cls.readme = README.read_text(encoding="utf-8")
 
     def test_runtime_files_are_in_upload_contract(self) -> None:
         for path in ("Dockerfile", ".dockerignore", "server.py"):
@@ -64,6 +66,17 @@ class HfSyncContractTest(unittest.TestCase):
     def test_stale_space_only_docker_claim_is_absent(self) -> None:
         self.assertNotIn("does not exist in this repo", self.workflow)
         self.assertNotIn("Space-only Dockerfile", self.workflow)
+
+    def test_archived_uds_source_is_not_advertised(self) -> None:
+        self.assertNotIn(
+            "https://github.com/szl-holdings/szl-uds-deployment",
+            self.readme,
+        )
+        for active_source in ("a11oy", "killinchu", "szl-mesh"):
+            self.assertIn(
+                f"https://github.com/szl-holdings/{active_source}",
+                self.readme,
+            )
 
 
 if __name__ == "__main__":
