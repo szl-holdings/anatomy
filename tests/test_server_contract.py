@@ -4,6 +4,7 @@ import copy
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import threading
@@ -77,6 +78,17 @@ class AnatomyContractTest(unittest.TestCase):
                 body = response.read().decode("utf-8")
                 self.assertEqual(200, response.status)
                 self.assertIn(marker, body)
+
+    def test_runtime_manifest_covers_frontend_script_dependencies(self):
+        declared = set(server.ARTIFACT_PATHS)
+        required: set[str] = set()
+        for relative_path in ("index.html", "live-body.html"):
+            document = (ROOT / relative_path).read_text(encoding="utf-8")
+            required.update(
+                re.findall(r'<script[^>]+src="\./([^"?#]+)', document)
+            )
+        self.assertTrue(required)
+        self.assertEqual(set(), required - declared)
 
     def test_manifest_separates_state_dimensions(self):
         status, headers, body = self.request("/api/anatomy/v1/manifest")

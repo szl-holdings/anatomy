@@ -66,7 +66,9 @@ ARTIFACT_PATHS = (
     "frontier_anatomy.js",
     "live-body.html",
     "live-body.js",
+    "lib/three.min.js",
     "lib/szl_verify_widget.js",
+    "v6_alive.js",
     "server.py",
     "hf-deploy-manifest.json",
 )
