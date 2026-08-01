@@ -453,7 +453,7 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertIsNone(body["deployment"]["workflow_run_id"])
         self.assertIn("do not bind", body["limits"][-1])
 
-    def test_hf_commit_binding_requires_exact_head_title_and_manifest_diff(self):
+    def test_hf_commit_binding_requires_exact_head_title_and_deployed_manifest(self):
         source_revision = "b" * 40
         hf_revision = "c" * 40
         workflow_run_id = "123456789"
@@ -467,13 +467,25 @@ class AnatomyContractTest(unittest.TestCase):
         ).encode("utf-8")
         commit_diff = (
             "diff --git a/hf-deploy-manifest.json b/hf-deploy-manifest.json\n"
-            f'+  "source_revision": "{source_revision}"\n'
+            f'   "source_revision": "{source_revision}"\n'
             f'+  "workflow_run_id": "{workflow_run_id}"\n'
+        ).encode("utf-8")
+        deployed_manifest = json.dumps(
+            {
+                "schema": "szl.hf-deploy-manifest/v1",
+                "source_repository": server.SOURCE_REPOSITORY,
+                "source_revision": source_revision,
+                "workflow_run_id": workflow_run_id,
+            }
         ).encode("utf-8")
         with mock.patch.object(
             urllib.request,
             "urlopen",
-            side_effect=[io.BytesIO(commits), io.BytesIO(commit_diff)],
+            side_effect=[
+                io.BytesIO(commits),
+                io.BytesIO(commit_diff),
+                io.BytesIO(deployed_manifest),
+            ],
         ):
             self.assertTrue(
                 server._hf_commit_matches_source(
@@ -485,7 +497,34 @@ class AnatomyContractTest(unittest.TestCase):
         with mock.patch.object(
             urllib.request,
             "urlopen",
-            side_effect=[io.BytesIO(commits), io.BytesIO(stale_diff)],
+            side_effect=[
+                io.BytesIO(commits),
+                io.BytesIO(stale_diff),
+                io.BytesIO(deployed_manifest),
+            ],
+        ):
+            self.assertFalse(
+                server._hf_commit_matches_source(
+                    hf_revision, source_revision, workflow_run_id, force=True
+                )
+            )
+
+        mismatched_manifest = json.dumps(
+            {
+                "schema": "szl.hf-deploy-manifest/v1",
+                "source_repository": server.SOURCE_REPOSITORY,
+                "source_revision": "d" * 40,
+                "workflow_run_id": workflow_run_id,
+            }
+        ).encode("utf-8")
+        with mock.patch.object(
+            urllib.request,
+            "urlopen",
+            side_effect=[
+                io.BytesIO(commits),
+                io.BytesIO(commit_diff),
+                io.BytesIO(mismatched_manifest),
+            ],
         ):
             self.assertFalse(
                 server._hf_commit_matches_source(

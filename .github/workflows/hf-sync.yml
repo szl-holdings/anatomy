@@ -163,7 +163,7 @@ jobs:
               try:
                   with urllib.request.urlopen(base + "/healthz", timeout=10) as response:
                       health = json.load(response)
-                  with urllib.request.urlopen(base + "/version", timeout=10) as response:
+                  with urllib.request.urlopen(base + "/version?refresh=1", timeout=10) as response:
                       version = json.load(response)
                   with urllib.request.urlopen(base + "/evidence?refresh=1", timeout=15) as response:
                       evidence = json.load(response)

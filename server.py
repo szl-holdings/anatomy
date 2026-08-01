@@ -578,20 +578,30 @@ def _hf_commit_matches_source(
         f"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/{revision}.diff",
         headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "text/plain"},
     )
+    manifest_request = urllib.request.Request(
+        "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/"
+        f"{revision}/hf-deploy-manifest.json",
+        headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "application/json"},
+    )
     matched = False
     try:
         with urllib.request.urlopen(commits_request, timeout=4) as response:
             commits = json.load(response)
         with urllib.request.urlopen(diff_request, timeout=4) as response:
             commit_diff = response.read(1_000_000).decode("utf-8")
+        with urllib.request.urlopen(manifest_request, timeout=4) as response:
+            deployed_manifest = json.loads(response.read(100_000).decode("utf-8"))
         latest = commits[0] if isinstance(commits, list) and commits else {}
         matched = (
             isinstance(latest, dict)
             and str(latest.get("id") or "").lower() == revision
             and latest.get("title") == expected_title
             and "diff --git a/hf-deploy-manifest.json b/hf-deploy-manifest.json" in commit_diff
-            and f'+  "source_revision": "{source_revision}"' in commit_diff
-            and f'+  "workflow_run_id": "{workflow_run_id}"' in commit_diff
+            and isinstance(deployed_manifest, dict)
+            and deployed_manifest.get("schema") == "szl.hf-deploy-manifest/v1"
+            and deployed_manifest.get("source_repository") == SOURCE_REPOSITORY
+            and str(deployed_manifest.get("source_revision") or "").lower() == source_revision
+            and deployed_manifest.get("workflow_run_id") == workflow_run_id
         )
     except Exception:
         matched = False

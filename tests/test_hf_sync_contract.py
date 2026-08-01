@@ -32,6 +32,7 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn("info.sha == target_sha", self.workflow)
         self.assertIn('stage == "RUNNING"', self.workflow)
         self.assertIn('"BUILD_ERROR"', self.workflow)
+        self.assertIn('/version?refresh=1', self.workflow)
         self.assertIn('/.well-known/szl-source.json?refresh=1', self.workflow)
         self.assertIn('source["deployment"]["hf_revision"] == target_sha', self.workflow)
         self.assertIn('source["source"]["commit"] == source_revision', self.workflow)
@@ -85,7 +86,7 @@ class HfSyncContractTest(unittest.TestCase):
 
     def test_release_verifies_public_version_and_evidence(self) -> None:
         for contract in (
-            'base + "/version"',
+            'base + "/version?refresh=1"',
             'base + "/evidence?refresh=1"',
             'version["gitSha"] == source_revision',
             'version["deploymentRevision"] == target_sha',
