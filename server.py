@@ -288,6 +288,26 @@ def _artifact_manifest() -> dict[str, object]:
     }
 
 
+def _artifact_set_complete(manifest: object) -> bool:
+    if not isinstance(manifest, dict):
+        return False
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != len(ARTIFACT_PATHS):
+        return False
+    paths: list[str] = []
+    for item in artifacts:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("path"), str)
+            or not isinstance(item.get("bytes"), int)
+            or int(item["bytes"]) < 0
+            or not _is_sha256(item.get("sha256"))
+        ):
+            return False
+        paths.append(str(item["path"]))
+    return len(set(paths)) == len(paths) and set(paths) == set(ARTIFACT_PATHS)
+
+
 def _local_receipt() -> dict[str, object]:
     manifest = _artifact_manifest()
     body: dict[str, object] = {
@@ -356,6 +376,11 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
             and subject.get("artifact_set_sha256") == current["artifact_set_sha256"]
             else "FAIL",
             "detail": "Recomputed from the files currently served by this Space.",
+        },
+        {
+            "name": "artifact_completeness",
+            "status": "PASS" if _artifact_set_complete(current) else "FAIL",
+            "detail": "Every declared runtime artifact must be present with bytes and SHA-256.",
         },
         {
             "name": "signature",
@@ -457,10 +482,26 @@ def _dependency_evidence(force: bool = False) -> dict[str, object]:
     return value
 
 
+def _is_full_revision(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
+
+
 def _hf_revision(force: bool = False) -> str | None:
     env_revision = os.environ.get("SPACE_REPOSITORY_COMMIT")
-    if env_revision and len(env_revision) == 40:
-        return env_revision
+    if _is_full_revision(env_revision):
+        return str(env_revision).lower()
     now = time.monotonic()
     with _revision_lock:
         cached = _revision_cache.get("value")
@@ -475,8 +516,8 @@ def _hf_revision(force: bool = False) -> str | None:
         with urllib.request.urlopen(req, timeout=4) as response:
             data = json.load(response)
             candidate = data.get("sha")
-            if isinstance(candidate, str) and len(candidate) == 40:
-                revision = candidate
+            if _is_full_revision(candidate):
+                revision = str(candidate).lower()
     except Exception:
         revision = None
     with _revision_lock:
@@ -503,15 +544,10 @@ def _source_binding() -> dict[str, object]:
         return fallback
     repository = payload.get("source_repository")
     revision = payload.get("source_revision")
-    is_full_sha = (
-        isinstance(revision, str)
-        and len(revision) == 40
-        and all(character in "0123456789abcdef" for character in revision.lower())
-    )
     if (
         payload.get("schema") != "szl.hf-deploy-manifest/v1"
         or repository != SOURCE_REPOSITORY
-        or not is_full_sha
+        or not _is_full_revision(revision)
     ):
         return fallback
     return {
@@ -557,9 +593,9 @@ def _version_contract(force: bool = False) -> dict[str, object]:
     identity_measured = (
         source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
         and isinstance(source_identity, dict)
-        and isinstance(source_identity.get("commit"), str)
+        and _is_full_revision(source_identity.get("commit"))
         and isinstance(deployment, dict)
-        and isinstance(deployment.get("hf_revision"), str)
+        and _is_full_revision(deployment.get("hf_revision"))
     )
     return {
         "schemaVersion": "szl.vertical-conformance.version.v1",
@@ -581,21 +617,23 @@ def _evidence_contract(force: bool = False) -> dict[str, object]:
     source_bound = (
         source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
         and isinstance(source_identity, dict)
-        and isinstance(source_identity.get("commit"), str)
+        and _is_full_revision(source_identity.get("commit"))
         and isinstance(deployment, dict)
-        and isinstance(deployment.get("hf_revision"), str)
+        and _is_full_revision(deployment.get("hf_revision"))
     )
     receipt_body = local_receipt["receipt"]
     receipt_evidence = receipt_body["evidence"] if isinstance(receipt_body, dict) else {}
+    artifact_complete = _artifact_set_complete(receipt_evidence)
+    evidence_available = source_bound and artifact_complete
     return {
         "schemaVersion": "szl.vertical-conformance.evidence.v1",
         "service": "anatomy",
         "surface": "anatomy",
-        "gitSha": source_identity.get("commit") if source_bound else None,
-        "evidenceState": "PARTIAL" if source_bound else "UNAVAILABLE",
+        "gitSha": source_identity.get("commit") if evidence_available else None,
+        "evidenceState": "PARTIAL" if evidence_available else "UNAVAILABLE",
         "runtime": {
-            "status": "RUNNING",
-            "ready": True,
+            "status": "RUNNING" if artifact_complete else "DEGRADED",
+            "ready": artifact_complete,
             "transportState": "REACHABLE",
             "authorityState": "READ_ONLY",
         },
@@ -603,7 +641,7 @@ def _evidence_contract(force: bool = False) -> dict[str, object]:
         "receipts": [
             {
                 "kind": "bundle-integrity",
-                "status": "STRUCTURAL_ONLY",
+                "status": "STRUCTURAL_ONLY" if artifact_complete else "FAILED",
                 "receiptId": local_receipt["receipt_id"],
                 "artifactSetSha256": (
                     receipt_evidence.get("artifact_set_sha256")
@@ -737,14 +775,20 @@ class HardenedHandler(SimpleHTTPRequestHandler):
             return
         if path == "/version":
             payload = _version_contract(force=force)
-            self._send_json(payload, evidence_state=str(payload["evidenceState"]))
+            self._send_json(
+                payload,
+                status=200 if payload["evidenceState"] == "MEASURED" else 503,
+                evidence_state=str(payload["evidenceState"]),
+            )
             return
         if path == "/evidence":
             payload = _evidence_contract(force=force)
+            receipt_status = str(payload["receipts"][0]["status"])
             self._send_json(
                 payload,
+                status=200 if payload["evidenceState"] == "PARTIAL" else 503,
                 evidence_state=str(payload["evidenceState"]),
-                extra_headers={"X-SZL-Verification-State": "STRUCTURAL_ONLY"},
+                extra_headers={"X-SZL-Verification-State": receipt_status},
             )
             return
         if path == "/.well-known/szl-source.json":

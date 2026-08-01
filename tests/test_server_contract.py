@@ -19,6 +19,19 @@ import server  # noqa: E402
 
 
 class AnatomyContractTest(unittest.TestCase):
+    @staticmethod
+    def complete_manifest():
+        artifacts = [
+            {"path": path, "bytes": 1, "sha256": "d" * 64}
+            for path in server.ARTIFACT_PATHS
+        ]
+        return {
+            "algorithm": "sha256",
+            "artifact_count": len(artifacts),
+            "artifact_set_sha256": "e" * 64,
+            "artifacts": artifacts,
+        }
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.httpd = server.make_server("127.0.0.1", 0)
@@ -105,6 +118,7 @@ class AnatomyContractTest(unittest.TestCase):
         with (
             mock.patch.object(server, "_source_attestation", return_value=source),
             mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+            mock.patch.object(server, "_artifact_manifest", return_value=self.complete_manifest()),
         ):
             version_status, _, version = self.request("/version")
             evidence_status, evidence_headers, evidence = self.request("/evidence")
@@ -131,9 +145,90 @@ class AnatomyContractTest(unittest.TestCase):
         }
         with mock.patch.object(server, "_source_attestation", return_value=source):
             status, _, version = self.request("/version")
-        self.assertEqual(200, status)
+        self.assertEqual(503, status)
         self.assertEqual("UNAVAILABLE", version["evidenceState"])
         self.assertIsNone(version["gitSha"])
+
+    def test_unbound_evidence_fails_closed_at_transport_and_claim_layers(self):
+        source = {
+            "source": {"commit": "a" * 40},
+            "deployment": {"hf_revision": "b" * 40},
+            "alignment_state": "PENDING_GITHUB_SYNC",
+        }
+        dependencies = {
+            "evidence_state": "UNAVAILABLE",
+            "observed_at": "2026-08-01T00:00:00Z",
+            "summary": {"live": 0, "total": 4},
+        }
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=source),
+            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+            mock.patch.object(server, "_artifact_manifest", return_value=self.complete_manifest()),
+        ):
+            status, headers, evidence = self.request("/evidence")
+        self.assertEqual(503, status)
+        self.assertEqual("UNAVAILABLE", evidence["evidenceState"])
+        self.assertIsNone(evidence["gitSha"])
+        self.assertEqual("STRUCTURAL_ONLY", evidence["receipts"][0]["status"])
+        self.assertEqual("STRUCTURAL_ONLY", headers["X-SZL-Verification-State"])
+
+    def test_malformed_source_revisions_cannot_satisfy_binding(self):
+        source = {
+            "source": {"commit": "not-a-revision"},
+            "deployment": {"hf_revision": "z" * 40},
+            "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+        }
+        dependencies = {
+            "evidence_state": "UNAVAILABLE",
+            "observed_at": "2026-08-01T00:00:00Z",
+            "summary": {"live": 0, "total": 4},
+        }
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=source),
+            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+        ):
+            version_status, _, version = self.request("/version")
+            evidence_status, _, evidence = self.request("/evidence")
+        self.assertEqual(503, version_status)
+        self.assertEqual(503, evidence_status)
+        self.assertEqual("UNAVAILABLE", version["evidenceState"])
+        self.assertEqual("UNAVAILABLE", evidence["evidenceState"])
+        self.assertIsNone(version["gitSha"])
+        self.assertIsNone(evidence["gitSha"])
+
+    def test_missing_runtime_artifact_fails_readiness_and_evidence(self):
+        source = {
+            "source": {"commit": "a" * 40},
+            "deployment": {"hf_revision": "b" * 40},
+            "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+        }
+        dependencies = {
+            "evidence_state": "UNAVAILABLE",
+            "observed_at": "2026-08-01T00:00:00Z",
+            "summary": {"live": 0, "total": 4},
+        }
+        receipt = {
+            "receipt": {
+                "evidence": {
+                    "artifact_set_sha256": "d" * 64,
+                    "artifacts": [{"path": path, "state": "MISSING"} for path in server.ARTIFACT_PATHS],
+                }
+            },
+            "receipt_id": "e" * 64,
+        }
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=source),
+            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+            mock.patch.object(server, "_local_receipt", return_value=receipt),
+        ):
+            status, headers, evidence = self.request("/evidence")
+        self.assertEqual(503, status)
+        self.assertEqual("UNAVAILABLE", evidence["evidenceState"])
+        self.assertIsNone(evidence["gitSha"])
+        self.assertEqual("DEGRADED", evidence["runtime"]["status"])
+        self.assertFalse(evidence["runtime"]["ready"])
+        self.assertEqual("FAILED", evidence["receipts"][0]["status"])
+        self.assertEqual("FAILED", headers["X-SZL-Verification-State"])
 
     def test_every_capability_has_five_part_shell(self):
         status, _, body = self.request("/api/anatomy/v1/capabilities")
@@ -148,15 +243,17 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertTrue(all(url.startswith("https://github.com/") for url in formula["provenance"]))
 
     def test_receipt_replays_as_structural_only(self):
-        status, receipt_headers, receipt = self.request("/api/anatomy/v1/receipt")
+        with mock.patch.object(
+            server, "_artifact_manifest", return_value=self.complete_manifest()
+        ):
+            status, receipt_headers, receipt = self.request("/api/anatomy/v1/receipt")
+            verify_status, verify_headers, verified = self.request(
+                "/api/anatomy/v1/verify/receipt", method="POST", body=receipt
+            )
         self.assertEqual(200, status)
         self.assertEqual("STRUCTURAL_ONLY", receipt["verification_state"])
         self.assertEqual(64, len(receipt["receipt_id"]))
         self.assertEqual("STRUCTURAL_ONLY", receipt_headers["X-SZL-Verification-State"])
-
-        verify_status, verify_headers, verified = self.request(
-            "/api/anatomy/v1/verify/receipt", method="POST", body=receipt
-        )
         self.assertEqual(200, verify_status)
         self.assertEqual("STRUCTURAL-ONLY", verified["verdict"])
         self.assertEqual("STRUCTURAL_ONLY", verify_headers["X-SZL-Verification-State"])
@@ -165,16 +262,38 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertEqual("UNAVAILABLE", checks["signature"])
 
     def test_tampered_receipt_fails(self):
-        _, _, receipt = self.request("/api/anatomy/v1/receipt")
-        tampered = copy.deepcopy(receipt)
-        tampered["receipt"]["claim"]["purpose"] = "changed"
-        status, _, result = self.request(
-            "/api/anatomy/v1/verify/receipt", method="POST", body=tampered
-        )
+        with mock.patch.object(
+            server, "_artifact_manifest", return_value=self.complete_manifest()
+        ):
+            _, _, receipt = self.request("/api/anatomy/v1/receipt")
+            tampered = copy.deepcopy(receipt)
+            tampered["receipt"]["claim"]["purpose"] = "changed"
+            status, _, result = self.request(
+                "/api/anatomy/v1/verify/receipt", method="POST", body=tampered
+            )
         self.assertEqual(400, status)
         self.assertEqual("FAIL", result["verdict"])
         checks = {item["name"]: item["status"] for item in result["checks"]}
         self.assertEqual("FAIL", checks["receipt_digest"])
+
+    def test_incomplete_receipt_cannot_receive_structural_pass(self):
+        incomplete = {
+            "algorithm": "sha256",
+            "artifact_count": len(server.ARTIFACT_PATHS),
+            "artifact_set_sha256": "f" * 64,
+            "artifacts": [
+                {"path": path, "state": "MISSING"} for path in server.ARTIFACT_PATHS
+            ],
+        }
+        with mock.patch.object(server, "_artifact_manifest", return_value=incomplete):
+            _, _, receipt = self.request("/api/anatomy/v1/receipt")
+            status, _, result = self.request(
+                "/api/anatomy/v1/verify/receipt", method="POST", body=receipt
+            )
+        self.assertEqual(400, status)
+        self.assertEqual("FAIL", result["verdict"])
+        checks = {item["name"]: item["status"] for item in result["checks"]}
+        self.assertEqual("FAIL", checks["artifact_completeness"])
 
     def test_source_attestation_matches_estate_schema(self):
         previous = os.environ.get("SPACE_REPOSITORY_COMMIT")

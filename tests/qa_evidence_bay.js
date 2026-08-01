@@ -73,9 +73,12 @@ async function run(browser, vp) {
   if (dependencyCount !== 4) throw new Error(vp.name+' dependency count '+dependencyCount);
   if (!endpointTexts.some(text => text.includes('/version'))) throw new Error(vp.name+' missing /version discovery');
   if (!endpointTexts.some(text => text.includes('/evidence'))) throw new Error(vp.name+' missing /evidence discovery');
-  if (contracts.versionStatus !== 200 || contracts.version.schemaVersion !== 'szl.vertical-conformance.version.v1') throw new Error(vp.name+' version contract failed');
-  if (contracts.evidenceStatus !== 200 || contracts.evidence.schemaVersion !== 'szl.vertical-conformance.evidence.v1') throw new Error(vp.name+' evidence contract failed');
-  if (contracts.evidence.evidenceState === 'VERIFIED') throw new Error(vp.name+' structural evidence was over-promoted');
+  if (contracts.version.schemaVersion !== 'szl.vertical-conformance.version.v1') throw new Error(vp.name+' version schema failed');
+  if (contracts.evidence.schemaVersion !== 'szl.vertical-conformance.evidence.v1') throw new Error(vp.name+' evidence schema failed');
+  if (contracts.version.evidenceState === 'MEASURED' ? contracts.versionStatus !== 200 : contracts.versionStatus !== 503) throw new Error(vp.name+' version transport/state mismatch');
+  if (contracts.evidence.evidenceState === 'PARTIAL' ? contracts.evidenceStatus !== 200 : contracts.evidenceStatus !== 503) throw new Error(vp.name+' evidence transport/state mismatch');
+  if (!['MEASURED','UNAVAILABLE'].includes(contracts.version.evidenceState)) throw new Error(vp.name+' unexpected version evidence state '+contracts.version.evidenceState);
+  if (!['PARTIAL','UNAVAILABLE'].includes(contracts.evidence.evidenceState)) throw new Error(vp.name+' unexpected evidence state '+contracts.evidence.evidenceState);
   if (!verification.includes('STRUCTURAL-ONLY')) throw new Error(vp.name+' receipt verdict '+verification);
   return {viewport:vp.name, overview, capabilityCount, dependencyCount, dependencyStates, endpointTexts, contracts, verification};
 }
