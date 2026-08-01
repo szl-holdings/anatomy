@@ -10,6 +10,7 @@ import unittest
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,7 +74,66 @@ class AnatomyContractTest(unittest.TestCase):
         )
         self.assertEqual("CONJECTURE_1", body["doctrine"]["lambda"])
         self.assertEqual(8, len(body["doctrine"]["locked_proven_declared"]))
+        self.assertEqual("/version", body["endpoints"]["version"])
+        self.assertEqual("/evidence", body["endpoints"]["evidence_index"])
         self.assertEqual("*", headers["Access-Control-Allow-Origin"])
+
+    def test_version_and_evidence_are_real_json_contracts(self):
+        source = {
+            "schema": "szl.deployment-source/v1",
+            "source": {
+                "repository": "szl-holdings/anatomy",
+                "commit": "b" * 40,
+                "path": "",
+                "relation": "github-actions-source-bound-deployment",
+            },
+            "deployment": {
+                "hf_space": "SZLHOLDINGS/anatomy",
+                "hf_revision": "c" * 40,
+                "artifact_set_sha256": "d" * 64,
+            },
+            "built_at": None,
+            "observed_at": "2026-08-01T00:00:00Z",
+            "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+            "limits": [],
+        }
+        dependencies = {
+            "evidence_state": "MIXED",
+            "observed_at": "2026-08-01T00:00:00Z",
+            "summary": {"live": 3, "total": 4},
+        }
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=source),
+            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+        ):
+            version_status, _, version = self.request("/version")
+            evidence_status, evidence_headers, evidence = self.request("/evidence")
+
+        self.assertEqual(200, version_status)
+        self.assertEqual("szl.vertical-conformance.version.v1", version["schemaVersion"])
+        self.assertEqual("b" * 40, version["gitSha"])
+        self.assertEqual("c" * 40, version["deploymentRevision"])
+        self.assertEqual("MEASURED", version["evidenceState"])
+
+        self.assertEqual(200, evidence_status)
+        self.assertEqual("szl.vertical-conformance.evidence.v1", evidence["schemaVersion"])
+        self.assertEqual("PARTIAL", evidence["evidenceState"])
+        self.assertEqual("b" * 40, evidence["gitSha"])
+        self.assertEqual("STRUCTURAL_ONLY", evidence["receipts"][0]["status"])
+        self.assertEqual(False, evidence["outputProvenance"]["authenticityEstablished"])
+        self.assertEqual("STRUCTURAL_ONLY", evidence_headers["X-SZL-Verification-State"])
+
+    def test_unbound_version_refuses_to_publish_declared_base_as_runtime_identity(self):
+        source = {
+            "source": {"commit": "a" * 40},
+            "deployment": {"hf_revision": "b" * 40},
+            "alignment_state": "PENDING_GITHUB_SYNC",
+        }
+        with mock.patch.object(server, "_source_attestation", return_value=source):
+            status, _, version = self.request("/version")
+        self.assertEqual(200, status)
+        self.assertEqual("UNAVAILABLE", version["evidenceState"])
+        self.assertIsNone(version["gitSha"])
 
     def test_every_capability_has_five_part_shell(self):
         status, _, body = self.request("/api/anatomy/v1/capabilities")

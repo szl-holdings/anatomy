@@ -5,6 +5,10 @@ The visual bundle remains static and read-only.  This thin server adds an honest
 machine-readable boundary around it:
 
 * ``/healthz`` reports transport health only.
+* ``/version`` exposes the exact source and deployed Space revisions using the
+  shared vertical-conformance identity contract.
+* ``/evidence`` indexes the source binding, local bundle receipt, and measured
+  dependency posture without upgrading structural checks to signed proof.
 * ``/.well-known/szl-source.json`` identifies the GitHub source and live HF
   revision without pretending that the two revisions are identical.
 * ``/api/anatomy/v1/manifest`` describes the contract and status vocabulary.
@@ -546,13 +550,97 @@ def _source_attestation(force: bool = False) -> dict[str, object]:
     }
 
 
+def _version_contract(force: bool = False) -> dict[str, object]:
+    source = _source_attestation(force=force)
+    source_identity = source["source"]
+    deployment = source["deployment"]
+    identity_measured = (
+        source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+        and isinstance(source_identity, dict)
+        and isinstance(source_identity.get("commit"), str)
+        and isinstance(deployment, dict)
+        and isinstance(deployment.get("hf_revision"), str)
+    )
+    return {
+        "schemaVersion": "szl.vertical-conformance.version.v1",
+        "service": "anatomy",
+        "surface": "anatomy",
+        "gitSha": source_identity.get("commit") if identity_measured else None,
+        "evidenceState": "MEASURED" if identity_measured else "UNAVAILABLE",
+        "deploymentRevision": deployment.get("hf_revision") if isinstance(deployment, dict) else None,
+        "contractVersion": "1.1.0",
+    }
+
+
+def _evidence_contract(force: bool = False) -> dict[str, object]:
+    source = _source_attestation(force=force)
+    dependency_evidence = _dependency_evidence(force=force)
+    local_receipt = _local_receipt()
+    source_identity = source["source"]
+    deployment = source["deployment"]
+    source_bound = (
+        source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+        and isinstance(source_identity, dict)
+        and isinstance(source_identity.get("commit"), str)
+        and isinstance(deployment, dict)
+        and isinstance(deployment.get("hf_revision"), str)
+    )
+    receipt_body = local_receipt["receipt"]
+    receipt_evidence = receipt_body["evidence"] if isinstance(receipt_body, dict) else {}
+    return {
+        "schemaVersion": "szl.vertical-conformance.evidence.v1",
+        "service": "anatomy",
+        "surface": "anatomy",
+        "gitSha": source_identity.get("commit") if source_bound else None,
+        "evidenceState": "PARTIAL" if source_bound else "UNAVAILABLE",
+        "runtime": {
+            "status": "RUNNING",
+            "ready": True,
+            "transportState": "REACHABLE",
+            "authorityState": "READ_ONLY",
+        },
+        "source": source,
+        "receipts": [
+            {
+                "kind": "bundle-integrity",
+                "status": "STRUCTURAL_ONLY",
+                "receiptId": local_receipt["receipt_id"],
+                "artifactSetSha256": (
+                    receipt_evidence.get("artifact_set_sha256")
+                    if isinstance(receipt_evidence, dict)
+                    else None
+                ),
+                "scope": "deployed runtime whitelist; unsigned local recomputation",
+                "verify": "/api/anatomy/v1/verify/receipt",
+            }
+        ],
+        "dependencies": {
+            "evidenceState": dependency_evidence["evidence_state"],
+            "observedAt": dependency_evidence["observed_at"],
+            "live": dependency_evidence["summary"]["live"],
+            "total": dependency_evidence["summary"]["total"],
+            "details": "/api/anatomy/v1/evidence?refresh=1",
+        },
+        "outputProvenance": {
+            "signatureStatus": "UNSIGNED",
+            "authenticityEstablished": False,
+            "record": "content-addressed bundle receipt; no runtime signing key",
+        },
+        "limitations": [
+            "The bundle receipt is STRUCTURAL_ONLY and does not establish publisher identity.",
+            "Dependency reachability does not certify quality, safety, freshness, or business performance.",
+            "The Space is read-only and does not execute or authorize agent actions.",
+        ],
+    }
+
+
 def _manifest() -> dict[str, object]:
     return {
         "schema": "szl.anatomy-manifest/v1",
         "service": "anatomy-space",
         "space": SPACE_ID,
         "purpose": "Read-only spatial evidence map of the governed-agent substrate.",
-        "contract_version": "1.0.0",
+        "contract_version": "1.1.0",
         "state_dimensions": {
             "transport_state": "REACHABLE",
             "evidence_state": "MIXED",
@@ -566,6 +654,8 @@ def _manifest() -> dict[str, object]:
             "authority_state": ["READ_ONLY", "PROPOSAL_ONLY", "MUTATING"],
         },
         "endpoints": {
+            "version": "/version",
+            "evidence_index": "/evidence",
             "manifest": "/api/anatomy/v1/manifest",
             "capabilities": "/api/anatomy/v1/capabilities",
             "evidence": "/api/anatomy/v1/evidence?refresh=1",
@@ -639,9 +729,22 @@ class HardenedHandler(SimpleHTTPRequestHandler):
                     "evidence_state": "SNAPSHOT",
                     "verification_state": "STRUCTURAL_ONLY",
                     "authority_state": "READ_ONLY",
+                    "contracts": {"version": "/version", "evidence": "/evidence"},
                     "note": "Transport health only; quality and upstream freshness are not inferred.",
                 },
                 evidence_state="SNAPSHOT",
+            )
+            return
+        if path == "/version":
+            payload = _version_contract(force=force)
+            self._send_json(payload, evidence_state=str(payload["evidenceState"]))
+            return
+        if path == "/evidence":
+            payload = _evidence_contract(force=force)
+            self._send_json(
+                payload,
+                evidence_state=str(payload["evidenceState"]),
+                extra_headers={"X-SZL-Verification-State": "STRUCTURAL_ONLY"},
             )
             return
         if path == "/.well-known/szl-source.json":

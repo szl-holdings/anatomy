@@ -63,6 +63,21 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('health["transport_state"] == "REACHABLE"', self.workflow)
         self.assertIn('health["verification_state"] == "STRUCTURAL_ONLY"', self.workflow)
 
+    def test_release_verifies_public_version_and_evidence(self) -> None:
+        for contract in (
+            'base + "/version"',
+            'base + "/evidence?refresh=1"',
+            'version["gitSha"] == source_revision',
+            'version["deploymentRevision"] == target_sha',
+            'version["evidenceState"] == "MEASURED"',
+            'evidence["gitSha"] == source_revision',
+            'evidence["evidenceState"] == "PARTIAL"',
+            'evidence["source"]["deployment"]["hf_revision"] == target_sha',
+            'evidence["receipts"][0]["status"] == "STRUCTURAL_ONLY"',
+            'evidence["outputProvenance"]["authenticityEstablished"] is False',
+        ):
+            self.assertIn(contract, self.workflow)
+
     def test_stale_space_only_docker_claim_is_absent(self) -> None:
         self.assertNotIn("does not exist in this repo", self.workflow)
         self.assertNotIn("Space-only Dockerfile", self.workflow)

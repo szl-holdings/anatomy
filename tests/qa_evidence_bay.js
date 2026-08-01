@@ -40,6 +40,21 @@ async function run(browser, vp) {
   const dependencyCount = await page.locator('.fa-dep').count();
   const dependencyStates = await page.locator('.fa-dep-state').allInnerTexts();
 
+  await page.click('[data-tab="reproduce"]');
+  const endpointTexts = await page.locator('.fa-endpoint a').allInnerTexts();
+  const contracts = await page.evaluate(async () => {
+    const [versionResponse, evidenceResponse] = await Promise.all([
+      fetch('/version', {cache:'no-store'}),
+      fetch('/evidence', {cache:'no-store'}),
+    ]);
+    return {
+      versionStatus: versionResponse.status,
+      evidenceStatus: evidenceResponse.status,
+      version: await versionResponse.json(),
+      evidence: await evidenceResponse.json(),
+    };
+  });
+
   await page.click('[data-tab="overview"]');
   await page.click('#fa-verify-bundle');
   await page.waitForSelector('.fa-output.good');
@@ -56,8 +71,13 @@ async function run(browser, vp) {
     if (!shellText.includes(field)) throw new Error(vp.name+' missing '+field+' shell');
   }
   if (dependencyCount !== 4) throw new Error(vp.name+' dependency count '+dependencyCount);
+  if (!endpointTexts.some(text => text.includes('/version'))) throw new Error(vp.name+' missing /version discovery');
+  if (!endpointTexts.some(text => text.includes('/evidence'))) throw new Error(vp.name+' missing /evidence discovery');
+  if (contracts.versionStatus !== 200 || contracts.version.schemaVersion !== 'szl.vertical-conformance.version.v1') throw new Error(vp.name+' version contract failed');
+  if (contracts.evidenceStatus !== 200 || contracts.evidence.schemaVersion !== 'szl.vertical-conformance.evidence.v1') throw new Error(vp.name+' evidence contract failed');
+  if (contracts.evidence.evidenceState === 'VERIFIED') throw new Error(vp.name+' structural evidence was over-promoted');
   if (!verification.includes('STRUCTURAL-ONLY')) throw new Error(vp.name+' receipt verdict '+verification);
-  return {viewport:vp.name, overview, capabilityCount, dependencyCount, dependencyStates, verification};
+  return {viewport:vp.name, overview, capabilityCount, dependencyCount, dependencyStates, endpointTexts, contracts, verification};
 }
 
 (async()=>{

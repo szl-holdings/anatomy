@@ -160,12 +160,26 @@ jobs:
               try:
                   with urllib.request.urlopen(base + "/healthz", timeout=10) as response:
                       health = json.load(response)
+                  with urllib.request.urlopen(base + "/version", timeout=10) as response:
+                      version = json.load(response)
+                  with urllib.request.urlopen(base + "/evidence?refresh=1", timeout=15) as response:
+                      evidence = json.load(response)
                   with urllib.request.urlopen(
                       base + "/.well-known/szl-source.json?refresh=1", timeout=10
                   ) as response:
                       source = json.load(response)
                   assert health["transport_state"] == "REACHABLE"
                   assert health["verification_state"] == "STRUCTURAL_ONLY"
+                  assert version["schemaVersion"] == "szl.vertical-conformance.version.v1"
+                  assert version["gitSha"] == source_revision
+                  assert version["deploymentRevision"] == target_sha
+                  assert version["evidenceState"] == "MEASURED"
+                  assert evidence["schemaVersion"] == "szl.vertical-conformance.evidence.v1"
+                  assert evidence["gitSha"] == source_revision
+                  assert evidence["evidenceState"] == "PARTIAL"
+                  assert evidence["source"]["deployment"]["hf_revision"] == target_sha
+                  assert evidence["receipts"][0]["status"] == "STRUCTURAL_ONLY"
+                  assert evidence["outputProvenance"]["authenticityEstablished"] is False
                   assert source["deployment"]["hf_revision"] == target_sha
                   assert source["source"]["commit"] == source_revision
                   assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
