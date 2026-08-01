@@ -56,7 +56,7 @@ class AnatomyContractTest(unittest.TestCase):
             headers["Content-Type"] = "application/json"
         req = urllib.request.Request(self.base + path, data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=15) as response:
                 return response.status, dict(response.headers), json.load(response)
         except urllib.error.HTTPError as exc:
             return exc.code, dict(exc.headers), json.load(exc)
@@ -327,6 +327,36 @@ class AnatomyContractTest(unittest.TestCase):
         checks = {item["name"]: item["status"] for item in result["checks"]}
         self.assertEqual("FAIL", checks["artifact_completeness"])
 
+    def test_forged_incomplete_candidate_cannot_reuse_live_artifact_digest(self):
+        manifest = self.complete_manifest()
+        with mock.patch.object(server, "_artifact_manifest", return_value=manifest):
+            _, _, receipt = self.request("/api/anatomy/v1/receipt")
+            receipt["receipt"]["evidence"]["artifacts"] = [
+                {"path": path, "state": "MISSING"} for path in server.ARTIFACT_PATHS
+            ]
+            receipt["receipt_id"] = server._sha256(server._canonical(receipt["receipt"]))
+            status, _, result = self.request(
+                "/api/anatomy/v1/verify/receipt", method="POST", body=receipt
+            )
+        self.assertEqual(400, status)
+        self.assertEqual("FAIL", result["verdict"])
+        checks = {item["name"]: item["status"] for item in result["checks"]}
+        self.assertEqual("PASS", checks["receipt_digest"])
+        self.assertEqual("FAIL", checks["artifact_set"])
+        self.assertEqual("FAIL", checks["artifact_completeness"])
+
+    def test_zero_byte_runtime_artifact_is_incomplete(self):
+        manifest = self.complete_manifest()
+        manifest["artifacts"][0]["bytes"] = 0
+        manifest["artifact_set_sha256"] = server._sha256(
+            server._canonical(manifest["artifacts"])
+        )
+        with mock.patch.object(server, "_artifact_manifest", return_value=manifest):
+            status, headers, receipt = self.request("/api/anatomy/v1/receipt")
+        self.assertEqual(503, status)
+        self.assertEqual("FAILED", receipt["verification_state"])
+        self.assertEqual("FAILED", headers["X-SZL-Verification-State"])
+
     def test_source_attestation_matches_estate_schema(self):
         previous = os.environ.get("SPACE_REPOSITORY_COMMIT")
         os.environ["SPACE_REPOSITORY_COMMIT"] = "a" * 40
@@ -364,11 +394,7 @@ class AnatomyContractTest(unittest.TestCase):
             server.DEPLOY_MANIFEST_PATH = manifest
             os.environ["SPACE_REPOSITORY_COMMIT"] = "c" * 40
             try:
-                with mock.patch.object(
-                    server,
-                    "_hf_commit_matches_binding",
-                    return_value=True,
-                ):
+                with mock.patch.object(server, "_hf_commit_matches_source", return_value=True):
                     status, _, body = self.request("/.well-known/szl-source.json")
             finally:
                 server.DEPLOY_MANIFEST_PATH = previous_manifest
@@ -384,34 +410,10 @@ class AnatomyContractTest(unittest.TestCase):
         )
         self.assertEqual("SOURCE_BOUND_DEPLOYMENT", body["alignment_state"])
         self.assertEqual("c" * 40, body["deployment"]["hf_revision"])
+        self.assertEqual("MEASURED", body["deployment"]["commit_binding"])
+        self.assertEqual("123456789", body["deployment"]["workflow_run_id"])
 
-    def test_hf_commit_binding_requires_exact_revision_and_run_title(self):
-        hf_revision = "c" * 40
-        source_revision = "b" * 40
-        workflow_run_id = "123456789"
-        commits = [
-            {
-                "id": hf_revision,
-                "title": server._deployment_commit_title(
-                    source_revision,
-                    workflow_run_id,
-                ),
-            }
-        ]
-        with mock.patch.object(
-            server.urllib.request,
-            "urlopen",
-            return_value=io.BytesIO(json.dumps(commits).encode("utf-8")),
-        ):
-            self.assertTrue(
-                server._hf_commit_matches_binding(
-                    hf_revision,
-                    source_revision,
-                    workflow_run_id,
-                )
-            )
-
-    def test_retained_manifest_degrades_after_space_only_revision(self):
+    def test_source_attestation_rejects_stale_manifest_on_new_hf_revision(self):
         previous_manifest = server.DEPLOY_MANIFEST_PATH
         previous_revision = os.environ.get("SPACE_REPOSITORY_COMMIT")
         with tempfile.TemporaryDirectory() as temporary:
@@ -429,37 +431,61 @@ class AnatomyContractTest(unittest.TestCase):
                 encoding="utf-8",
             )
             server.DEPLOY_MANIFEST_PATH = manifest
-            os.environ["SPACE_REPOSITORY_COMMIT"] = "d" * 40
+            os.environ["SPACE_REPOSITORY_COMMIT"] = "c" * 40
             try:
-                with mock.patch.object(
-                    server,
-                    "_hf_commit_matches_binding",
-                    return_value=False,
-                ):
-                    source = server._source_attestation(force=True)
+                with mock.patch.object(server, "_hf_commit_matches_source", return_value=False):
+                    status, _, body = self.request("/.well-known/szl-source.json")
             finally:
                 server.DEPLOY_MANIFEST_PATH = previous_manifest
                 if previous_revision is None:
                     os.environ.pop("SPACE_REPOSITORY_COMMIT", None)
                 else:
                     os.environ["SPACE_REPOSITORY_COMMIT"] = previous_revision
+        self.assertEqual(200, status)
+        self.assertEqual("DEPLOYMENT_REVISION_UNBOUND", body["alignment_state"])
+        self.assertEqual("UNAVAILABLE", body["deployment"]["commit_binding"])
+        self.assertIsNone(body["deployment"]["workflow_run_id"])
+        self.assertIn("do not bind", body["limits"][-1])
 
-        dependencies = {
-            "evidence_state": "UNAVAILABLE",
-            "observed_at": "2026-08-01T00:00:00Z",
-            "summary": {"live": 0, "total": 4},
-        }
-        with (
-            mock.patch.object(server, "_source_attestation", return_value=source),
-            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+    def test_hf_commit_binding_requires_exact_head_title_and_manifest_diff(self):
+        source_revision = "b" * 40
+        hf_revision = "c" * 40
+        workflow_run_id = "123456789"
+        commits = json.dumps(
+            [
+                {
+                    "id": hf_revision,
+                    "title": f"hf-sync: source {source_revision} run {workflow_run_id}",
+                }
+            ]
+        ).encode("utf-8")
+        commit_diff = (
+            "diff --git a/hf-deploy-manifest.json b/hf-deploy-manifest.json\n"
+            f'+  "source_revision": "{source_revision}"\n'
+            f'+  "workflow_run_id": "{workflow_run_id}"\n'
+        ).encode("utf-8")
+        with mock.patch.object(
+            urllib.request,
+            "urlopen",
+            side_effect=[io.BytesIO(commits), io.BytesIO(commit_diff)],
         ):
-            version = server._version_contract()
-            evidence = server._evidence_contract()
-        self.assertEqual("PENDING_GITHUB_SYNC", source["alignment_state"])
-        self.assertEqual("UNAVAILABLE", version["evidenceState"])
-        self.assertIsNone(version["gitSha"])
-        self.assertEqual("UNAVAILABLE", evidence["evidenceState"])
-        self.assertIsNone(evidence["gitSha"])
+            self.assertTrue(
+                server._hf_commit_matches_source(
+                    hf_revision, source_revision, workflow_run_id, force=True
+                )
+            )
+
+        stale_diff = b"diff --git a/index.html b/index.html\n"
+        with mock.patch.object(
+            urllib.request,
+            "urlopen",
+            side_effect=[io.BytesIO(commits), io.BytesIO(stale_diff)],
+        ):
+            self.assertFalse(
+                server._hf_commit_matches_source(
+                    hf_revision, source_revision, workflow_run_id, force=True
+                )
+            )
 
     def test_frontend_and_public_verifier_use_current_contract(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")

@@ -37,6 +37,10 @@ class HfSyncContractTest(unittest.TestCase):
             'source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"',
             self.workflow,
         )
+        self.assertIn(
+            'source["deployment"]["workflow_run_id"] == workflow_run_id',
+            self.workflow,
+        )
 
     def test_release_generates_exact_source_manifest(self) -> None:
         self.assertIn('"schema": "szl.hf-deploy-manifest/v1"', self.workflow)
@@ -44,12 +48,17 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('"source_revision": source_revision', self.workflow)
         self.assertIn('"workflow_run_id": workflow_run_id', self.workflow)
         self.assertIn('path_in_repo="hf-deploy-manifest.json"', self.workflow)
+        self.assertIn(
+            'commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}"',
+            self.workflow,
+        )
+        self.assertNotIn("os.environ.get('GITHUB_SHA','')[:8]", self.workflow)
 
     def test_release_binds_manifest_to_hf_commit_metadata(self) -> None:
         self.assertIn('workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")', self.workflow)
         self.assertIn('if not workflow_run_id.isdigit():', self.workflow)
         self.assertIn(
-            'f"hf-sync: source {source_revision[:12]} run {workflow_run_id}"',
+            'f"hf-sync: source {source_revision} run {workflow_run_id}"',
             self.workflow,
         )
 

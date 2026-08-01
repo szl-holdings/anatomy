@@ -138,9 +138,7 @@ jobs:
           print("Syncing", len(ops), "file(s) to", space, ":", files)
           commit = api.create_commit(
               repo_id=space, repo_type="space", operations=ops,
-              commit_message=(
-                  f"hf-sync: source {source_revision[:12]} run {workflow_run_id}"
-              ),
+              commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}",
           )
           print("Space commit:", getattr(commit, "commit_url", commit))
 
@@ -188,6 +186,7 @@ jobs:
                   assert source["deployment"]["hf_revision"] == target_sha
                   assert source["source"]["commit"] == source_revision
                   assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+                  assert source["deployment"]["workflow_run_id"] == workflow_run_id
                   print("Verified live Space revision and health:", target_sha)
                   break
               except Exception as error:

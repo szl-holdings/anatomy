@@ -42,18 +42,16 @@ async function run(browser, vp) {
 
   await page.click('[data-tab="reproduce"]');
   const endpointTexts = await page.locator('.fa-endpoint a').allInnerTexts();
-  const contracts = await page.evaluate(async () => {
-    const [versionResponse, evidenceResponse] = await Promise.all([
-      fetch('/version', {cache:'no-store'}),
-      fetch('/evidence', {cache:'no-store'}),
-    ]);
-    return {
-      versionStatus: versionResponse.status,
-      evidenceStatus: evidenceResponse.status,
-      version: await versionResponse.json(),
-      evidence: await evidenceResponse.json(),
-    };
-  });
+  const [versionResponse, evidenceResponse] = await Promise.all([
+    page.request.get(BASE+'/version'),
+    page.request.get(BASE+'/evidence'),
+  ]);
+  const contracts = {
+    versionStatus: versionResponse.status(),
+    evidenceStatus: evidenceResponse.status(),
+    version: await versionResponse.json(),
+    evidence: await evidenceResponse.json(),
+  };
 
   await page.click('[data-tab="overview"]');
   await page.click('#fa-verify-bundle');
