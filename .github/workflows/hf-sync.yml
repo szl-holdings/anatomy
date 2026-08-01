@@ -64,7 +64,7 @@ jobs:
 
           # Runtime and served files. The Space's .github/ remains untouched.
           patterns = ["README.md", "Dockerfile", ".dockerignore", "server.py",
-                      "index.html", "live-body.html",
+                      "*.html",
                       "*.js", "*.css", "lib/**/*"]
           files = []
           for p in patterns:

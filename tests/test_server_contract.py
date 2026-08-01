@@ -82,10 +82,16 @@ class AnatomyContractTest(unittest.TestCase):
     def test_runtime_manifest_covers_frontend_script_dependencies(self):
         declared = set(server.ARTIFACT_PATHS)
         required: set[str] = set()
-        for relative_path in ("index.html", "live-body.html"):
-            document = (ROOT / relative_path).read_text(encoding="utf-8")
+        html_entries = sorted(ROOT.glob("*.html"))
+        self.assertTrue(html_entries)
+        self.assertEqual(set(), {path.name for path in html_entries} - declared)
+        for path in html_entries:
+            document = path.read_text(encoding="utf-8")
             required.update(
                 re.findall(r'<script[^>]+src="\./([^"?#]+)', document)
+            )
+            required.update(
+                re.findall(r'\bfrom\s+["\']\./([^"\'?#]+)', document)
             )
         self.assertTrue(required)
         self.assertEqual(set(), required - declared)

@@ -15,6 +15,8 @@ class HfSyncContractTest(unittest.TestCase):
     def test_runtime_files_are_in_upload_contract(self) -> None:
         for path in ("Dockerfile", ".dockerignore", "server.py"):
             self.assertIn(f'"{path}"', self.workflow, path)
+        self.assertIn('"*.html"', self.workflow)
+        self.assertNotIn('"index.html", "live-body.html"', self.workflow)
 
     def test_every_main_push_schedules_a_replacement_deploy(self) -> None:
         push_trigger = self.workflow.split("workflow_dispatch:", 1)[0]

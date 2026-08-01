@@ -59,6 +59,7 @@ LOCKED_FORMULAS = ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"]
 
 ARTIFACT_PATHS = (
     "index.html",
+    "covenant-cockpit.html",
     "favicon.svg",
     "app.js",
     "data.js",
@@ -66,6 +67,7 @@ ARTIFACT_PATHS = (
     "frontier_anatomy.js",
     "live-body.html",
     "live-body.js",
+    "covenant-cockpit.js",
     "lib/three.min.js",
     "lib/szl_verify_widget.js",
     "v6_alive.js",
