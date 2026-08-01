@@ -88,6 +88,9 @@ jobs:
               raise RuntimeError(
                   f"refusing production deploy from non-main ref: {source_ref!r}"
               )
+          workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")
+          if not workflow_run_id.isdigit():
+              raise RuntimeError("GITHUB_RUN_ID is not a numeric workflow run ID")
           deploy_manifest = {
               "schema": "szl.hf-deploy-manifest/v1",
               "source_repository": "szl-holdings/anatomy",
@@ -98,7 +101,7 @@ jobs:
                   "repo_type": "space",
                   "mode": "runtime-whitelist",
               },
-              "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "workflow_run_id": workflow_run_id,
           }
           ops.append(
               CommitOperationAdd(
@@ -135,7 +138,9 @@ jobs:
           print("Syncing", len(ops), "file(s) to", space, ":", files)
           commit = api.create_commit(
               repo_id=space, repo_type="space", operations=ops,
-              commit_message=f"hf-sync: mirror front-door from GitHub {os.environ.get('GITHUB_SHA','')[:8]}",
+              commit_message=(
+                  f"hf-sync: source {source_revision[:12]} run {workflow_run_id}"
+              ),
           )
           print("Space commit:", getattr(commit, "commit_url", commit))
 

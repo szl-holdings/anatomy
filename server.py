@@ -525,7 +525,45 @@ def _hf_revision(force: bool = False) -> str | None:
     return revision
 
 
-def _source_binding() -> dict[str, object]:
+def _deployment_commit_title(source_revision: str, workflow_run_id: str) -> str:
+    return f"hf-sync: source {source_revision[:12]} run {workflow_run_id}"
+
+
+def _hf_commit_matches_binding(
+    hf_revision: str | None,
+    source_revision: str,
+    workflow_run_id: str,
+) -> bool:
+    if (
+        not isinstance(hf_revision, str)
+        or len(hf_revision) != 40
+        or any(character not in "0123456789abcdef" for character in hf_revision.lower())
+        or not workflow_run_id.isdigit()
+    ):
+        return False
+    request = urllib.request.Request(
+        f"https://huggingface.co/api/spaces/{SPACE_ID}/commits/{hf_revision.lower()}",
+        headers={
+            "User-Agent": "szl-anatomy-source-attestation/1.1",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=4) as response:
+            commits = json.load(response)
+    except Exception:
+        return False
+    if not isinstance(commits, list) or not commits or not isinstance(commits[0], dict):
+        return False
+    current = commits[0]
+    return (
+        str(current.get("id") or "").lower() == hf_revision.lower()
+        and current.get("title")
+        == _deployment_commit_title(source_revision, workflow_run_id)
+    )
+
+
+def _source_binding(hf_revision: str | None) -> dict[str, object]:
     fallback: dict[str, object] = {
         "repository": SOURCE_REPOSITORY,
         "commit": SOURCE_BASE_COMMIT,
@@ -535,7 +573,7 @@ def _source_binding() -> dict[str, object]:
         "built_at": None,
         "limits": [
             "source.commit is the declared GitHub base; deployment.hf_revision is measured separately.",
-            "No workflow-generated deployment manifest was observed.",
+            "No workflow manifest bound to the measured Hugging Face revision was observed.",
         ],
     }
     try:
@@ -544,10 +582,17 @@ def _source_binding() -> dict[str, object]:
         return fallback
     repository = payload.get("source_repository")
     revision = payload.get("source_revision")
+    workflow_run_id = payload.get("workflow_run_id")
     if (
         payload.get("schema") != "szl.hf-deploy-manifest/v1"
         or repository != SOURCE_REPOSITORY
         or not _is_full_revision(revision)
+        or not isinstance(workflow_run_id, str)
+        or not _hf_commit_matches_binding(
+            hf_revision,
+            revision.lower(),
+            workflow_run_id,
+        )
     ):
         return fallback
     return {
@@ -558,7 +603,7 @@ def _source_binding() -> dict[str, object]:
         "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
         "built_at": payload.get("built_at"),
         "limits": [
-            "The manifest binds this Hugging Face revision to the GitHub commit used by the deployment workflow.",
+            "The measured Hugging Face commit metadata binds this revision to the manifest's GitHub source and workflow run.",
             "The deployment uploads a declared runtime whitelist; it does not claim whole-repository byte parity.",
         ],
     }
@@ -567,7 +612,7 @@ def _source_binding() -> dict[str, object]:
 def _source_attestation(force: bool = False) -> dict[str, object]:
     revision = _hf_revision(force=force)
     manifest = _artifact_manifest()
-    source_binding = _source_binding()
+    source_binding = _source_binding(revision)
     return {
         "schema": "szl.deployment-source/v1",
         "source": {

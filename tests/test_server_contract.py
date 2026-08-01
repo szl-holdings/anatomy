@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import io
 import json
 import os
 import sys
@@ -324,6 +325,7 @@ class AnatomyContractTest(unittest.TestCase):
                         "source_repository": "szl-holdings/anatomy",
                         "source_revision": "b" * 40,
                         "source_path": "",
+                        "workflow_run_id": "123456789",
                     }
                 ),
                 encoding="utf-8",
@@ -331,7 +333,12 @@ class AnatomyContractTest(unittest.TestCase):
             server.DEPLOY_MANIFEST_PATH = manifest
             os.environ["SPACE_REPOSITORY_COMMIT"] = "c" * 40
             try:
-                status, _, body = self.request("/.well-known/szl-source.json")
+                with mock.patch.object(
+                    server,
+                    "_hf_commit_matches_binding",
+                    return_value=True,
+                ):
+                    status, _, body = self.request("/.well-known/szl-source.json")
             finally:
                 server.DEPLOY_MANIFEST_PATH = previous_manifest
                 if previous_revision is None:
@@ -346,6 +353,82 @@ class AnatomyContractTest(unittest.TestCase):
         )
         self.assertEqual("SOURCE_BOUND_DEPLOYMENT", body["alignment_state"])
         self.assertEqual("c" * 40, body["deployment"]["hf_revision"])
+
+    def test_hf_commit_binding_requires_exact_revision_and_run_title(self):
+        hf_revision = "c" * 40
+        source_revision = "b" * 40
+        workflow_run_id = "123456789"
+        commits = [
+            {
+                "id": hf_revision,
+                "title": server._deployment_commit_title(
+                    source_revision,
+                    workflow_run_id,
+                ),
+            }
+        ]
+        with mock.patch.object(
+            server.urllib.request,
+            "urlopen",
+            return_value=io.BytesIO(json.dumps(commits).encode("utf-8")),
+        ):
+            self.assertTrue(
+                server._hf_commit_matches_binding(
+                    hf_revision,
+                    source_revision,
+                    workflow_run_id,
+                )
+            )
+
+    def test_retained_manifest_degrades_after_space_only_revision(self):
+        previous_manifest = server.DEPLOY_MANIFEST_PATH
+        previous_revision = os.environ.get("SPACE_REPOSITORY_COMMIT")
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "hf-deploy-manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "szl.hf-deploy-manifest/v1",
+                        "source_repository": "szl-holdings/anatomy",
+                        "source_revision": "b" * 40,
+                        "source_path": "",
+                        "workflow_run_id": "123456789",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            server.DEPLOY_MANIFEST_PATH = manifest
+            os.environ["SPACE_REPOSITORY_COMMIT"] = "d" * 40
+            try:
+                with mock.patch.object(
+                    server,
+                    "_hf_commit_matches_binding",
+                    return_value=False,
+                ):
+                    source = server._source_attestation(force=True)
+            finally:
+                server.DEPLOY_MANIFEST_PATH = previous_manifest
+                if previous_revision is None:
+                    os.environ.pop("SPACE_REPOSITORY_COMMIT", None)
+                else:
+                    os.environ["SPACE_REPOSITORY_COMMIT"] = previous_revision
+
+        dependencies = {
+            "evidence_state": "UNAVAILABLE",
+            "observed_at": "2026-08-01T00:00:00Z",
+            "summary": {"live": 0, "total": 4},
+        }
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=source),
+            mock.patch.object(server, "_dependency_evidence", return_value=dependencies),
+        ):
+            version = server._version_contract()
+            evidence = server._evidence_contract()
+        self.assertEqual("PENDING_GITHUB_SYNC", source["alignment_state"])
+        self.assertEqual("UNAVAILABLE", version["evidenceState"])
+        self.assertIsNone(version["gitSha"])
+        self.assertEqual("UNAVAILABLE", evidence["evidenceState"])
+        self.assertIsNone(evidence["gitSha"])
 
     def test_frontend_and_public_verifier_use_current_contract(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")

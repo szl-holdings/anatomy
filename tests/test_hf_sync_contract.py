@@ -42,7 +42,16 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('"schema": "szl.hf-deploy-manifest/v1"', self.workflow)
         self.assertIn('"source_repository": "szl-holdings/anatomy"', self.workflow)
         self.assertIn('"source_revision": source_revision', self.workflow)
+        self.assertIn('"workflow_run_id": workflow_run_id', self.workflow)
         self.assertIn('path_in_repo="hf-deploy-manifest.json"', self.workflow)
+
+    def test_release_binds_manifest_to_hf_commit_metadata(self) -> None:
+        self.assertIn('workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")', self.workflow)
+        self.assertIn('if not workflow_run_id.isdigit():', self.workflow)
+        self.assertIn(
+            'f"hf-sync: source {source_revision[:12]} run {workflow_run_id}"',
+            self.workflow,
+        )
 
     def test_release_rechecks_exact_current_main_at_mutation_boundary(self) -> None:
         for contract in (
