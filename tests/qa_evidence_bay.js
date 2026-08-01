@@ -16,10 +16,16 @@ async function run(browser, vp) {
   const errors = [];
   page.on('console', msg => { if (msg.type()==='error') errors.push(msg.text()); });
   page.on('pageerror', err => errors.push('PAGEERROR: '+err.message));
+  const initialEvidence = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === '/api/anatomy/v1/evidence' && response.request().method() === 'GET';
+  }, {timeout:45000});
   await page.goto(BASE+'/', {waitUntil:'networkidle'});
   await page.waitForSelector('#fa-launch');
   await page.click('#fa-launch');
   await page.waitForSelector('#fa-panel.open');
+  const initialEvidenceResponse = await initialEvidence;
+  if (initialEvidenceResponse.status() !== 200) throw new Error(vp.name+' initial evidence HTTP '+initialEvidenceResponse.status());
 
   const overview = await page.evaluate(() => ({
     title: document.querySelector('.fa-title')?.textContent,
@@ -36,7 +42,13 @@ async function run(browser, vp) {
   const shellText = await page.locator('.fa-cap').first().textContent();
 
   await page.click('[data-tab="evidence"]');
-  await page.waitForSelector('.fa-dep');
+  try {
+    await page.waitForSelector('.fa-dep');
+  } catch (error) {
+    const activeTab = await page.locator('.fa-tab.active').innerText({timeout:2000}).catch(()=>'missing');
+    const evidenceBody = await page.locator('#fa-body').innerText({timeout:2000}).catch(()=>'missing');
+    throw new Error(vp.name+' evidence panel timeout; active='+activeTab+'; body='+evidenceBody+'; console='+errors.join(' | ')+'; '+error.message);
+  }
   const dependencyCount = await page.locator('.fa-dep').count();
   const dependencyStates = await page.locator('.fa-dep-state').allInnerTexts();
 
@@ -83,8 +95,11 @@ async function run(browser, vp) {
 
 (async()=>{
   const browser = await chromium.launch({executablePath:EDGE,headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
-  const results=[];
-  for (const vp of VIEWPORTS) results.push(await run(browser,vp));
-  await browser.close();
-  console.log(JSON.stringify(results,null,2));
+  try {
+    const results=[];
+    for (const vp of VIEWPORTS) results.push(await run(browser,vp));
+    console.log(JSON.stringify(results,null,2));
+  } finally {
+    await browser.close();
+  }
 })().catch(err=>{ console.error(err); process.exit(1); });
