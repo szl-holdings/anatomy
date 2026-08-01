@@ -353,6 +353,11 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
     recomputed_id = _sha256(_canonical(receipt))
     subject = receipt.get("subject") if isinstance(receipt.get("subject"), dict) else {}
     evidence = receipt.get("evidence") if isinstance(receipt.get("evidence"), dict) else {}
+    current_complete = _artifact_set_complete(current)
+    candidate_complete = _artifact_set_complete(evidence)
+    candidate_artifact_set_sha256 = (
+        _sha256(_canonical(evidence["artifacts"])) if candidate_complete else None
+    )
     checks = [
         {
             "name": "schema",
@@ -372,15 +377,18 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
         {
             "name": "artifact_set",
             "status": "PASS"
-            if evidence.get("artifact_set_sha256") == current["artifact_set_sha256"]
-            and subject.get("artifact_set_sha256") == current["artifact_set_sha256"]
+            if current_complete
+            and candidate_complete
+            and candidate_artifact_set_sha256 == current["artifact_set_sha256"]
+            and evidence.get("artifact_set_sha256") == candidate_artifact_set_sha256
+            and subject.get("artifact_set_sha256") == candidate_artifact_set_sha256
             else "FAIL",
-            "detail": "Recomputed from the files currently served by this Space.",
+            "detail": "Recomputed from both the submitted evidence and files currently served by this Space.",
         },
         {
             "name": "artifact_completeness",
-            "status": "PASS" if _artifact_set_complete(current) else "FAIL",
-            "detail": "Every declared runtime artifact must be present with bytes and SHA-256.",
+            "status": "PASS" if current_complete and candidate_complete else "FAIL",
+            "detail": "Every current and submitted runtime artifact must be present with bytes and SHA-256.",
         },
         {
             "name": "signature",

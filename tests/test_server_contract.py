@@ -29,7 +29,7 @@ class AnatomyContractTest(unittest.TestCase):
         return {
             "algorithm": "sha256",
             "artifact_count": len(artifacts),
-            "artifact_set_sha256": "e" * 64,
+            "artifact_set_sha256": server._sha256(server._canonical(artifacts)),
             "artifacts": artifacts,
         }
 
@@ -276,6 +276,25 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertEqual("FAIL", result["verdict"])
         checks = {item["name"]: item["status"] for item in result["checks"]}
         self.assertEqual("FAIL", checks["receipt_digest"])
+
+    def test_rehashed_receipt_with_missing_artifact_fails(self):
+        current = self.complete_manifest()
+        with mock.patch.object(server, "_artifact_manifest", return_value=current):
+            _, _, receipt = self.request("/api/anatomy/v1/receipt")
+            tampered = copy.deepcopy(receipt)
+            tampered["receipt"]["evidence"]["artifacts"].pop()
+            tampered["receipt_id"] = server._sha256(
+                server._canonical(tampered["receipt"])
+            )
+            status, _, result = self.request(
+                "/api/anatomy/v1/verify/receipt", method="POST", body=tampered
+            )
+        self.assertEqual(400, status)
+        self.assertEqual("FAIL", result["verdict"])
+        checks = {item["name"]: item["status"] for item in result["checks"]}
+        self.assertEqual("PASS", checks["receipt_digest"])
+        self.assertEqual("FAIL", checks["artifact_set"])
+        self.assertEqual("FAIL", checks["artifact_completeness"])
 
     def test_incomplete_receipt_cannot_receive_structural_pass(self):
         incomplete = {
