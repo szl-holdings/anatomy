@@ -5,6 +5,10 @@ The visual bundle remains static and read-only.  This thin server adds an honest
 machine-readable boundary around it:
 
 * ``/healthz`` reports transport health only.
+* ``/version`` exposes the exact source and deployed Space revisions using the
+  shared vertical-conformance identity contract.
+* ``/evidence`` indexes the source binding, local bundle receipt, and measured
+  dependency posture without upgrading structural checks to signed proof.
 * ``/.well-known/szl-source.json`` identifies the GitHub source and live HF
   revision without pretending that the two revisions are identical.
 * ``/api/anatomy/v1/manifest`` describes the contract and status vocabulary.
@@ -55,6 +59,7 @@ LOCKED_FORMULAS = ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"]
 
 ARTIFACT_PATHS = (
     "index.html",
+    "covenant-cockpit.html",
     "favicon.svg",
     "app.js",
     "data.js",
@@ -62,7 +67,10 @@ ARTIFACT_PATHS = (
     "frontier_anatomy.js",
     "live-body.html",
     "live-body.js",
+    "covenant-cockpit.js",
+    "lib/three.min.js",
     "lib/szl_verify_widget.js",
+    "v6_alive.js",
     "server.py",
     "hf-deploy-manifest.json",
 )
@@ -252,6 +260,8 @@ _probe_lock = threading.Lock()
 _probe_cache: dict[str, object] = {"at": 0.0, "value": None}
 _revision_lock = threading.Lock()
 _revision_cache: dict[str, object] = {"at": 0.0, "value": None}
+_binding_lock = threading.Lock()
+_binding_cache: dict[str, object] = {"at": 0.0, "key": None, "value": False}
 
 
 def _utc_now() -> str:
@@ -284,8 +294,35 @@ def _artifact_manifest() -> dict[str, object]:
     }
 
 
+def _artifact_set_complete(manifest: object) -> bool:
+    if not isinstance(manifest, dict):
+        return False
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != len(ARTIFACT_PATHS):
+        return False
+    paths: list[str] = []
+    for item in artifacts:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("path"), str)
+            or not isinstance(item.get("bytes"), int)
+            or int(item["bytes"]) <= 0
+            or not _is_sha256(item.get("sha256"))
+        ):
+            return False
+        paths.append(str(item["path"]))
+    return len(set(paths)) == len(paths) and set(paths) == set(ARTIFACT_PATHS)
+
+
+def _artifact_manifest_digest_valid(manifest: object) -> bool:
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("artifacts"), list):
+        return False
+    return _sha256(_canonical(manifest["artifacts"])) == manifest.get("artifact_set_sha256")
+
+
 def _local_receipt() -> dict[str, object]:
     manifest = _artifact_manifest()
+    artifact_complete = _artifact_set_complete(manifest) and _artifact_manifest_digest_valid(manifest)
     body: dict[str, object] = {
         "schema": "szl.anatomy-integrity-receipt/v1",
         "subject": {
@@ -295,7 +332,7 @@ def _local_receipt() -> dict[str, object]:
         "claim": {
             "purpose": "Byte-level integrity of the deployed Living Anatomy bundle",
             "authority_state": "READ_ONLY",
-            "evidence_state": "COMPUTED",
+            "evidence_state": "COMPUTED" if artifact_complete else "UNAVAILABLE",
             "doctrine": DOCTRINE,
             "kernel_reference": KERNEL_COMMIT,
             "locked_proven_declared": len(LOCKED_FORMULAS),
@@ -314,7 +351,7 @@ def _local_receipt() -> dict[str, object]:
     return {
         "receipt": body,
         "receipt_id": _sha256(_canonical(body)),
-        "verification_state": "STRUCTURAL_ONLY",
+        "verification_state": "STRUCTURAL_ONLY" if artifact_complete else "FAILED",
     }
 
 
@@ -329,6 +366,8 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
     recomputed_id = _sha256(_canonical(receipt))
     subject = receipt.get("subject") if isinstance(receipt.get("subject"), dict) else {}
     evidence = receipt.get("evidence") if isinstance(receipt.get("evidence"), dict) else {}
+    current_complete = _artifact_set_complete(current) and _artifact_manifest_digest_valid(current)
+    candidate_complete = _artifact_set_complete(evidence) and _artifact_manifest_digest_valid(evidence)
     checks = [
         {
             "name": "schema",
@@ -348,10 +387,19 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
         {
             "name": "artifact_set",
             "status": "PASS"
-            if evidence.get("artifact_set_sha256") == current["artifact_set_sha256"]
+            if current_complete
+            and candidate_complete
+            and evidence.get("artifact_set_sha256") == current["artifact_set_sha256"]
             and subject.get("artifact_set_sha256") == current["artifact_set_sha256"]
             else "FAIL",
-            "detail": "Recomputed from the files currently served by this Space.",
+            "detail": "Recomputed from both the submitted evidence and files currently served by this Space.",
+        },
+        {
+            "name": "artifact_completeness",
+            "status": "PASS"
+            if current_complete and candidate_complete
+            else "FAIL",
+            "detail": "Both the submitted and currently served manifests must contain every non-empty runtime artifact and bind their artifact-list digest.",
         },
         {
             "name": "signature",
@@ -453,10 +501,26 @@ def _dependency_evidence(force: bool = False) -> dict[str, object]:
     return value
 
 
+def _is_full_revision(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
+
+
 def _hf_revision(force: bool = False) -> str | None:
     env_revision = os.environ.get("SPACE_REPOSITORY_COMMIT")
-    if env_revision and len(env_revision) == 40:
-        return env_revision
+    if _is_full_revision(env_revision):
+        return str(env_revision).lower()
     now = time.monotonic()
     with _revision_lock:
         cached = _revision_cache.get("value")
@@ -471,13 +535,79 @@ def _hf_revision(force: bool = False) -> str | None:
         with urllib.request.urlopen(req, timeout=4) as response:
             data = json.load(response)
             candidate = data.get("sha")
-            if isinstance(candidate, str) and len(candidate) == 40:
-                revision = candidate
+            if _is_full_revision(candidate):
+                revision = str(candidate).lower()
     except Exception:
         revision = None
     with _revision_lock:
         _revision_cache.update({"at": time.monotonic(), "value": revision})
     return revision
+
+
+def _hf_commit_matches_source(
+    revision: object,
+    source_revision: object,
+    workflow_run_id: object,
+    force: bool = False,
+) -> bool:
+    if (
+        not _is_full_revision(revision)
+        or not _is_full_revision(source_revision)
+        or not isinstance(workflow_run_id, str)
+        or not workflow_run_id.isdigit()
+    ):
+        return False
+    revision = str(revision).lower()
+    source_revision = str(source_revision).lower()
+    key = f"{revision}:{source_revision}:{workflow_run_id}"
+    now = time.monotonic()
+    with _binding_lock:
+        if (
+            not force
+            and _binding_cache.get("key") == key
+            and now - float(_binding_cache["at"]) < 60
+        ):
+            return bool(_binding_cache["value"])
+
+    expected_title = f"hf-sync: source {source_revision} run {workflow_run_id}"
+    commits_request = urllib.request.Request(
+        "https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1",
+        headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "application/json"},
+    )
+    diff_request = urllib.request.Request(
+        f"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/{revision}.diff",
+        headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "text/plain"},
+    )
+    manifest_request = urllib.request.Request(
+        "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/"
+        f"{revision}/hf-deploy-manifest.json",
+        headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "application/json"},
+    )
+    matched = False
+    try:
+        with urllib.request.urlopen(commits_request, timeout=4) as response:
+            commits = json.load(response)
+        with urllib.request.urlopen(diff_request, timeout=4) as response:
+            commit_diff = response.read(1_000_000).decode("utf-8")
+        with urllib.request.urlopen(manifest_request, timeout=4) as response:
+            deployed_manifest = json.loads(response.read(100_000).decode("utf-8"))
+        latest = commits[0] if isinstance(commits, list) and commits else {}
+        matched = (
+            isinstance(latest, dict)
+            and str(latest.get("id") or "").lower() == revision
+            and latest.get("title") == expected_title
+            and "diff --git a/hf-deploy-manifest.json b/hf-deploy-manifest.json" in commit_diff
+            and isinstance(deployed_manifest, dict)
+            and deployed_manifest.get("schema") == "szl.hf-deploy-manifest/v1"
+            and deployed_manifest.get("source_repository") == SOURCE_REPOSITORY
+            and str(deployed_manifest.get("source_revision") or "").lower() == source_revision
+            and deployed_manifest.get("workflow_run_id") == workflow_run_id
+        )
+    except Exception:
+        matched = False
+    with _binding_lock:
+        _binding_cache.update({"at": time.monotonic(), "key": key, "value": matched})
+    return matched
 
 
 def _source_binding() -> dict[str, object]:
@@ -487,6 +617,7 @@ def _source_binding() -> dict[str, object]:
         "path": "",
         "relation": "base-plus-hf-overlay",
         "alignment_state": "PENDING_GITHUB_SYNC",
+        "workflow_run_id": None,
         "built_at": None,
         "limits": [
             "source.commit is the declared GitHub base; deployment.hf_revision is measured separately.",
@@ -499,15 +630,13 @@ def _source_binding() -> dict[str, object]:
         return fallback
     repository = payload.get("source_repository")
     revision = payload.get("source_revision")
-    is_full_sha = (
-        isinstance(revision, str)
-        and len(revision) == 40
-        and all(character in "0123456789abcdef" for character in revision.lower())
-    )
+    workflow_run_id = payload.get("workflow_run_id")
     if (
         payload.get("schema") != "szl.hf-deploy-manifest/v1"
         or repository != SOURCE_REPOSITORY
-        or not is_full_sha
+        or not _is_full_revision(revision)
+        or not isinstance(workflow_run_id, str)
+        or not workflow_run_id.isdigit()
     ):
         return fallback
     return {
@@ -516,6 +645,7 @@ def _source_binding() -> dict[str, object]:
         "path": str(payload.get("source_path") or ""),
         "relation": "github-actions-source-bound-deployment",
         "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+        "workflow_run_id": workflow_run_id,
         "built_at": payload.get("built_at"),
         "limits": [
             "The manifest binds this Hugging Face revision to the GitHub commit used by the deployment workflow.",
@@ -528,6 +658,21 @@ def _source_attestation(force: bool = False) -> dict[str, object]:
     revision = _hf_revision(force=force)
     manifest = _artifact_manifest()
     source_binding = _source_binding()
+    manifest_source_revision = source_binding.get("commit")
+    workflow_run_id = source_binding.get("workflow_run_id")
+    revision_bound = (
+        source_binding["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+        and _hf_commit_matches_source(
+            revision, manifest_source_revision, workflow_run_id, force=force
+        )
+    )
+    alignment_state = source_binding["alignment_state"]
+    limits = list(source_binding["limits"])
+    if alignment_state == "SOURCE_BOUND_DEPLOYMENT" and not revision_bound:
+        alignment_state = "DEPLOYMENT_REVISION_UNBOUND"
+        limits.append(
+            "The current Hugging Face commit metadata and diff do not bind this manifest to the measured deployment revision."
+        )
     return {
         "schema": "szl.deployment-source/v1",
         "source": {
@@ -538,11 +683,99 @@ def _source_attestation(force: bool = False) -> dict[str, object]:
             "hf_space": SPACE_ID,
             "hf_revision": revision,
             "artifact_set_sha256": manifest["artifact_set_sha256"],
+            "commit_binding": "MEASURED" if revision_bound else "UNAVAILABLE",
+            "workflow_run_id": workflow_run_id if revision_bound else None,
         },
         "built_at": source_binding["built_at"],
         "observed_at": _utc_now(),
-        "alignment_state": source_binding["alignment_state"],
-        "limits": source_binding["limits"],
+        "alignment_state": alignment_state,
+        "limits": limits,
+    }
+
+
+def _version_contract(force: bool = False) -> dict[str, object]:
+    source = _source_attestation(force=force)
+    source_identity = source["source"]
+    deployment = source["deployment"]
+    identity_measured = (
+        source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+        and isinstance(source_identity, dict)
+        and _is_full_revision(source_identity.get("commit"))
+        and isinstance(deployment, dict)
+        and _is_full_revision(deployment.get("hf_revision"))
+    )
+    return {
+        "schemaVersion": "szl.vertical-conformance.version.v1",
+        "service": "anatomy",
+        "surface": "anatomy",
+        "gitSha": source_identity.get("commit") if identity_measured else None,
+        "evidenceState": "MEASURED" if identity_measured else "UNAVAILABLE",
+        "deploymentRevision": deployment.get("hf_revision") if isinstance(deployment, dict) else None,
+        "contractVersion": "1.1.0",
+    }
+
+
+def _evidence_contract(force: bool = False) -> dict[str, object]:
+    source = _source_attestation(force=force)
+    dependency_evidence = _dependency_evidence(force=force)
+    local_receipt = _local_receipt()
+    source_identity = source["source"]
+    deployment = source["deployment"]
+    source_bound = (
+        source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+        and isinstance(source_identity, dict)
+        and _is_full_revision(source_identity.get("commit"))
+        and isinstance(deployment, dict)
+        and _is_full_revision(deployment.get("hf_revision"))
+    )
+    receipt_body = local_receipt["receipt"]
+    receipt_evidence = receipt_body["evidence"] if isinstance(receipt_body, dict) else {}
+    artifact_complete = _artifact_set_complete(receipt_evidence)
+    evidence_available = source_bound and artifact_complete
+    return {
+        "schemaVersion": "szl.vertical-conformance.evidence.v1",
+        "service": "anatomy",
+        "surface": "anatomy",
+        "gitSha": source_identity.get("commit") if evidence_available else None,
+        "evidenceState": "PARTIAL" if evidence_available else "UNAVAILABLE",
+        "runtime": {
+            "status": "RUNNING" if artifact_complete else "DEGRADED",
+            "ready": artifact_complete,
+            "transportState": "REACHABLE",
+            "authorityState": "READ_ONLY",
+        },
+        "source": source,
+        "receipts": [
+            {
+                "kind": "bundle-integrity",
+                "status": "STRUCTURAL_ONLY" if artifact_complete else "FAILED",
+                "receiptId": local_receipt["receipt_id"],
+                "artifactSetSha256": (
+                    receipt_evidence.get("artifact_set_sha256")
+                    if isinstance(receipt_evidence, dict)
+                    else None
+                ),
+                "scope": "deployed runtime whitelist; unsigned local recomputation",
+                "verify": "/api/anatomy/v1/verify/receipt",
+            }
+        ],
+        "dependencies": {
+            "evidenceState": dependency_evidence["evidence_state"],
+            "observedAt": dependency_evidence["observed_at"],
+            "live": dependency_evidence["summary"]["live"],
+            "total": dependency_evidence["summary"]["total"],
+            "details": "/api/anatomy/v1/evidence?refresh=1",
+        },
+        "outputProvenance": {
+            "signatureStatus": "UNSIGNED",
+            "authenticityEstablished": False,
+            "record": "content-addressed bundle receipt; no runtime signing key",
+        },
+        "limitations": [
+            "The bundle receipt is STRUCTURAL_ONLY and does not establish publisher identity.",
+            "Dependency reachability does not certify quality, safety, freshness, or business performance.",
+            "The Space is read-only and does not execute or authorize agent actions.",
+        ],
     }
 
 
@@ -552,7 +785,7 @@ def _manifest() -> dict[str, object]:
         "service": "anatomy-space",
         "space": SPACE_ID,
         "purpose": "Read-only spatial evidence map of the governed-agent substrate.",
-        "contract_version": "1.0.0",
+        "contract_version": "1.1.0",
         "state_dimensions": {
             "transport_state": "REACHABLE",
             "evidence_state": "MIXED",
@@ -566,6 +799,8 @@ def _manifest() -> dict[str, object]:
             "authority_state": ["READ_ONLY", "PROPOSAL_ONLY", "MUTATING"],
         },
         "endpoints": {
+            "version": "/version",
+            "evidence_index": "/evidence",
             "manifest": "/api/anatomy/v1/manifest",
             "capabilities": "/api/anatomy/v1/capabilities",
             "evidence": "/api/anatomy/v1/evidence?refresh=1",
@@ -639,9 +874,28 @@ class HardenedHandler(SimpleHTTPRequestHandler):
                     "evidence_state": "SNAPSHOT",
                     "verification_state": "STRUCTURAL_ONLY",
                     "authority_state": "READ_ONLY",
+                    "contracts": {"version": "/version", "evidence": "/evidence"},
                     "note": "Transport health only; quality and upstream freshness are not inferred.",
                 },
                 evidence_state="SNAPSHOT",
+            )
+            return
+        if path == "/version":
+            payload = _version_contract(force=force)
+            self._send_json(
+                payload,
+                status=200 if payload["evidenceState"] == "MEASURED" else 503,
+                evidence_state=str(payload["evidenceState"]),
+            )
+            return
+        if path == "/evidence":
+            payload = _evidence_contract(force=force)
+            receipt_status = str(payload["receipts"][0]["status"])
+            self._send_json(
+                payload,
+                status=200 if payload["evidenceState"] == "PARTIAL" else 503,
+                evidence_state=str(payload["evidenceState"]),
+                extra_headers={"X-SZL-Verification-State": receipt_status},
             )
             return
         if path == "/.well-known/szl-source.json":
@@ -666,10 +920,13 @@ class HardenedHandler(SimpleHTTPRequestHandler):
             self._send_json(payload, evidence_state=str(payload["evidence_state"]))
             return
         if path == "/api/anatomy/v1/receipt":
+            payload = _local_receipt()
+            verification_state = str(payload["verification_state"])
             self._send_json(
-                _local_receipt(),
-                evidence_state="COMPUTED",
-                extra_headers={"X-SZL-Verification-State": "STRUCTURAL_ONLY"},
+                payload,
+                status=200 if verification_state == "STRUCTURAL_ONLY" else 503,
+                evidence_state=("COMPUTED" if verification_state == "STRUCTURAL_ONLY" else "UNAVAILABLE"),
+                extra_headers={"X-SZL-Verification-State": verification_state},
             )
             return
         super().do_GET()

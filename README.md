@@ -93,6 +93,8 @@ Machine-readable routes:
 
 | Route | Meaning |
 |---|---|
+| `/version` | Exact GitHub source and deployed HF revision (`MEASURED` only when source-bound) |
+| `/evidence` | Release identity, structural bundle receipt, and dependency evidence index |
 | `/api/anatomy/v1/manifest` | Contract, state vocabulary, doctrine boundary |
 | `/api/anatomy/v1/capabilities` | Five-part capability shell and provenance |
 | `/api/anatomy/v1/evidence?refresh=1` | Fresh dependency contract probes |

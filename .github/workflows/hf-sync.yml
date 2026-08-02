@@ -64,7 +64,7 @@ jobs:
 
           # Runtime and served files. The Space's .github/ remains untouched.
           patterns = ["README.md", "Dockerfile", ".dockerignore", "server.py",
-                      "index.html", "live-body.html",
+                      "*.html",
                       "*.js", "*.css", "lib/**/*"]
           files = []
           for p in patterns:
@@ -88,6 +88,9 @@ jobs:
               raise RuntimeError(
                   f"refusing production deploy from non-main ref: {source_ref!r}"
               )
+          workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")
+          if not workflow_run_id.isdigit():
+              raise RuntimeError("GITHUB_RUN_ID is not a numeric workflow run ID")
           deploy_manifest = {
               "schema": "szl.hf-deploy-manifest/v1",
               "source_repository": "szl-holdings/anatomy",
@@ -98,7 +101,7 @@ jobs:
                   "repo_type": "space",
                   "mode": "runtime-whitelist",
               },
-              "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "workflow_run_id": workflow_run_id,
           }
           ops.append(
               CommitOperationAdd(
@@ -135,7 +138,7 @@ jobs:
           print("Syncing", len(ops), "file(s) to", space, ":", files)
           commit = api.create_commit(
               repo_id=space, repo_type="space", operations=ops,
-              commit_message=f"hf-sync: mirror front-door from GitHub {os.environ.get('GITHUB_SHA','')[:8]}",
+              commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}",
           )
           print("Space commit:", getattr(commit, "commit_url", commit))
 
@@ -160,15 +163,30 @@ jobs:
               try:
                   with urllib.request.urlopen(base + "/healthz", timeout=10) as response:
                       health = json.load(response)
+                  with urllib.request.urlopen(base + "/version?refresh=1", timeout=10) as response:
+                      version = json.load(response)
+                  with urllib.request.urlopen(base + "/evidence?refresh=1", timeout=15) as response:
+                      evidence = json.load(response)
                   with urllib.request.urlopen(
                       base + "/.well-known/szl-source.json?refresh=1", timeout=10
                   ) as response:
                       source = json.load(response)
                   assert health["transport_state"] == "REACHABLE"
                   assert health["verification_state"] == "STRUCTURAL_ONLY"
+                  assert version["schemaVersion"] == "szl.vertical-conformance.version.v1"
+                  assert version["gitSha"] == source_revision
+                  assert version["deploymentRevision"] == target_sha
+                  assert version["evidenceState"] == "MEASURED"
+                  assert evidence["schemaVersion"] == "szl.vertical-conformance.evidence.v1"
+                  assert evidence["gitSha"] == source_revision
+                  assert evidence["evidenceState"] == "PARTIAL"
+                  assert evidence["source"]["deployment"]["hf_revision"] == target_sha
+                  assert evidence["receipts"][0]["status"] == "STRUCTURAL_ONLY"
+                  assert evidence["outputProvenance"]["authenticityEstablished"] is False
                   assert source["deployment"]["hf_revision"] == target_sha
                   assert source["source"]["commit"] == source_revision
                   assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+                  assert source["deployment"]["workflow_run_id"] == workflow_run_id
                   print("Verified live Space revision and health:", target_sha)
                   break
               except Exception as error:
