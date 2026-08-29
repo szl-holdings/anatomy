@@ -13,7 +13,7 @@ class HfSyncContractTest(unittest.TestCase):
         cls.readme = README.read_text(encoding="utf-8")
 
     def test_runtime_files_are_in_upload_contract(self) -> None:
-        for path in ("Dockerfile", ".dockerignore", "server.py"):
+        for path in ("Dockerfile", ".dockerignore", "server.py", "organ_integrity.py"):
             self.assertIn(f'"{path}"', self.workflow, path)
         self.assertIn('"*.html"', self.workflow)
         self.assertNotIn('"index.html", "live-body.html"', self.workflow)
