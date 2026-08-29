@@ -41,6 +41,7 @@ const EP = {
   honest:  HOST + "/api/a11oy/v1/honest",
   readyz:  HOST + "/api/a11oy/readyz",
   govern:  HOST + "/api/a11oy/v1/govern/health",
+  integrity: HOST + "/api/a11oy/v1/organs/integrity",
 };
 
 /* ---- KANCHAY palette (canonical brand · purple BANNED) -------------------- */
@@ -283,3 +284,39 @@ export {
   organForAction, isDenied,
   probeOrgan, fetchLedger, fetchLambda, fetchMind, fetchDoctrine, fetchImmune,
 };
+
+
+/* Five-organ fail-closed kernel overlay.
+ * LIVE/DOWN from /api/a11oy/v1/organs/integrity. Missing API → UNAVAILABLE, never faked LIVE. */
+async function probeOrganIntegrity() {
+  const rec = { status: STATUS.PENDING, detail: "not yet polled", blocked: null, organs: [] };
+  try {
+    const r = await fetch(EP.integrity, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const ev = j.body || j;
+    rec.status = STATUS.LIVE;
+    rec.blocked = !!ev.blocked;
+    rec.organs = ev.organs || [];
+    rec.detail = (ev.live_count || 0) + "/5 LIVE · " + (ev.reason || "ok") +
+      " · energy UNAVAILABLE · Conjecture 1 OPEN";
+  } catch (e) {
+    rec.status = STATUS.UNREACHABLE;
+    rec.detail = "organ-integrity UNAVAILABLE — " + (e && e.message ? e.message : e);
+  }
+  if (typeof window !== "undefined") window.__szlOrganIntegrity = rec;
+  const el = document.getElementById("integrity-strip");
+  if (el) {
+    el.dataset.state = rec.status;
+    el.textContent = rec.detail;
+  }
+  return rec;
+}
+if (typeof window !== "undefined") {
+  window.probeOrganIntegrity = probeOrganIntegrity;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => { probeOrganIntegrity(); });
+  } else {
+    probeOrganIntegrity();
+  }
+}

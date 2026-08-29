@@ -56,6 +56,9 @@ kernel that actually runs the five organs lives in
 [szl-holdings/szl-khipu](https://github.com/szl-holdings/szl-khipu) as `evaluate_anatomy`,
 and on the KHIPU Space **Anatomy** tab:
 [SZLHOLDINGS/szl-khipu](https://huggingface.co/spaces/SZLHOLDINGS/szl-khipu).
+The command body exposes the same fail-closed contract at
+[`GET/POST /api/a11oy/v1/organs/integrity`](https://a-11-oy.com/api/a11oy/v1/organs/integrity)
+and the Evidence Bay at [szl-holdings/szl-organ-integrity](https://github.com/szl-holdings/szl-organ-integrity).
 
 HEART/YUYAY · YAWAR · YACHAY · OTel · Khipu skeleton. Any DOWN organ or a WILLAY veto
 blocks the body. Λ = Conjecture 1 OPEN. Energy UNAVAILABLE. Locked-proven stays 8.
