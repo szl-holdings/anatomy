@@ -63,7 +63,9 @@ jobs:
           space = os.environ["SPACE_ID"]
 
           # Runtime and served files. The Space's .github/ remains untouched.
+          # organ_integrity.py is the fail-closed five-organ kernel server.py imports.
           patterns = ["README.md", "Dockerfile", ".dockerignore", "server.py",
+                      "organ_integrity.py",
                       "*.html",
                       "*.js", "*.css", "lib/**/*"]
           files = []
