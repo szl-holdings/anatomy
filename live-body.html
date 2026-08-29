@@ -6,7 +6,7 @@
      HSTS / frame-ancestors omitted (browsers ignore them in <meta>; setting them
      would be fabrication). 'unsafe-inline' is required: this page ships an inline
      module script + inline styles, and Three.js is a vendored same-origin script. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://szlholdings-a11oy.hf.space; object-src 'none'; base-uri 'self'; form-action 'self'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://szlholdings-a11oy.hf.space https://a-11-oy.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
@@ -137,7 +137,7 @@
   <div class="hud panel" id="integrity" style="top:auto;bottom:16px;left:16px;width:min(290px,calc(100vw - 32px));padding:13px 15px;transform:translateY(-210px)">
     <div class="hdr">fail-closed kernel</div>
     <div id="integrity-strip" data-state="pending" style="font-family:var(--font-m);font-size:10.5px;color:var(--muted);line-height:1.45">organ-integrity not yet polled</div>
-    <div style="margin-top:8px;font-size:10px;color:var(--faint)">GET /api/a11oy/v1/organs/integrity · energy UNAVAILABLE · Λ = Conjecture 1</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--faint)">GET /api/anatomy/v1/organs/integrity · energy UNAVAILABLE · Λ = Conjecture 1</div>
   </div>
 
   <div class="hud panel" id="organs" aria-live="polite">

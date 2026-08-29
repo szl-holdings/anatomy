@@ -287,22 +287,37 @@ export {
 
 
 /* Five-organ fail-closed kernel overlay.
- * LIVE/DOWN from /api/a11oy/v1/organs/integrity. Missing API → UNAVAILABLE, never faked LIVE. */
+ * Same-origin anatomy kernel first, then a-11-oy.com, then the a11oy Space.
+ * Missing API → UNAVAILABLE, never faked LIVE. */
 async function probeOrganIntegrity() {
-  const rec = { status: STATUS.PENDING, detail: "not yet polled", blocked: null, organs: [] };
-  try {
-    const r = await fetch(EP.integrity, { cache: "no-store" });
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    const ev = j.body || j;
-    rec.status = STATUS.LIVE;
-    rec.blocked = !!ev.blocked;
-    rec.organs = ev.organs || [];
-    rec.detail = (ev.live_count || 0) + "/5 LIVE · " + (ev.reason || "ok") +
-      " · energy UNAVAILABLE · Conjecture 1 OPEN";
-  } catch (e) {
+  const rec = { status: STATUS.PENDING, detail: "not yet polled", blocked: null, organs: [], endpoint: null };
+  const urls = [
+    "/api/anatomy/v1/organs/integrity",
+    "https://a-11-oy.com/api/a11oy/v1/organs/integrity",
+    EP.integrity,
+  ];
+  let last = "unreachable";
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { cache: "no-store", mode: url.startsWith("/") ? "same-origin" : "cors" });
+      if (!r.ok) { last = "HTTP " + r.status; continue; }
+      const j = await r.json();
+      const ev = j.body || j;
+      rec.status = STATUS.LIVE;
+      rec.blocked = !!ev.blocked;
+      rec.organs = ev.organs || [];
+      rec.endpoint = url;
+      rec.detail = (ev.live_count || 0) + "/5 LIVE · " + (ev.reason || "ok") +
+        " · energy UNAVAILABLE · Conjecture 1 OPEN";
+      last = null;
+      break;
+    } catch (e) {
+      last = (e && e.message) ? e.message : String(e);
+    }
+  }
+  if (last) {
     rec.status = STATUS.UNREACHABLE;
-    rec.detail = "organ-integrity UNAVAILABLE — " + (e && e.message ? e.message : e);
+    rec.detail = "organ-integrity UNAVAILABLE — " + last;
   }
   if (typeof window !== "undefined") window.__szlOrganIntegrity = rec;
   const el = document.getElementById("integrity-strip");
