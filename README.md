@@ -49,6 +49,19 @@ The governed-AI organ substrate shared by **a11oy** (governed-AI command body) a
 **killinchu** (maritime / drone C2 body): two bodies, one circulatory + nervous mesh,
 with the Λ heart at the center.
 
+## Live integrity kernel (szl-khipu)
+
+This repository is the **3D atlas** (SLSA L1 static viz). The fail-closed organ-integrity
+kernel that actually runs the five organs lives in
+[szl-holdings/szl-khipu](https://github.com/szl-holdings/szl-khipu) as `evaluate_anatomy`,
+and on the KHIPU Space **Anatomy** tab:
+[SZLHOLDINGS/szl-khipu](https://huggingface.co/spaces/SZLHOLDINGS/szl-khipu).
+
+HEART/YUYAY · YAWAR · YACHAY · OTel · Khipu skeleton. Any DOWN organ or a WILLAY veto
+blocks the body. Λ = Conjecture 1 OPEN. Energy UNAVAILABLE. Locked-proven stays 8.
+Not a Three.js rehost of this Space — the other way around: this Space is the map,
+szl-khipu is the kernel.
+
 ## Evidence Bay — the proof boundary
 
 The 3D organism now has a machine-readable evidence boundary without replacing its
