@@ -20,6 +20,9 @@ machine-readable boundary around it:
   receipt.  The result is deliberately ``STRUCTURAL-ONLY`` because this Space
   has no signing key; it never upgrades an unsigned receipt to cryptographically
   VERIFIED.
+* ``GET/POST /api/anatomy/v1/organs/integrity`` runs the five-organ fail-closed
+  kernel (HEART/YUYAY, BRAIN/YACHAY, CIRCULATORY/YAWAR, NERVOUS/OTel,
+  SKELETON/Khipu). Energy stays UNAVAILABLE. Λ is Conjecture 1 OPEN.
 
 No endpoint mutates state, signs data, runs a model, or claims that reachability
 proves model quality.  Lambda remains Conjecture 1 and the Space does not execute
@@ -41,6 +44,17 @@ from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
+
+try:
+    from organ_integrity import envelope as _org_envelope
+    from organ_integrity import evaluate_anatomy as _evaluate_anatomy
+    from organ_integrity import parse_flags as _org_parse_flags
+    _ORGAN_INTEGRITY = True
+except Exception:
+    _ORGAN_INTEGRITY = False
+    _org_envelope = None
+    _evaluate_anatomy = None
+    _org_parse_flags = None
 
 
 PORT = int(os.environ.get("PORT", "7860"))
@@ -183,6 +197,36 @@ CAPABILITIES = [
         "provenance": [FORMULA_LINKS["hash_chain"]],
     },
     {
+        "id": "anatomy.organ-integrity",
+        "name": "Five-organ fail-closed kernel",
+        "purpose": "Prove the body, not the picture: HEART/YUYAY, BRAIN/YACHAY, CIRCULATORY/YAWAR, NERVOUS/OTel, SKELETON/Khipu. Any DOWN organ or a WILLAY veto fail-closes.",
+        "try": {"method": "GET", "path": "/api/anatomy/v1/organs/integrity", "action": "Healthy cycle, then POST {\"zero_heart\":true}."},
+        "evidence": {
+            "state": "COMPUTED",
+            "basis": "Stdlib SHA-256 receipt chain, advisory Λ, canal-partition silhouette. MEASURED NumPy YARQA lives on SZLHOLDINGS/szl-khipu.",
+        },
+        "limits": [
+            "Λ uniqueness remains Conjecture 1 OPEN. proven_trust is false.",
+            "Energy is UNAVAILABLE. Never a fabricated joule.",
+            "Canal leak here is the fail-closed rule, not NumPy YARQA.",
+            "CHECKED ≠ Lean PROVEN. Locked-proven stays exactly 8.",
+        ],
+        "reproduce": {
+            "steps": [
+                "GET /api/anatomy/v1/organs/integrity — expect 5/5 LIVE, verdict ADVISORY_BODY.",
+                "POST {\"zero_heart\":true} — HEART DOWN, body BLOCKED.",
+                "POST {\"fabricate_joule\":true} — NERVOUS DOWN, energy_j stays null.",
+            ]
+        },
+        "authority_state": "READ_ONLY",
+        "formula_refs": ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"],
+        "provenance": [
+            "https://github.com/szl-holdings/szl-organ-integrity",
+            "https://a-11-oy.com/organs/integrity",
+            "https://huggingface.co/spaces/SZLHOLDINGS/szl-khipu",
+        ],
+    },
+    {
         "id": "anatomy.physics-overlays",
         "name": "Physics and quantum-bio overlays",
         "purpose": "Expose bounded exploratory models beside operational and formal layers without confusing them with measurements or locked theorems.",
@@ -225,6 +269,13 @@ DEPENDENCIES = (
         "critical": True,
     },
     {
+        "id": "a11oy.organ-integrity",
+        "url": "https://a-11-oy.com/api/a11oy/v1/organs/integrity",
+        "method": "GET",
+        "purpose": "Fail-closed five-organ kernel on the command body",
+        "critical": False,
+    },
+    {
         "id": "killinchu.experience-manifest",
         "url": "https://szlholdings-killinchu.hf.space/api/killinchu/v1/experience/manifest",
         "method": "GET",
@@ -248,7 +299,7 @@ CONTENT_SECURITY_POLICY = (
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob:; "
     "font-src 'self'; "
-    "connect-src 'self' https://szlholdings-a11oy.hf.space "
+    "connect-src 'self' https://szlholdings-a11oy.hf.space https://a-11-oy.com "
     "https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space "
     "https://szlholdings-sentra.hf.space; "
     "form-action 'self'; "
@@ -806,6 +857,7 @@ def _manifest() -> dict[str, object]:
             "evidence": "/api/anatomy/v1/evidence?refresh=1",
             "receipt": "/api/anatomy/v1/receipt",
             "verify_receipt": "/api/anatomy/v1/verify/receipt",
+            "organ_integrity": "/api/anatomy/v1/organs/integrity",
             "source": "/.well-known/szl-source.json",
         },
         "doctrine": {
@@ -929,10 +981,58 @@ class HardenedHandler(SimpleHTTPRequestHandler):
                 extra_headers={"X-SZL-Verification-State": verification_state},
             )
             return
+        if path in ("/api/anatomy/v1/organs/integrity", "/api/organs/integrity"):
+            if not _ORGAN_INTEGRITY:
+                self._send_json(
+                    {"ok": False, "error": "organ-integrity kernel UNAVAILABLE"},
+                    status=503,
+                    evidence_state="UNAVAILABLE",
+                )
+                return
+            flags = _org_parse_flags(query)
+            payload = _org_envelope(_evaluate_anatomy(**flags))
+            ev = payload.get("body") if isinstance(payload, dict) else {}
+            blocked = bool(ev.get("blocked")) if isinstance(ev, dict) else False
+            self._send_json(
+                payload,
+                evidence_state="COMPUTED",
+                extra_headers={"X-SZL-Organ-Verdict": "BLOCKED" if blocked else "ADVISORY_BODY"},
+            )
+            return
         super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlsplit(self.path).path
+        if path in ("/api/anatomy/v1/organs/integrity", "/api/organs/integrity"):
+            if not _ORGAN_INTEGRITY:
+                self._send_json(
+                    {"ok": False, "error": "organ-integrity kernel UNAVAILABLE"},
+                    status=503,
+                    evidence_state="UNAVAILABLE",
+                )
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = 0
+            data: dict = {}
+            if 0 < length <= 1_000_000:
+                try:
+                    parsed = json.loads(self.rfile.read(length))
+                    if isinstance(parsed, dict):
+                        data = parsed
+                except Exception:
+                    data = {}
+            flags = _org_parse_flags(data)
+            payload = _org_envelope(_evaluate_anatomy(**flags))
+            ev = payload.get("body") if isinstance(payload, dict) else {}
+            blocked = bool(ev.get("blocked")) if isinstance(ev, dict) else False
+            self._send_json(
+                payload,
+                evidence_state="COMPUTED",
+                extra_headers={"X-SZL-Organ-Verdict": "BLOCKED" if blocked else "ADVISORY_BODY"},
+            )
+            return
         if path != "/api/anatomy/v1/verify/receipt":
             self._send_json({"error": "not_found", "path": path}, status=404, evidence_state="UNAVAILABLE")
             return

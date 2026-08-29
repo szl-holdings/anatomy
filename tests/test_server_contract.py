@@ -532,6 +532,48 @@ class AnatomyContractTest(unittest.TestCase):
                 )
             )
 
+    def test_organ_integrity_fail_closed(self):
+        status, headers, body = self.request("/api/anatomy/v1/organs/integrity")
+        self.assertEqual(200, status)
+        ev = body.get("body") if isinstance(body.get("body"), dict) else body
+        self.assertEqual(5, ev["live_count"])
+        self.assertFalse(ev["blocked"])
+        self.assertEqual("ADVISORY_BODY", ev["verdict"])
+        self.assertEqual("UNAVAILABLE", ev["energy"])
+        self.assertIsNone(ev["energy_j"])
+        self.assertFalse(ev["proven_trust"])
+        self.assertEqual("OPEN", ev["conjecture_1"])
+        self.assertEqual(8, ev["locked_proven"])
+        self.assertEqual("SHA-256", ev["chain_alg"])
+        self.assertEqual(64, len(ev["chain_head"]))
+        verdict = headers.get("X-SZL-Organ-Verdict") or headers.get("x-szl-organ-verdict")
+        self.assertEqual("ADVISORY_BODY", verdict)
+        names = [o["name"] for o in ev["organs"]]
+        self.assertEqual(["BRAIN", "HEART", "CIRCULATORY", "NERVOUS", "SKELETON"], names)
+
+        zero_status, _, zero = self.request(
+            "/api/anatomy/v1/organs/integrity",
+            method="POST",
+            body={"zero_heart": True},
+        )
+        self.assertEqual(200, zero_status)
+        zev = zero.get("body") if isinstance(zero.get("body"), dict) else zero
+        self.assertTrue(zev["blocked"])
+        self.assertEqual("BLOCKED", zev["verdict"])
+        self.assertEqual("DOWN", zev["organs"][1]["status"])
+        self.assertEqual(0.0, zev["organs"][1]["metric"])
+
+        joule_status, _, joule = self.request(
+            "/api/organs/integrity",
+            method="POST",
+            body={"fabricate_joule": True},
+        )
+        self.assertEqual(200, joule_status)
+        jev = joule.get("body") if isinstance(joule.get("body"), dict) else joule
+        self.assertTrue(jev["blocked"])
+        self.assertEqual("DOWN", jev["organs"][3]["status"])
+        self.assertIsNone(jev["energy_j"])
+
     def test_frontend_and_public_verifier_use_current_contract(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         bay = (ROOT / "frontier_anatomy.js").read_text(encoding="utf-8")
