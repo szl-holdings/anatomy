@@ -32,7 +32,6 @@ We follow a **90-day responsible disclosure** policy. After 90 days from initial
 ## Supply-Chain Security
 
 - **SLSA Build Level 1** — build provenance generated per release (honest; not L2/L3)
-- **DCO required** — all commits carry `Signed-off-by:` trailers per [Linux Foundation DCO](https://developercertificate.org/)
 - **Cosign keyless signing** — containers signed via Sigstore OIDC keyless mode; verify with `cosign verify ghcr.io/szl-holdings/anatomy:<tag>`
 - **SBOM** — CycloneDX SBOM attached to each GitHub Release
 
