@@ -1,0 +1,61 @@
+name: Repair Holo Runtime Manifest on Branch
+
+on:
+  push:
+    branches:
+      - design/holographic-space-v2
+    paths:
+      - ".github/workflows/repair-holo-manifest-on-branch.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anatomy-holo-manifest-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact rollout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: design/holographic-space-v2
+          fetch-depth: 0
+
+      - name: Bind Holo assets into the runtime receipt manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("server.py")
+          text = path.read_text(encoding="utf-8")
+          anchor = '    "frontier_anatomy.js",\n'
+          insertion = anchor + '    "szl-holo-v2.css",\n    "szl-holo-v2.js",\n'
+          if '    "szl-holo-v2.js",\n' not in text:
+              if anchor not in text:
+                  raise SystemExit("ARTIFACT_PATHS anchor not found")
+              text = text.replace(anchor, insertion, 1)
+              path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Prove manifest and server contracts
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile server.py
+          git diff --check
+
+      - name: Commit repair and remove one-shot controller
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/repair-holo-manifest-on-branch.yml
+          git config user.name "SZL Anatomy Manifest Controller"
+          git config user.email "stephenlutar2@gmail.com"
+          git add server.py .github/workflows/repair-holo-manifest-on-branch.yml
+          git commit -s -m "fix(frontend): bind Holo assets into anatomy receipt manifest"
+          git push origin HEAD:design/holographic-space-v2
