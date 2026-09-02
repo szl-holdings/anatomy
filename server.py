@@ -79,6 +79,8 @@ ARTIFACT_PATHS = (
     "data.js",
     "v5_organs.js",
     "frontier_anatomy.js",
+    "szl-holo-v2.css",
+    "szl-holo-v2.js",
     "live-body.html",
     "live-body.js",
     "covenant-cockpit.js",
