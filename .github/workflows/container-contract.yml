@@ -11,33 +11,66 @@ permissions:
 
 jobs:
   container-contract:
-    name: Build and exercise pinned Space image
+    name: Build and exercise source-bound Living Anatomy image
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - name: Run server contract tests
+
+      - name: Materialize exact public Second Brain projection
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/materialize_second_brain.py --output .runtime/second-brain
+
+      - name: Run server and Second Brain contract tests
         run: python -m unittest discover -s tests -v
+
       - name: Build pinned Space image
         run: docker build --tag anatomy-space-ci .
+
       - name: Start Space image
         run: docker run --detach --name anatomy-space-ci --publish 7860:7860 anatomy-space-ci
-      - name: Verify live container contract
+
+      - name: Verify combined live container contract
         run: |
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error http://127.0.0.1:7860/healthz > health.json; then
-              python -c "import json; data=json.load(open('health.json', encoding='utf-8')); assert data['transport_state']=='REACHABLE'; assert data['verification_state']=='STRUCTURAL_ONLY'"
-              test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7860/this-route-must-not-exist)" = "404"
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error \
+              http://127.0.0.1:7860/api/anatomy/v1/living-health \
+              > living-health.json; then
+              curl --fail --silent --show-error \
+                "http://127.0.0.1:7860/api/anatomy/v1/brain/search?q=governed%20receipts&k=3" \
+                > brain-search.json
+              python - <<'PY'
+          import json
+
+          living = json.load(open("living-health.json", encoding="utf-8"))
+          search = json.load(open("brain-search.json", encoding="utf-8"))
+          assert living["ready"] is True
+          assert living["transport_state"] == "REACHABLE"
+          assert living["organs"]["brain"]["ready"] is True
+          assert living["organs"]["brain"]["chunk_count"] == 575
+          assert search["ready"] is True
+          assert search["handles"]
+          assert all("text" not in handle for handle in search["handles"])
+          assert all(len(handle["sha256"]) == 64 for handle in search["handles"])
+          PY
+              test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                http://127.0.0.1:7860/this-route-must-not-exist)" = "404"
               exit 0
             fi
             sleep 1
           done
           docker logs anatomy-space-ci
           exit 1
+
       - name: Stop Space image
         if: always()
         run: docker rm --force anatomy-space-ci || true
