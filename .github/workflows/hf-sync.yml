@@ -70,7 +70,7 @@ jobs:
           source_revision = os.environ.get("GITHUB_SHA", "").lower()
           source_ref = os.environ.get("GITHUB_REF")
           workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")
-          github_repository = os.environ.get("GITHUB_REPOSITORY")
+          github_repo = os.environ.get("GITHUB_REPOSITORY")
           github_token = os.environ.get("GITHUB_TOKEN", "")
 
           if len(source_revision) != 40 or any(
@@ -81,10 +81,8 @@ jobs:
               raise RuntimeError(
                   f"refusing production deploy from non-main ref: {source_ref!r}"
               )
-          if github_repository != "szl-holdings/anatomy":
-              raise RuntimeError(
-                  f"unexpected GitHub repository: {github_repository!r}"
-              )
+          if github_repo != "szl-holdings/anatomy":
+              raise RuntimeError(f"unexpected GitHub repository: {github_repo!r}")
           if not workflow_run_id.isdigit():
               raise RuntimeError("GITHUB_RUN_ID is not numeric")
           if not github_token:
@@ -92,7 +90,7 @@ jobs:
 
           request = urllib.request.Request(
               os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
-              + f"/repos/{github_repository}/commits/main",
+              + f"/repos/{github_repo}/commits/main",
               headers={
                   "Accept": "application/vnd.github+json",
                   "Authorization": f"Bearer {github_token}",
@@ -114,7 +112,9 @@ jobs:
           if len(brain_revision) != 40:
               raise RuntimeError("Second Brain snapshot lacks an exact source revision")
           if int(brain_source.get("public_chunk_count") or 0) != 575:
-              raise RuntimeError("Second Brain snapshot does not contain exactly 575 public chunks")
+              raise RuntimeError(
+                  "Second Brain snapshot does not contain exactly 575 public chunks"
+              )
           if brain_source.get("private_graph_nodes_materialized") != 0:
               raise RuntimeError("private Second Brain nodes entered the public snapshot")
 
@@ -267,10 +267,7 @@ jobs:
                   repo_id=space,
                   repo_type="space",
                   operations=operations,
-                  commit_message=(
-                      f"hf-sync: anatomy {source_revision} "
-                      f"brain {brain_revision} run {workflow_run_id}"
-                  ),
+                  commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}",
               )
               target_sha = str(commit.oid)
               expected_workflow_run_id = workflow_run_id
@@ -279,6 +276,11 @@ jobs:
                   "Source and Second Brain revisions already deployed; "
                   "performing lifecycle and live-contract reconciliation only."
               )
+              if not expected_workflow_run_id.isdigit():
+                  raise RuntimeError(
+                      "deployed manifest lacks a numeric workflow run identity"
+                  )
+              workflow_run_id = expected_workflow_run_id
               info = api.space_info(space)
               target_sha = str(getattr(info, "sha", "") or "")
 
@@ -300,7 +302,7 @@ jobs:
                       private=False,
                   )
               if (
-                  current_sha == target_sha
+                  info.sha == target_sha
                   and stage
                   in {
                       "PAUSED",
@@ -318,7 +320,7 @@ jobs:
                       in {"RUNTIME_ERROR", "BUILD_ERROR", "CONFIG_ERROR"},
                   )
                   restarted = True
-              if current_sha == target_sha and stage == "RUNNING" and not info.private:
+              if info.sha == target_sha and stage == "RUNNING" and not info.private:
                   break
               time.sleep(10)
           else:
@@ -329,21 +331,26 @@ jobs:
           base = "https://szlholdings-anatomy.hf.space"
           for attempt in range(18):
               try:
-                  def get_json(path, timeout=15):
-                      with urllib.request.urlopen(base + path, timeout=timeout) as response:
+                  def get_json(url, timeout=15):
+                      with urllib.request.urlopen(url, timeout=timeout) as response:
                           return json.load(response)
 
-                  health = get_json("/healthz")
-                  living = get_json("/api/anatomy/v1/living-health?refresh=1")
-                  brain = get_json("/api/anatomy/v1/brain/health?refresh=1")
-                  search = get_json(
-                      "/api/anatomy/v1/brain/search"
-                      "?q=governed%20receipts%20living%20anatomy&k=3"
+                  health = get_json(base + "/healthz")
+                  living = get_json(
+                      base + "/api/anatomy/v1/living-health?refresh=1"
                   )
-                  version = get_json("/version?refresh=1")
-                  evidence = get_json("/evidence?refresh=1", timeout=20)
-                  source = get_json("/.well-known/szl-source.json?refresh=1")
-                  manifest = get_json("/api/anatomy/v1/manifest")
+                  brain = get_json(base + "/api/anatomy/v1/brain/health?refresh=1")
+                  search = get_json(
+                      base
+                      + "/api/anatomy/v1/brain/search"
+                      + "?q=governed%20receipts%20living%20anatomy&k=3"
+                  )
+                  version = get_json(base + "/version?refresh=1")
+                  evidence = get_json(base + "/evidence?refresh=1", timeout=20)
+                  source = get_json(
+                      base + "/.well-known/szl-source.json?refresh=1"
+                  )
+                  manifest = get_json(base + "/api/anatomy/v1/manifest")
 
                   assert health["transport_state"] == "REACHABLE"
                   assert health["verification_state"] == "STRUCTURAL_ONLY"
@@ -363,15 +370,15 @@ jobs:
                   assert version["secondBrainSourceRevision"] == brain_revision
                   assert version["evidenceState"] == "MEASURED"
                   assert evidence["gitSha"] == source_revision
+                  assert evidence["evidenceState"] == "PARTIAL"
                   assert evidence["source"]["deployment"]["hf_revision"] == target_sha
+                  assert evidence["receipts"][0]["status"] == "STRUCTURAL_ONLY"
+                  assert evidence["outputProvenance"]["authenticityEstablished"] is False
                   assert evidence["dependencies"]["secondBrain"]["ready"] is True
                   assert source["deployment"]["hf_revision"] == target_sha
                   assert source["source"]["commit"] == source_revision
                   assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
-                  assert (
-                      str(source["deployment"]["workflow_run_id"])
-                      == expected_workflow_run_id
-                  )
+                  assert source["deployment"]["workflow_run_id"] == workflow_run_id
                   assert (
                       manifest["endpoints"]["brain_health"]
                       == "/api/anatomy/v1/brain/health"
