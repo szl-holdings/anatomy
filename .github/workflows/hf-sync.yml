@@ -1,24 +1,16 @@
 # Copyright 2026 SZL Holdings — SPDX-License-Identifier: Apache-2.0
-name: Sync to HuggingFace Space
+name: Sync Living Anatomy to Hugging Face
 
-# Mirrors this repo's served files and Docker runtime to the live Hugging Face
-# Space (SZLHOLDINGS/anatomy) on every push to main, so the Space never drifts
-# behind GitHub. It uses huggingface_hub.create_commit (git-free, no LFS, no
-# orphan-mirror) — the same drift-safe path proven on a11oy/killinchu, which
-# avoids the dangling-LFS / pre-receive / missing-front-matter failures that
-# broke earlier git-push mirrors.
-#
-# It mirrors only the tracked runtime and front-door files required by this
-# Docker Space. The Space's .github/ directory remains untouched. README.md is
-# uploaded verbatim because it carries the HF Space front-matter.
-#
-# Requires repo secret HF_TOKEN (HF write token with org write to SZLHOLDINGS).
-# Without it the job FAILS LOUDLY with a founder-action message — it never fakes
-# a sync.
+# GitHub is authoritative. This workflow materializes the exact public
+# szl-second-brain revision, validates it, mirrors the runtime whitelist to
+# SZLHOLDINGS/anatomy, makes the Space public, restarts it when needed, and
+# verifies the source-bound live contracts. It never exports the private graph.
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -31,15 +23,28 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Checkout exact protected-main source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: "3.11"
-      - name: Install huggingface_hub
-        run: pip install --quiet "huggingface_hub==1.23.0"
-      - name: Mirror runtime and front-door files to the Space
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned Hugging Face client
+        run: python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==1.23.0"
+
+      - name: Materialize and validate exact Second Brain projection
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/materialize_second_brain.py --output .runtime/second-brain
+
+      - name: Reconcile, mirror, and verify Living Anatomy
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -47,8 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${HF_TOKEN:-}" ]; then
-            echo "::error::HF_TOKEN secret is not set — cannot sync the Space."
-            echo "::error::Founder action required: add repo secret HF_TOKEN (HF write token, org write to SZLHOLDINGS)."
+            echo "::error::HF_TOKEN is not set; cannot reconcile SZLHOLDINGS/anatomy."
             exit 1
           fi
           python3 <<'PYEOF'
@@ -57,69 +61,33 @@ jobs:
           import os
           import time
           import urllib.request
-          from huggingface_hub import HfApi, CommitOperationAdd
+          from pathlib import Path
+
+          from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
           api = HfApi(token=os.environ["HF_TOKEN"])
           space = os.environ["SPACE_ID"]
-
-          # Runtime and served files. The Space's .github/ remains untouched.
-          # organ_integrity.py is the fail-closed five-organ kernel server.py imports.
-          patterns = ["README.md", "Dockerfile", ".dockerignore", "server.py",
-                      "organ_integrity.py",
-                      "*.html",
-                      "*.js", "*.css", "lib/**/*"]
-          files = []
-          for p in patterns:
-              files += [f for f in glob.glob(p, recursive=True) if os.path.isfile(f)]
-          files = sorted(set(files))
-          if not files:
-              print("No front-door files matched — nothing to sync.")
-              raise SystemExit(0)
-
-          ops = []
-          for f in files:
-              with open(f, "rb") as fh:
-                  ops.append(CommitOperationAdd(path_in_repo=f, path_or_fileobj=fh.read()))
           source_revision = os.environ.get("GITHUB_SHA", "").lower()
+          source_ref = os.environ.get("GITHUB_REF")
+          workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")
+          github_repo = os.environ.get("GITHUB_REPOSITORY")
+          github_token = os.environ.get("GITHUB_TOKEN", "")
+
           if len(source_revision) != 40 or any(
               character not in "0123456789abcdef" for character in source_revision
           ):
               raise RuntimeError("GITHUB_SHA is not an exact Git revision")
-          source_ref = os.environ.get("GITHUB_REF")
           if source_ref != "refs/heads/main":
               raise RuntimeError(
                   f"refusing production deploy from non-main ref: {source_ref!r}"
               )
-          workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")
-          if not workflow_run_id.isdigit():
-              raise RuntimeError("GITHUB_RUN_ID is not a numeric workflow run ID")
-          deploy_manifest = {
-              "schema": "szl.hf-deploy-manifest/v1",
-              "source_repository": "szl-holdings/anatomy",
-              "source_revision": source_revision,
-              "source_path": "",
-              "destination": {
-                  "repo_id": space,
-                  "repo_type": "space",
-                  "mode": "runtime-whitelist",
-              },
-              "workflow_run_id": workflow_run_id,
-          }
-          ops.append(
-              CommitOperationAdd(
-                  path_in_repo="hf-deploy-manifest.json",
-                  path_or_fileobj=(
-                      json.dumps(deploy_manifest, sort_keys=True, indent=2) + "\n"
-                  ).encode("utf-8"),
-              )
-          )
-
-          github_repo = os.environ.get("GITHUB_REPOSITORY")
           if github_repo != "szl-holdings/anatomy":
               raise RuntimeError(f"unexpected GitHub repository: {github_repo!r}")
-          github_token = os.environ.get("GITHUB_TOKEN", "")
+          if not workflow_run_id.isdigit():
+              raise RuntimeError("GITHUB_RUN_ID is not numeric")
           if not github_token:
-              raise RuntimeError("GITHUB_TOKEN is not available")
+              raise RuntimeError("GITHUB_TOKEN is unavailable")
+
           request = urllib.request.Request(
               os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
               + f"/repos/{github_repo}/commits/main",
@@ -127,6 +95,7 @@ jobs:
                   "Accept": "application/vnd.github+json",
                   "Authorization": f"Bearer {github_token}",
                   "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "szl-anatomy-hf-sync/2.0",
               },
           )
           with urllib.request.urlopen(request, timeout=20) as response:
@@ -137,62 +106,297 @@ jobs:
                   f"current_main={current_main!r} source_revision={source_revision!r}"
               )
 
-          print("Syncing", len(ops), "file(s) to", space, ":", files)
-          commit = api.create_commit(
-              repo_id=space, repo_type="space", operations=ops,
-              commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}",
-          )
-          print("Space commit:", getattr(commit, "commit_url", commit))
+          brain_source_path = Path(".runtime/second-brain/source.json")
+          brain_source = json.loads(brain_source_path.read_text(encoding="utf-8"))
+          brain_revision = str(brain_source.get("source_revision") or "").lower()
+          if len(brain_revision) != 40:
+              raise RuntimeError("Second Brain snapshot lacks an exact source revision")
+          if int(brain_source.get("public_chunk_count") or 0) != 575:
+              raise RuntimeError(
+                  "Second Brain snapshot does not contain exactly 575 public chunks"
+              )
+          if brain_source.get("private_graph_nodes_materialized") != 0:
+              raise RuntimeError("private Second Brain nodes entered the public snapshot")
 
-          target_sha = commit.oid
-          deadline = time.monotonic() + 480
+          info = api.space_info(space)
+          if bool(getattr(info, "private", False)):
+              print("Promoting Space to public:", space)
+              api.update_repo_settings(
+                  repo_id=space,
+                  repo_type="space",
+                  private=False,
+              )
+              info = api.space_info(space)
+          if bool(getattr(info, "private", False)):
+              raise RuntimeError("Space remained private after public reconciliation")
+
+          def stage_name(runtime):
+              value = getattr(runtime, "stage", None)
+              return str(getattr(value, "value", value) or "UNKNOWN").upper()
+
+          initial_stage = stage_name(api.get_space_runtime(space))
+          if initial_stage in {
+              "PAUSED",
+              "SLEEPING",
+              "STOPPED",
+              "RUNTIME_ERROR",
+              "BUILD_ERROR",
+              "CONFIG_ERROR",
+          }:
+              print("Restarting Space from stage:", initial_stage)
+              api.restart_space(
+                  repo_id=space,
+                  factory_reboot=initial_stage
+                  in {"RUNTIME_ERROR", "BUILD_ERROR", "CONFIG_ERROR"},
+              )
+
+          def remote_json(path):
+              try:
+                  local = hf_hub_download(
+                      repo_id=space,
+                      repo_type="space",
+                      filename=path,
+                      token=os.environ["HF_TOKEN"],
+                      force_download=True,
+                  )
+                  return json.loads(Path(local).read_text(encoding="utf-8"))
+              except Exception as error:
+                  print("Remote metadata unavailable:", path, type(error).__name__)
+                  return {}
+
+          existing_deploy = remote_json("hf-deploy-manifest.json")
+          existing_brain = remote_json(".runtime/second-brain/source.json")
+          source_changed = existing_deploy.get("source_revision") != source_revision
+          brain_changed = (
+              existing_brain.get("source_revision") != brain_revision
+              or existing_brain.get("corpus_sha256")
+              != brain_source.get("corpus_sha256")
+          )
+          needs_commit = source_changed or brain_changed
+
+          target_sha = str(getattr(info, "sha", "") or "")
+          expected_workflow_run_id = str(
+              existing_deploy.get("workflow_run_id") or ""
+          )
+
+          if needs_commit:
+              patterns = [
+                  "README.md",
+                  "Dockerfile",
+                  ".dockerignore",
+                  "server.py",
+                  "organ_integrity.py",
+                  "living_runtime.py",
+                  "second_brain_runtime.py",
+                  "scripts/materialize_second_brain.py",
+                  ".runtime/**/*",
+                  "*.html",
+                  "*.js",
+                  "*.css",
+                  "lib/**/*",
+              ]
+              files = []
+              for pattern in patterns:
+                  files.extend(
+                      path
+                      for path in glob.glob(pattern, recursive=True)
+                      if os.path.isfile(path)
+                  )
+              files = sorted(set(files))
+              required = {
+                  "living_runtime.py",
+                  "second_brain_runtime.py",
+                  ".runtime/second-brain/manifest.json",
+                  ".runtime/second-brain/brain-corpus.public.jsonl",
+                  ".runtime/second-brain/source.json",
+              }
+              missing = sorted(required - set(files))
+              if missing:
+                  raise RuntimeError(
+                      f"required Living Anatomy runtime artifacts missing: {missing}"
+                  )
+
+              deploy_manifest = {
+                  "schema": "szl.hf-deploy-manifest/v1",
+                  "source_repository": "szl-holdings/anatomy",
+                  "source_revision": source_revision,
+                  "source_path": "",
+                  "destination": {
+                      "repo_id": space,
+                      "repo_type": "space",
+                      "mode": "runtime-whitelist",
+                      "visibility": "public",
+                      "lifecycle": "KEEP_PUBLIC_RUNNING",
+                  },
+                  "dependencies": {
+                      "second_brain": {
+                          "source_repository": brain_source["source_repository"],
+                          "source_revision": brain_revision,
+                          "public_chunk_count": brain_source["public_chunk_count"],
+                          "corpus_sha256": brain_source["corpus_sha256"],
+                          "authority_state": "READ_ONLY",
+                          "content_access": "HANDLES_ONLY",
+                      }
+                  },
+                  "workflow_run_id": workflow_run_id,
+              }
+              operations = []
+              for path in files:
+                  operations.append(
+                      CommitOperationAdd(path_in_repo=path, path_or_fileobj=path)
+                  )
+              operations.append(
+                  CommitOperationAdd(
+                      path_in_repo="hf-deploy-manifest.json",
+                      path_or_fileobj=(
+                          json.dumps(deploy_manifest, sort_keys=True, indent=2) + "\n"
+                      ).encode("utf-8"),
+                  )
+              )
+              print(
+                  "Syncing",
+                  len(operations),
+                  "source-bound artifacts to",
+                  space,
+                  "anatomy=",
+                  source_revision,
+                  "brain=",
+                  brain_revision,
+              )
+              commit = api.create_commit(
+                  repo_id=space,
+                  repo_type="space",
+                  operations=operations,
+                  commit_message=f"hf-sync: source {source_revision} run {workflow_run_id}",
+              )
+              target_sha = str(commit.oid)
+              expected_workflow_run_id = workflow_run_id
+          else:
+              print(
+                  "Source and Second Brain revisions already deployed; "
+                  "performing lifecycle and live-contract reconciliation only."
+              )
+              if not expected_workflow_run_id.isdigit():
+                  raise RuntimeError(
+                      "deployed manifest lacks a numeric workflow run identity"
+                  )
+              workflow_run_id = expected_workflow_run_id
+              info = api.space_info(space)
+              target_sha = str(getattr(info, "sha", "") or "")
+
+          if len(target_sha) != 40:
+              raise RuntimeError(f"target Hugging Face revision is invalid: {target_sha!r}")
+
+          deadline = time.monotonic() + 600
+          restarted = False
           while time.monotonic() < deadline:
               info = api.space_info(space)
               runtime = api.get_space_runtime(space)
-              stage = getattr(runtime.stage, "value", str(runtime.stage))
-              print("Observed Space:", info.sha, stage)
-              if info.sha == target_sha:
-                  if stage == "RUNNING":
-                      break
-                  if stage in {"BUILD_ERROR", "RUNTIME_ERROR", "CONFIG_ERROR"}:
-                      raise RuntimeError(f"Space reached {stage} at target revision {target_sha}")
+              stage = stage_name(runtime)
+              current_sha = str(getattr(info, "sha", "") or "")
+              print("Observed Space:", current_sha, stage, "private=", info.private)
+              if bool(getattr(info, "private", False)):
+                  api.update_repo_settings(
+                      repo_id=space,
+                      repo_type="space",
+                      private=False,
+                  )
+              if (
+                  info.sha == target_sha
+                  and stage
+                  in {
+                      "PAUSED",
+                      "SLEEPING",
+                      "STOPPED",
+                      "RUNTIME_ERROR",
+                      "BUILD_ERROR",
+                      "CONFIG_ERROR",
+                  }
+                  and not restarted
+              ):
+                  api.restart_space(
+                      repo_id=space,
+                      factory_reboot=stage
+                      in {"RUNTIME_ERROR", "BUILD_ERROR", "CONFIG_ERROR"},
+                  )
+                  restarted = True
+              if info.sha == target_sha and stage == "RUNNING" and not info.private:
+                  break
               time.sleep(10)
           else:
-              raise TimeoutError(f"Space did not reach RUNNING at {target_sha} within 480 seconds")
+              raise TimeoutError(
+                  f"Space did not settle RUNNING/public at {target_sha} within 600 seconds"
+              )
 
           base = "https://szlholdings-anatomy.hf.space"
-          for attempt in range(12):
+          for attempt in range(18):
               try:
-                  with urllib.request.urlopen(base + "/healthz", timeout=10) as response:
-                      health = json.load(response)
-                  with urllib.request.urlopen(base + "/version?refresh=1", timeout=10) as response:
-                      version = json.load(response)
-                  with urllib.request.urlopen(base + "/evidence?refresh=1", timeout=15) as response:
-                      evidence = json.load(response)
-                  with urllib.request.urlopen(
-                      base + "/.well-known/szl-source.json?refresh=1", timeout=10
-                  ) as response:
-                      source = json.load(response)
+                  def get_json(url, timeout=15):
+                      with urllib.request.urlopen(url, timeout=timeout) as response:
+                          return json.load(response)
+
+                  health = get_json(base + "/healthz")
+                  living = get_json(
+                      base + "/api/anatomy/v1/living-health?refresh=1"
+                  )
+                  brain = get_json(base + "/api/anatomy/v1/brain/health?refresh=1")
+                  search = get_json(
+                      base
+                      + "/api/anatomy/v1/brain/search"
+                      + "?q=governed%20receipts%20living%20anatomy&k=3"
+                  )
+                  version = get_json(base + "/version?refresh=1")
+                  evidence = get_json(base + "/evidence?refresh=1", timeout=20)
+                  source = get_json(
+                      base + "/.well-known/szl-source.json?refresh=1"
+                  )
+                  manifest = get_json(base + "/api/anatomy/v1/manifest")
+
                   assert health["transport_state"] == "REACHABLE"
                   assert health["verification_state"] == "STRUCTURAL_ONLY"
-                  assert version["schemaVersion"] == "szl.vertical-conformance.version.v1"
+                  assert living["ready"] is True
+                  assert living["organs"]["brain"]["chunk_count"] == 575
+                  assert brain["ready"] is True
+                  assert brain["state"] == "SOURCE_BOUND_PUBLIC_PROJECTION"
+                  assert brain["source_revision"] == brain_revision
+                  assert brain["chunk_count"] == 575
+                  assert brain["private_graph_nodes_loaded"] == 0
+                  assert brain["content_access"] == "HANDLES_ONLY"
+                  assert search["ready"] is True
+                  assert search["handles"]
+                  assert all("text" not in handle for handle in search["handles"])
                   assert version["gitSha"] == source_revision
                   assert version["deploymentRevision"] == target_sha
+                  assert version["secondBrainSourceRevision"] == brain_revision
                   assert version["evidenceState"] == "MEASURED"
-                  assert evidence["schemaVersion"] == "szl.vertical-conformance.evidence.v1"
                   assert evidence["gitSha"] == source_revision
                   assert evidence["evidenceState"] == "PARTIAL"
                   assert evidence["source"]["deployment"]["hf_revision"] == target_sha
                   assert evidence["receipts"][0]["status"] == "STRUCTURAL_ONLY"
                   assert evidence["outputProvenance"]["authenticityEstablished"] is False
+                  assert evidence["dependencies"]["secondBrain"]["ready"] is True
                   assert source["deployment"]["hf_revision"] == target_sha
                   assert source["source"]["commit"] == source_revision
                   assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
                   assert source["deployment"]["workflow_run_id"] == workflow_run_id
-                  print("Verified live Space revision and health:", target_sha)
+                  assert (
+                      manifest["endpoints"]["brain_health"]
+                      == "/api/anatomy/v1/brain/health"
+                  )
+                  final_info = api.space_info(space)
+                  assert final_info.private is False
+                  print(
+                      "Verified Living Anatomy public/RUNNING:",
+                      target_sha,
+                      "Second Brain:",
+                      brain_revision,
+                  )
                   break
               except Exception as error:
-                  if attempt == 11:
-                      raise RuntimeError("Public Space verification failed") from error
-                  time.sleep(5)
+                  if attempt == 17:
+                      raise RuntimeError(
+                          "Public Living Anatomy + Second Brain verification failed"
+                      ) from error
+                  print("Live verification retry:", type(error).__name__, error)
+                  time.sleep(10)
           PYEOF
