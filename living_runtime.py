@@ -23,6 +23,17 @@ from urllib.parse import parse_qs, urlsplit
 import server as anatomy_server
 from second_brain_runtime import PublicSecondBrain
 
+try:
+    from fastapi import FastAPI
+except ImportError:  # pragma: no cover - FastAPI is a declared runtime dep
+    FastAPI = None  # type: ignore[misc,assignment]
+
+app = (
+    FastAPI(title="living-anatomy-space", version="1.3.0")
+    if FastAPI is not None
+    else None
+)
+
 BRAIN = PublicSecondBrain()
 
 # Bind the v7 runtime and exact source snapshot into the existing deterministic
