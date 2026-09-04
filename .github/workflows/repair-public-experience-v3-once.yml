@@ -1,0 +1,113 @@
+name: Repair Public Experience v3 once
+
+on:
+  push:
+    branches:
+      - fix/public-experience-v3-live-audit-20260903
+    paths:
+      - .github/workflows/repair-public-experience-v3-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anatomy-public-experience-v3-once
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: fix/public-experience-v3-live-audit-20260903
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply receipt-derived mobile and zoom corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object index.html)" = d772ca087a8c301abaa4061d8647ddcbf4dc3406
+          test "$(git hash-object yachay-second-brain.js)" = d6ac112513312e4aa74b5aa579fb8f49281f8832
+          python - <<'PY'
+          from pathlib import Path
+
+          index_path = Path("index.html")
+          index = index_path.read_text(encoding="utf-8")
+          replacements = {
+              '<html lang="en" data-szl-holo-space-v2="anatomy">': '<html lang="en" data-szl-holo-space-v2="anatomy" data-szl-public-experience-v3="true">',
+              '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />': '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />',
+              '  #scene{position:fixed;inset:0;z-index:0;display:block;touch-action:none}\n  canvas{display:block}': '  #scene{position:absolute;inset:0;z-index:0;display:block;touch-action:none}\n  canvas{display:block}\n  :where(button,input,select,textarea,summary,a[href],[role="button"],[tabindex]:not([tabindex="-1"])){min-block-size:44px}\n  :where(button,summary,[role="button"]){min-inline-size:44px}\n  a[href]{display:inline-flex;align-items:center}',
+          }
+          for old, new in replacements.items():
+              if index.count(old) != 1:
+                  raise SystemExit(f"index repair target drifted: {old[:80]!r}")
+              index = index.replace(old, new)
+          index_path.write_text(index, encoding="utf-8")
+
+          yachay_path = Path("yachay-second-brain.js")
+          yachay = yachay_path.read_text(encoding="utf-8")
+          old_controls = '    "#yachay-sb *{box-sizing:border-box}#yachay-sb button,#yachay-sb input{font:inherit}",'
+          new_controls = old_controls + '\n    "#yachay-sb button,#yachay-sb input,#yachay-sb a{min-height:44px}#yachay-sb button{min-width:44px}#yachay-sb a{display:inline-flex;align-items:center;padding:6px 4px}",'
+          old_media = '    "@media(max-width:520px){#yachay-sb{right:8px;bottom:8px}.yachay-hide-mobile{display:none}}",'
+          new_media = old_media + '\n    "html[style*=\\\"zoom\\\"] #yachay-sb{position:absolute;max-height:calc(100vh - 16px);overflow:auto}",'
+          for old, new in ((old_controls, new_controls), (old_media, new_media)):
+              if yachay.count(old) != 1:
+                  raise SystemExit(f"YACHAY repair target drifted: {old[:80]!r}")
+              yachay = yachay.replace(old, new)
+          yachay_path.write_text(yachay, encoding="utf-8")
+
+          test_path = Path("tests/test_public_experience_v3.py")
+          test_path.write_text('''from __future__ import annotations
+
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class PublicExperienceV3Tests(unittest.TestCase):
+    def test_front_door_exposes_mobile_zoom_contract(self) -> None:
+        source = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('data-szl-public-experience-v3="true"', source)
+        self.assertIn("viewport-fit=cover", source)
+        self.assertNotIn("maximum-scale", source)
+        self.assertIn("#scene{position:absolute", source)
+        self.assertIn("min-block-size:44px", source)
+        self.assertIn("min-inline-size:44px", source)
+
+    def test_second_brain_panel_reflows_under_css_zoom(self) -> None:
+        source = (ROOT / "yachay-second-brain.js").read_text(encoding="utf-8")
+        self.assertIn('html[style*=\\"zoom\\"] #yachay-sb{position:absolute', source)
+        self.assertIn("#yachay-sb button,#yachay-sb input,#yachay-sb a{min-height:44px}", source)
+        self.assertIn('authority: "READ_ONLY"', source)
+        self.assertIn('contentAccess: "HANDLES_ONLY"', source)
+
+
+if __name__ == "__main__":
+    unittest.main()
+''', encoding="utf-8")
+          PY
+          node --check yachay-second-brain.js
+          python -m unittest tests.test_public_experience_v3 -v
+          git diff --check
+          git rm .github/workflows/repair-public-experience-v3-once.yml
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 4
+          test "${changed[0]}" = .github/workflows/repair-public-experience-v3-once.yml
+          test "${changed[1]}" = index.html
+          test "${changed[2]}" = tests/test_public_experience_v3.py
+          test "${changed[3]}" = yachay-second-brain.js
+
+      - name: Commit exact repair and remove bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Lutar, Stephen P.'
+          git config user.email 'stephenlutar2@gmail.com'
+          git add index.html yachay-second-brain.js tests/test_public_experience_v3.py
+          git commit -m 'fix(ux): satisfy Anatomy Public Experience v3 receipt' -m 'Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>'
+          git push origin HEAD:fix/public-experience-v3-live-audit-20260903
