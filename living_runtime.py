@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Unified Python runtime for SZL Living Anatomy + YACHAY Second Brain.
+"""Unified runtime for SZL Living Anatomy + YACHAY Neural Quant v7.
 
-The existing Anatomy server remains the transport, evidence, receipt, and static
-rendering authority. This module extends it in-process with a source-bound,
-handles-only Second Brain organ and makes the combined body the Docker entry
-point. No reverse proxy, second process, model inference, private graph, or
-write authority is introduced.
+The hardened Anatomy server remains the transport, evidence, receipt, and static
+rendering authority. This module extends it in-process with the source-bound
+575-chunk Second Brain, its 122+ review-gated frontier candidates, the attributed
+formula/quant atlas, and bounded Ouroboros observations.
+
+Public APIs expose handles, counts, source revisions, and digests only. Runtime
+snapshot files are blocked from direct static access. No reverse proxy, second
+process, model training, private graph, candidate promotion, execution, merge, or
+provider-mutation authority is introduced.
 """
 from __future__ import annotations
 
@@ -21,13 +25,16 @@ from second_brain_runtime import PublicSecondBrain
 
 BRAIN = PublicSecondBrain()
 
-# Bind the new runtime and its source snapshot into the existing deterministic
+# Bind the v7 runtime and exact source snapshot into the existing deterministic
 # Anatomy receipt before the first request can populate any receipt cache.
 _EXTRA_ARTIFACTS = (
     "living_runtime.py",
     "second_brain_runtime.py",
+    "neural-quant-v7.js",
     ".runtime/second-brain/manifest.json",
     ".runtime/second-brain/brain-corpus.public.jsonl",
+    ".runtime/second-brain/frontier-state.v1.json",
+    ".runtime/second-brain/frontier-candidates.public.jsonl",
     ".runtime/second-brain/source.json",
 )
 anatomy_server.ARTIFACT_PATHS = tuple(
@@ -41,11 +48,14 @@ _ORIGINAL_EVIDENCE = anatomy_server._evidence_contract
 
 def _living_manifest() -> dict[str, Any]:
     payload = _ORIGINAL_MANIFEST()
+    brain = BRAIN.health()
     payload["service"] = "living-anatomy-space"
     payload["purpose"] = (
-        "Read-only spatial evidence map with a source-bound YACHAY Second Brain organ."
+        "Read-only spatial evidence map with source-bound YACHAY Second Brain, "
+        "formula/quant atlas, and bounded Ouroboros observations."
     )
-    payload["contract_version"] = "1.2.0"
+    payload["contract_version"] = "1.3.0"
+    payload["experience_version"] = "NEURAL_QUANT_V7"
     endpoints = payload.setdefault("endpoints", {})
     endpoints.update(
         {
@@ -54,23 +64,51 @@ def _living_manifest() -> dict[str, Any]:
             "brain_manifest": "/api/anatomy/v1/brain/manifest",
             "brain_search": "/api/anatomy/v1/brain/search",
             "brain_context": "/api/anatomy/v1/brain/context",
+            "brain_frontier": "/api/anatomy/v1/brain/frontier",
+            "brain_formulas": "/api/anatomy/v1/brain/formulas",
+            "brain_quant": "/api/anatomy/v1/brain/quant",
+            "brain_ouroboros": "/api/anatomy/v1/brain/ouroboros",
+            "neural_quant_v7": "/api/anatomy/v1/brain/neural-quant-v7",
         }
     )
     payload["organs"] = {
         "brain": {
             "name": "YACHAY",
-            "state": BRAIN.health()["state"],
+            "state": brain["state"],
             "ready": BRAIN.ready,
-            "source_repository": BRAIN.health()["source_repository"],
+            "source_repository": brain["source_repository"],
             "source_revision": BRAIN.source_revision,
+            "chunk_count": brain["chunk_count"],
+            "frontier_candidate_count": brain["frontier"]["candidate_count"],
+            "candidate_set_sha256": brain["frontier"][
+                "candidate_set_sha256"
+            ],
             "authority_state": "READ_ONLY",
             "content_access": "HANDLES_ONLY",
-        }
+        },
+        "neural_quant": {
+            "name": "NEURAL QUANT V7",
+            "ready": BRAIN.ready,
+            "attributed_formula_count": brain["formula_atlas"][
+                "attributed_formula_count"
+            ],
+            "executable_formula_count": brain["formula_atlas"][
+                "executable_formula_count"
+            ],
+            "locked_proven_count": brain["formula_atlas"][
+                "locked_proven_count"
+            ],
+            "quant_domain_count": brain["quant_domain_count"],
+            "lambda_state": "CONJECTURE_1",
+            "authority_state": "READ_ONLY",
+        },
     }
     payload.setdefault("limits", []).extend(
         [
-            "Second Brain ranking is lexical relevance, never correctness.",
-            "The public projection contains handles only; the private graph is not present.",
+            "Second Brain and frontier ranking are relevance signals, never correctness.",
+            "Public interfaces contain handles and digests; raw snapshot content is not served.",
+            "Frontier candidates remain review-required and cannot train or promote themselves.",
+            "The private graph is not present, and this surface has no execution authority.",
         ]
     )
     return payload
@@ -78,10 +116,17 @@ def _living_manifest() -> dict[str, Any]:
 
 def _living_version(force: bool = False) -> dict[str, Any]:
     payload = _ORIGINAL_VERSION(force=force)
-    payload["contractVersion"] = "1.2.0"
-    payload["runtime"] = "living-anatomy+yachay"
+    health = BRAIN.health()
+    payload["contractVersion"] = "1.3.0"
+    payload["experienceVersion"] = "NEURAL_QUANT_V7"
+    payload["runtime"] = "living-anatomy+yachay-neural-quant-v7"
     payload["secondBrainSourceRevision"] = BRAIN.source_revision
-    payload["secondBrainEvidenceState"] = "MEASURED" if BRAIN.ready else "UNAVAILABLE"
+    payload["secondBrainCandidateSetSha256"] = health["frontier"][
+        "candidate_set_sha256"
+    ]
+    payload["secondBrainEvidenceState"] = (
+        "MEASURED" if BRAIN.ready else "UNAVAILABLE"
+    )
     return payload
 
 
@@ -95,16 +140,31 @@ def _living_evidence(force: bool = False) -> dict[str, Any]:
         "sourceRepository": brain["source_repository"],
         "sourceRevision": brain["source_revision"],
         "chunkCount": brain["chunk_count"],
+        "frontierCandidateCount": brain["frontier"]["candidate_count"],
+        "frontierSourceCount": brain["frontier"]["source_count"],
+        "candidateSetSha256": brain["frontier"]["candidate_set_sha256"],
+        "attributedFormulaCount": brain["formula_atlas"][
+            "attributed_formula_count"
+        ],
+        "executableFormulaCount": brain["formula_atlas"][
+            "executable_formula_count"
+        ],
+        "lockedProvenCount": brain["formula_atlas"]["locked_proven_count"],
+        "quantDomainCount": brain["quant_domain_count"],
+        "lambdaState": brain["lambda_state"],
         "verificationState": brain["verification_state"],
         "authorityState": brain["authority_state"],
+        "contentAccess": brain["content_access"],
         "details": "/api/anatomy/v1/brain/health",
+        "neuralQuant": "/api/anatomy/v1/brain/neural-quant-v7",
     }
     runtime = payload.setdefault("runtime", {})
     if not BRAIN.ready:
         runtime["status"] = "DEGRADED"
         runtime["ready"] = False
         payload.setdefault("limitations", []).append(
-            "YACHAY Second Brain snapshot is unavailable; Living Anatomy remains transport-reachable but the integrated body is not ready."
+            "YACHAY Second Brain/frontier snapshot is unavailable; Living Anatomy "
+            "remains transport-reachable but the integrated v7 body is not ready."
         )
     return payload
 
@@ -120,43 +180,51 @@ if not any(
     anatomy_server.CAPABILITIES.append(
         {
             "id": "anatomy.yachay-second-brain",
-            "name": "YACHAY source-bound Second Brain",
+            "name": "YACHAY Neural Quant v7",
             "purpose": (
-                "Ground the Living Anatomy brain organ in the public 575-chunk "
-                "Second Brain projection without exposing corpus text or private nodes."
+                "Ground the Living Anatomy brain organ in the source-bound public "
+                "Second Brain, attributed formula/quant atlas, and bounded "
+                "Ouroboros frontier observations."
             ),
             "try": {
                 "method": "GET",
-                "path": "/api/anatomy/v1/brain/search?q=governed%20receipts&k=6",
-                "action": "Retrieve source-bound public handles.",
+                "path": "/api/anatomy/v1/brain/neural-quant-v7?k=12",
+                "action": "Inspect the source-bound handles-only v7 observation.",
             },
             "evidence": {
                 "state": "MEASURED" if BRAIN.ready else "UNAVAILABLE",
                 "basis": (
-                    "Deployment-pinned GitHub revision, manifest digest, corpus digest, "
-                    "per-row SHA-256 checks, and exact chunk count."
+                    "Exact Second Brain Git revision; retrieval, frontier, and source "
+                    "digests; per-row SHA-256; formula/quant counts; locked-eight and "
+                    "Lambda-conjecture boundary replay."
                 ),
                 "source_revision": BRAIN.source_revision,
                 "chunk_count": BRAIN.health()["chunk_count"],
+                "frontier_candidate_count": BRAIN.health()["frontier"][
+                    "candidate_count"
+                ],
+                "candidate_set_sha256": BRAIN.frontier_candidate_set_sha256,
             },
             "limits": [
-                "Lexical overlap is not correctness.",
-                "No corpus text is returned by the retrieval API.",
+                "Lexical overlap is not correctness or proof.",
+                "No corpus or candidate content is returned by public APIs.",
                 "No private graph node is bundled or queried.",
-                "No write or training authority is granted.",
+                "No training, promotion, execution, merge, or provider authority is granted.",
             ],
             "reproduce": {
                 "steps": [
                     "GET /api/anatomy/v1/brain/health",
-                    "Compare source_revision with szl-holdings/szl-second-brain.",
-                    "GET /api/anatomy/v1/brain/manifest and inspect the snapshot receipt.",
-                    "Run a search and verify every result is a handle with a SHA-256 pointer.",
+                    "Compare source_revision with szl-holdings/szl-second-brain main.",
+                    "Replay candidate_set_sha256 against the materialized JSONL.",
+                    "GET /api/anatomy/v1/brain/neural-quant-v7 and verify handles-only output.",
                 ]
             },
             "authority_state": "READ_ONLY",
-            "formula_refs": ["F1", "F22"],
+            "formula_refs": ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"],
             "provenance": [
                 "https://github.com/szl-holdings/szl-second-brain",
+                "https://github.com/szl-holdings/szl-formulas",
+                "https://github.com/szl-holdings/szl-ouroboros",
                 "https://huggingface.co/datasets/SZLHOLDINGS/szl-second-brain-inrepo",
             ],
         }
@@ -164,15 +232,18 @@ if not any(
 
 
 class LivingAnatomyHandler(anatomy_server.HardenedHandler):
-    """Add the YACHAY API while preserving every existing Anatomy route."""
+    """Add YACHAY v7 APIs while preserving every hardened Anatomy route."""
 
     def _brain_headers(self, evidence_state: str) -> dict[str, str]:
         return {
             "X-SZL-Brain-State": (
-                "SOURCE_BOUND_PUBLIC_PROJECTION" if BRAIN.ready else "UNAVAILABLE"
+                "SOURCE_BOUND_RETRIEVAL_AND_FRONTIER"
+                if BRAIN.ready
+                else "UNAVAILABLE"
             ),
             "X-SZL-Brain-Authority": "READ_ONLY",
             "X-SZL-Brain-Evidence": evidence_state,
+            "X-SZL-Brain-Content": "HANDLES_ONLY",
         }
 
     @staticmethod
@@ -181,9 +252,21 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             parsed = int(value)
         except (TypeError, ValueError):
             parsed = 6
-        return max(1, min(parsed, 12))
+        return max(1, min(parsed, 24))
 
-    def _read_json_body(self, maximum: int = 32_768) -> tuple[int, dict[str, Any] | None]:
+    @staticmethod
+    def _blocked_internal_path(path: str) -> bool:
+        return (
+            path == "/.runtime"
+            or path.startswith("/.runtime/")
+            or path == "/.git"
+            or path.startswith("/.git/")
+        )
+
+    def _read_json_body(
+        self,
+        maximum: int = 32_768,
+    ) -> tuple[int, dict[str, Any] | None]:
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -198,22 +281,48 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             return 400, None
         return 200, payload
 
+    def _send_brain_payload(self, payload: dict[str, Any]) -> None:
+        ready = bool(payload.get("ready"))
+        evidence = "COMPUTED" if ready else "UNAVAILABLE"
+        self._send_json(
+            payload,
+            status=200 if ready else 503,
+            evidence_state=evidence,
+            extra_headers=self._brain_headers(evidence),
+        )
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlsplit(self.path)
         path = parsed.path
         query = parse_qs(parsed.query)
+        if self._blocked_internal_path(path):
+            self._send_json(
+                {
+                    "error": "not_found",
+                    "state": "BLOCKED_INTERNAL_RUNTIME_PATH",
+                },
+                status=404,
+                evidence_state="UNAVAILABLE",
+                extra_headers=self._brain_headers("UNAVAILABLE"),
+            )
+            return
         if path == "/api/anatomy/v1/living-health":
             if query.get("refresh") == ["1"]:
                 BRAIN.reload()
             brain = BRAIN.health()
             payload = {
-                "schema": "szl.living-anatomy.health/v1",
+                "schema": "szl.living-anatomy.health/v2",
                 "status": "ok" if brain["ready"] else "degraded",
                 "ready": bool(brain["ready"]),
                 "service": "living-anatomy-space",
+                "experience": "NEURAL_QUANT_V7",
                 "transport_state": "REACHABLE",
-                "evidence_state": "MEASURED" if brain["ready"] else "UNAVAILABLE",
-                "verification_state": "STRUCTURAL_ONLY" if brain["ready"] else "FAILED",
+                "evidence_state": (
+                    "MEASURED" if brain["ready"] else "UNAVAILABLE"
+                ),
+                "verification_state": (
+                    "STRUCTURAL_ONLY" if brain["ready"] else "FAILED"
+                ),
                 "authority_state": "READ_ONLY",
                 "organs": {
                     "anatomy": {
@@ -226,12 +335,33 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
                         "state": brain["state"],
                         "source_revision": brain["source_revision"],
                         "chunk_count": brain["chunk_count"],
+                        "frontier_candidate_count": brain["frontier"][
+                            "candidate_count"
+                        ],
+                        "candidate_set_sha256": brain["frontier"][
+                            "candidate_set_sha256"
+                        ],
                         "contract": "/api/anatomy/v1/brain/health",
+                    },
+                    "neural_quant": {
+                        "ready": brain["ready"],
+                        "attributed_formula_count": brain["formula_atlas"][
+                            "attributed_formula_count"
+                        ],
+                        "executable_formula_count": brain["formula_atlas"][
+                            "executable_formula_count"
+                        ],
+                        "locked_proven_count": brain["formula_atlas"][
+                            "locked_proven_count"
+                        ],
+                        "quant_domain_count": brain["quant_domain_count"],
+                        "lambda_state": "CONJECTURE_1",
+                        "contract": "/api/anatomy/v1/brain/neural-quant-v7",
                     },
                 },
                 "note": (
-                    "Combined readiness requires both the Anatomy transport and the "
-                    "source-bound public Second Brain projection."
+                    "Combined readiness requires Anatomy transport plus exact, "
+                    "source-bound Second Brain retrieval and frontier snapshots."
                 ),
             }
             evidence = str(payload["evidence_state"])
@@ -255,14 +385,7 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             )
             return
         if path == "/api/anatomy/v1/brain/manifest":
-            payload = BRAIN.manifest()
-            evidence = "MEASURED" if payload["ready"] else "UNAVAILABLE"
-            self._send_json(
-                payload,
-                status=200 if payload["ready"] else 503,
-                evidence_state=evidence,
-                extra_headers=self._brain_headers(evidence),
-            )
+            self._send_brain_payload(BRAIN.manifest())
             return
         if path in (
             "/api/anatomy/v1/brain/search",
@@ -270,26 +393,65 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
         ):
             phrase = (query.get("q") or query.get("query") or [""])[0]
             k = self._bounded_k((query.get("k") or [6])[0])
-            payload = BRAIN.search(phrase, k=k)
-            evidence = "COMPUTED" if payload["ready"] else "UNAVAILABLE"
-            self._send_json(
-                payload,
-                status=200 if payload["ready"] else 503,
-                evidence_state=evidence,
-                extra_headers=self._brain_headers(evidence),
-            )
+            self._send_brain_payload(BRAIN.search(phrase, k=k))
             return
         if path == "/api/anatomy/v1/brain/context":
             phrase = (query.get("q") or query.get("query") or [""])[0]
             k = self._bounded_k((query.get("k") or [6])[0])
-            payload = BRAIN.context(phrase, k=k)
-            evidence = "COMPUTED" if payload["ready"] else "UNAVAILABLE"
-            self._send_json(
-                payload,
-                status=200 if payload["ready"] else 503,
-                evidence_state=evidence,
-                extra_headers=self._brain_headers(evidence),
+            self._send_brain_payload(BRAIN.context(phrase, k=k))
+            return
+        if path == "/api/anatomy/v1/brain/frontier":
+            phrase = (
+                query.get("q")
+                or query.get("query")
+                or ["brain formula quant anatomy ouroboros"]
+            )[0]
+            k = self._bounded_k((query.get("k") or [12])[0])
+            kinds_value = (query.get("kind") or [""])[0]
+            kinds = {
+                item.strip()
+                for item in str(kinds_value).split(",")
+                if item.strip()
+            }
+            domain = str((query.get("domain") or [""])[0]).strip() or None
+            repository = (
+                str((query.get("repository") or [""])[0]).strip() or None
             )
+            self._send_brain_payload(
+                BRAIN.frontier_search(
+                    phrase,
+                    k=k,
+                    source_kinds=kinds or None,
+                    quant_domain=domain,
+                    source_repository=repository,
+                )
+            )
+            return
+        if path == "/api/anatomy/v1/brain/formulas":
+            phrase = (
+                query.get("q")
+                or query.get("query")
+                or ["formula authority proof status"]
+            )[0]
+            k = self._bounded_k((query.get("k") or [24])[0])
+            self._send_brain_payload(BRAIN.formula_view(phrase, k=k))
+            return
+        if path == "/api/anatomy/v1/brain/quant":
+            phrase = (
+                query.get("q")
+                or query.get("query")
+                or ["quant math information geometry coding trust energy"]
+            )[0]
+            k = self._bounded_k((query.get("k") or [24])[0])
+            self._send_brain_payload(BRAIN.quant_view(phrase, k=k))
+            return
+        if path == "/api/anatomy/v1/brain/ouroboros":
+            k = self._bounded_k((query.get("k") or [16])[0])
+            self._send_brain_payload(BRAIN.ouroboros_view(k=k))
+            return
+        if path == "/api/anatomy/v1/brain/neural-quant-v7":
+            k = self._bounded_k((query.get("k") or [24])[0])
+            self._send_brain_payload(BRAIN.neural_quant_view(k=k))
             return
         super().do_GET()
 
@@ -299,6 +461,7 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             "/api/anatomy/v1/brain/search",
             "/api/anatomy/v1/brain/query",
             "/api/anatomy/v1/brain/context",
+            "/api/anatomy/v1/brain/frontier",
         ):
             super().do_POST()
             return
@@ -316,18 +479,36 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             return
         phrase = str(body.get("query") or body.get("q") or "")
         k = self._bounded_k(body.get("k", 6))
-        payload = (
-            BRAIN.context(phrase, k=k)
-            if path.endswith("/context")
-            else BRAIN.search(phrase, k=k)
-        )
-        evidence = "COMPUTED" if payload["ready"] else "UNAVAILABLE"
-        self._send_json(
-            payload,
-            status=200 if payload["ready"] else 503,
-            evidence_state=evidence,
-            extra_headers=self._brain_headers(evidence),
-        )
+        if path.endswith("/context"):
+            payload = BRAIN.context(phrase, k=k)
+        elif path.endswith("/frontier"):
+            kinds_value = body.get("kinds") or body.get("kind") or []
+            if isinstance(kinds_value, str):
+                kinds = {
+                    item.strip()
+                    for item in kinds_value.split(",")
+                    if item.strip()
+                }
+            elif isinstance(kinds_value, list):
+                kinds = {
+                    str(item).strip()
+                    for item in kinds_value
+                    if str(item).strip()
+                }
+            else:
+                kinds = set()
+            payload = BRAIN.frontier_search(
+                phrase,
+                k=k,
+                source_kinds=kinds or None,
+                quant_domain=str(body.get("domain") or "").strip() or None,
+                source_repository=(
+                    str(body.get("repository") or "").strip() or None
+                ),
+            )
+        else:
+            payload = BRAIN.search(phrase, k=k)
+        self._send_brain_payload(payload)
 
 
 def make_server(
@@ -343,10 +524,12 @@ def make_server(
 
 if __name__ == "__main__":
     httpd = make_server()
+    health = BRAIN.health()
     print(
-        "Serving SZL Living Anatomy + YACHAY Second Brain "
+        "Serving SZL Living Anatomy + YACHAY Neural Quant v7 "
         f"from {anatomy_server.DIRECTORY} on 0.0.0.0:{anatomy_server.PORT}; "
-        f"brain_ready={BRAIN.ready} source={BRAIN.source_revision}",
+        f"brain_ready={BRAIN.ready} source={BRAIN.source_revision} "
+        f"frontier={health['frontier']['candidate_count']}",
         flush=True,
     )
     try:
