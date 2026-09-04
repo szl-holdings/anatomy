@@ -164,3 +164,11 @@ and scheduled reconciliation. It:
    revisions are already deployed;
 6. verifies the live Anatomy, Brain, formula, quant, Ouroboros, Neural Quant v7,
    version, evidence, source, and manifest contracts.
+
+## Holographic v7 companion instrument
+
+Holographic v7 is an additive, read-only surface served by `frontier_runtime.py` at the same origin as the existing Neural Quant v7 experience. The runtime accepts the protected flat receipt emitted by current `main` while retaining read compatibility with the earlier nested frontier receipt shape. It does not create a second authority plane.
+
+The canonical public surface is `betterwithage/anatomy`. Its source-bound snapshot remains 575 public chunks, 30 attributed formulas, 21 executable formulas, and nine quant domains. Identity is `HANDLES_ONLY`; lambda remains `Conjecture 1`; frontier candidates remain review-gated and cannot be promoted by this instrument.
+
+The container starts `frontier_runtime.py`, which imports the existing living runtime and adds the Holographic v7 routes. Publishing includes the runtime and both local assets. No CDN, browser persistence, telemetry, credential material, or cross-origin data authority is introduced.

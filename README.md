@@ -109,6 +109,15 @@ contrast, forced colors, keyboard focus trapping, and Escape close.
 Public creator-profile Space:
 [`betterwithage/anatomy`](https://huggingface.co/spaces/betterwithage/anatomy).
 
+## Holographic v7 companion instrument
+
+Holographic v7 is a read-only, same-origin companion to Neural Quant v7. It
+serves the source-bound Second Brain through the frontier runtime without
+creating a second authority plane. The public snapshot remains 575 chunks with
+30 attributed formulas, 21 executable formulas, and nine quant domains. Public
+identity stays `HANDLES_ONLY`; lambda remains `Conjecture 1`, and every frontier
+candidate remains review-gated rather than promoted by the visualization.
+
 ## v6 — alive-proof layer (ratchet 2026-07-21)
 
 The **⛬ alive-proof (v6)** control closes the loop between the map and the
@@ -396,7 +405,7 @@ One sovereign substrate, many organs — every decision carries a signed, checka
 [🛡️ a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) ·
 [🧬 IMMUNE](https://huggingface.co/spaces/SZLHOLDINGS/immune) ·
 [🦅 killinchu](https://huggingface.co/spaces/SZLHOLDINGS/killinchu) ·
-[🫀 anatomy](https://huggingface.co/spaces/SZLHOLDINGS/anatomy) ·
+[🫀 anatomy](https://huggingface.co/spaces/betterwithage/anatomy) ·
 [🌌 cosmos](https://huggingface.co/spaces/SZLHOLDINGS/cosmos) ·
 [🛰️ SDA](https://huggingface.co/spaces/SZLHOLDINGS/sda) ·
 [🌊 yarqa](https://huggingface.co/spaces/SZLHOLDINGS/yarqa) ·

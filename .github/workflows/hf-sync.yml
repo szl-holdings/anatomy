@@ -54,10 +54,12 @@ jobs:
           python -m py_compile \
             server.py \
             living_runtime.py \
+            frontier_runtime.py \
             second_brain_runtime.py \
             scripts/materialize_second_brain.py \
             scripts/sync_hf_creator_profile.py
           node --check neural-quant-v7.js
+          node --check holographic-v7.js
 
       - name: Fail closed if Hugging Face credential is absent
         shell: bash

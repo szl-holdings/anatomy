@@ -8,4 +8,4 @@ COPY . /app
 EXPOSE 7860
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/api/anatomy/v1/living-health', timeout=2).read()"
-CMD ["python", "living_runtime.py"]
+CMD ["python", "frontier_runtime.py"]
