@@ -1,0 +1,243 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Patch Anatomy no-op publisher once
+
+on:
+  push:
+    branches:
+      - feat/neural-quant-anatomy-v7-20260904
+    paths:
+      - .github/workflows/patch-anatomy-noop-publisher-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/neural-quant-anatomy-v7-20260904
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned publisher dependency
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          "huggingface_hub==1.23.0"
+
+      - name: Add exact no-op deployment convergence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/sync_hf_creator_profile.py")
+          text = path.read_text(encoding="utf-8")
+          function_marker = "\ndef wait_running(api: HfApi, target_sha: str, timeout_seconds: int = 900) -> None:\n"
+          functions = '''
+
+def live_deploy_manifest() -> dict[str, Any] | None:
+    """Read the public deployment record without treating absence as success."""
+
+    url = (
+        "https://huggingface.co/spaces/"
+        + SPACE_ID
+        + "/resolve/main/hf-deploy-manifest.json?download=true"
+    )
+    try:
+        return get_json(url)
+    except Exception as error:
+        print(
+            "No reusable live deployment manifest:",
+            type(error).__name__,
+            flush=True,
+        )
+        return None
+
+
+def deployment_inputs_match(
+    observed: dict[str, Any] | None,
+    desired: dict[str, Any],
+) -> bool:
+    """Compare only immutable release inputs; workflow-run IDs are observations."""
+
+    if not isinstance(observed, dict):
+        return False
+    if observed.get("schema") != "szl.hf-deploy-manifest/v1":
+        return False
+    if observed.get("source_repository") != desired.get("source_repository"):
+        return False
+    if observed.get("source_revision") != desired.get("source_revision"):
+        return False
+    observed_destination = observed.get("destination")
+    desired_destination = desired.get("destination")
+    if not isinstance(observed_destination, dict) or not isinstance(
+        desired_destination,
+        dict,
+    ):
+        return False
+    for key in ("repo_id", "repo_type", "mode", "visibility", "lifecycle"):
+        if observed_destination.get(key) != desired_destination.get(key):
+            return False
+    observed_dependencies = observed.get("dependencies")
+    desired_dependencies = desired.get("dependencies")
+    if not isinstance(observed_dependencies, dict) or not isinstance(
+        desired_dependencies,
+        dict,
+    ):
+        return False
+    observed_brain = observed_dependencies.get("second_brain")
+    desired_brain = desired_dependencies.get("second_brain")
+    if not isinstance(observed_brain, dict) or not isinstance(desired_brain, dict):
+        return False
+    immutable_brain_fields = (
+        "source_repository",
+        "source_revision",
+        "public_chunk_count",
+        "corpus_sha256",
+        "frontier_candidate_count",
+        "frontier_source_count",
+        "frontier_candidate_set_sha256",
+        "frontier_state_sha256",
+        "frontier_candidates_sha256",
+        "formula_counts",
+        "quant_domain_count",
+        "lambda_state",
+        "candidate_state",
+        "authority_state",
+        "content_access",
+        "training_authority",
+        "promotion_authority",
+        "execution_authority",
+        "merge_authority",
+    )
+    return all(
+        observed_brain.get(key) == desired_brain.get(key)
+        for key in immutable_brain_fields
+    )
+'''
+          if "def live_deploy_manifest()" not in text:
+              if text.count(function_marker) != 1:
+                  raise SystemExit("wait_running insertion marker is not unique")
+              text = text.replace(function_marker, functions + function_marker, 1)
+
+          operations_marker = "\n    operations = [\n"
+          noop = '''
+    observed_manifest = live_deploy_manifest()
+    if deployment_inputs_match(observed_manifest, deploy_manifest):
+        info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
+        current_sha = str(getattr(info, "sha", "") or "")
+        observed_run_id = str(observed_manifest.get("workflow_run_id") or "")
+        if len(current_sha) != 40:
+            raise RuntimeError("reusable creator-profile revision is invalid")
+        if not observed_run_id.isdigit():
+            raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
+        print(
+            "NOOP: exact Anatomy, Brain, frontier, formula, and quant inputs are "
+            f"already deployed at {current_sha}; verifying and preserving revision.",
+            flush=True,
+        )
+        wait_running(api, current_sha)
+        verify_live(
+            source_revision,
+            current_sha,
+            brain_revision,
+            observed_run_id,
+            candidate_set_sha256,
+            frontier_candidate_count,
+        )
+        return
+'''
+          if "NOOP: exact Anatomy, Brain, frontier" not in text:
+              if text.count(operations_marker) != 1:
+                  raise SystemExit("operations insertion marker is not unique")
+              text = text.replace(operations_marker, "\n" + noop + operations_marker, 1)
+          path.write_text(text, encoding="utf-8", newline="\n")
+          PY
+
+          cat > tests/test_publisher_noop.py <<'PY'
+          from pathlib import Path
+          import unittest
+
+
+          PUBLISHER = Path("scripts/sync_hf_creator_profile.py")
+
+
+          class PublisherNoopContractTest(unittest.TestCase):
+              @classmethod
+              def setUpClass(cls) -> None:
+                  cls.source = PUBLISHER.read_text(encoding="utf-8")
+
+              def test_noop_comparison_is_exact_and_source_owned(self) -> None:
+                  for contract in (
+                      "def live_deploy_manifest()",
+                      "def deployment_inputs_match(",
+                      'observed.get("source_revision") != desired.get("source_revision")',
+                      'observed_destination.get(key) != desired_destination.get(key)',
+                      'observed_brain.get(key) == desired_brain.get(key)',
+                      '"frontier_candidate_set_sha256"',
+                      '"formula_counts"',
+                      '"quant_domain_count"',
+                      '"training_authority"',
+                      '"execution_authority"',
+                  ):
+                      self.assertIn(contract, self.source)
+
+              def test_noop_preserves_revision_and_reverifies_live(self) -> None:
+                  for contract in (
+                      "if deployment_inputs_match(observed_manifest, deploy_manifest):",
+                      'current_sha = str(getattr(info, "sha", "") or "")',
+                      "wait_running(api, current_sha)",
+                      "verify_live(",
+                      "observed_run_id",
+                      "return",
+                  ):
+                      self.assertIn(contract, self.source)
+                  noop_index = self.source.index(
+                      "if deployment_inputs_match(observed_manifest, deploy_manifest):"
+                  )
+                  commit_index = self.source.index("api.create_commit(")
+                  self.assertLess(noop_index, commit_index)
+
+              def test_workflow_run_id_is_not_an_immutable_input(self) -> None:
+                  function = self.source.split(
+                      "def deployment_inputs_match(",
+                      1,
+                  )[1].split("def wait_running", 1)[0]
+                  self.assertNotIn('observed.get("workflow_run_id")', function)
+                  self.assertNotIn('desired.get("workflow_run_id")', function)
+
+
+          if __name__ == "__main__":
+              unittest.main(verbosity=2)
+          PY
+
+          python -m py_compile scripts/sync_hf_creator_profile.py
+          python scripts/materialize_second_brain.py --output .runtime/second-brain
+          python -m unittest discover -s tests -v
+          node --check neural-quant-v7.js
+          git diff --check
+
+      - name: Commit durable no-op publisher behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          git add scripts/sync_hf_creator_profile.py tests/test_publisher_noop.py
+          git diff --cached --quiet && { echo "no publisher changes"; exit 1; }
+          git commit -s -m "perf(anatomy): preserve exact deployed revisions on no-op sync"
+          git push origin HEAD:feat/neural-quant-anatomy-v7-20260904
