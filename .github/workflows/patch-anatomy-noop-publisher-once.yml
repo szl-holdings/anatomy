@@ -39,192 +39,36 @@ jobs:
 
       - name: Add exact no-op deployment convergence
         shell: bash
+        env:
+          FUNCTIONS_B64: CmRlZiBsaXZlX2RlcGxveV9tYW5pZmVzdCgpIC0+IGRpY3Rbc3RyLCBBbnldIHwgTm9uZToKICAgICIiIlJlYWQgdGhlIHB1YmxpYyBkZXBsb3ltZW50IHJlY29yZCB3aXRob3V0IHRyZWF0aW5nIGFic2VuY2UgYXMgc3VjY2Vzcy4iIiIKCiAgICB1cmwgPSAoCiAgICAgICAgImh0dHBzOi8vaHVnZ2luZ2ZhY2UuY28vc3BhY2VzLyIKICAgICAgICArIFNQQUNFX0lECiAgICAgICAgKyAiL3Jlc29sdmUvbWFpbi9oZi1kZXBsb3ktbWFuaWZlc3QuanNvbj9kb3dubG9hZD10cnVlIgogICAgKQogICAgdHJ5OgogICAgICAgIHJldHVybiBnZXRfanNvbih1cmwpCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGVycm9yOgogICAgICAgIHByaW50KAogICAgICAgICAgICAiTm8gcmV1c2FibGUgbGl2ZSBkZXBsb3ltZW50IG1hbmlmZXN0OiIsCiAgICAgICAgICAgIHR5cGUoZXJyb3IpLl9fbmFtZV9fLAogICAgICAgICAgICBmbHVzaD1UcnVlLAogICAgICAgICkKICAgICAgICByZXR1cm4gTm9uZQoKCmRlZiBkZXBsb3ltZW50X2lucHV0c19tYXRjaCgKICAgIG9ic2VydmVkOiBkaWN0W3N0ciwgQW55XSB8IE5vbmUsCiAgICBkZXNpcmVkOiBkaWN0W3N0ciwgQW55XSwKKSAtPiBib29sOgogICAgIiIiQ29tcGFyZSBvbmx5IGltbXV0YWJsZSByZWxlYXNlIGlucHV0czsgd29ya2Zsb3ctcnVuIElEcyBhcmUgb2JzZXJ2YXRpb25zLiIiIgoKICAgIGlmIG5vdCBpc2luc3RhbmNlKG9ic2VydmVkLCBkaWN0KToKICAgICAgICByZXR1cm4gRmFsc2UKICAgIGlmIG9ic2VydmVkLmdldCgic2NoZW1hIikgIT0gInN6bC5oZi1kZXBsb3ktbWFuaWZlc3QvdjEiOgogICAgICAgIHJldHVybiBGYWxzZQogICAgaWYgb2JzZXJ2ZWQuZ2V0KCJzb3VyY2VfcmVwb3NpdG9yeSIpICE9IGRlc2lyZWQuZ2V0KCJzb3VyY2VfcmVwb3NpdG9yeSIpOgogICAgICAgIHJldHVybiBGYWxzZQogICAgaWYgb2JzZXJ2ZWQuZ2V0KCJzb3VyY2VfcmV2aXNpb24iKSAhPSBkZXNpcmVkLmdldCgic291cmNlX3JldmlzaW9uIik6CiAgICAgICAgcmV0dXJuIEZhbHNlCiAgICBvYnNlcnZlZF9kZXN0aW5hdGlvbiA9IG9ic2VydmVkLmdldCgiZGVzdGluYXRpb24iKQogICAgZGVzaXJlZF9kZXN0aW5hdGlvbiA9IGRlc2lyZWQuZ2V0KCJkZXN0aW5hdGlvbiIpCiAgICBpZiBub3QgaXNpbnN0YW5jZShvYnNlcnZlZF9kZXN0aW5hdGlvbiwgZGljdCkgb3Igbm90IGlzaW5zdGFuY2UoCiAgICAgICAgZGVzaXJlZF9kZXN0aW5hdGlvbiwKICAgICAgICBkaWN0LAogICAgKToKICAgICAgICByZXR1cm4gRmFsc2UKICAgIGZvciBrZXkgaW4gKCJyZXBvX2lkIiwgInJlcG9fdHlwZSIsICJtb2RlIiwgInZpc2liaWxpdHkiLCAibGlmZWN5Y2xlIik6CiAgICAgICAgaWYgb2JzZXJ2ZWRfZGVzdGluYXRpb24uZ2V0KGtleSkgIT0gZGVzaXJlZF9kZXN0aW5hdGlvbi5nZXQoa2V5KToKICAgICAgICAgICAgcmV0dXJuIEZhbHNlCiAgICBvYnNlcnZlZF9kZXBlbmRlbmNpZXMgPSBvYnNlcnZlZC5nZXQoImRlcGVuZGVuY2llcyIpCiAgICBkZXNpcmVkX2RlcGVuZGVuY2llcyA9IGRlc2lyZWQuZ2V0KCJkZXBlbmRlbmNpZXMiKQogICAgaWYgbm90IGlzaW5zdGFuY2Uob2JzZXJ2ZWRfZGVwZW5kZW5jaWVzLCBkaWN0KSBvciBub3QgaXNpbnN0YW5jZSgKICAgICAgICBkZXNpcmVkX2RlcGVuZGVuY2llcywKICAgICAgICBkaWN0LAogICAgKToKICAgICAgICByZXR1cm4gRmFsc2UKICAgIG9ic2VydmVkX2JyYWluID0gb2JzZXJ2ZWRfZGVwZW5kZW5jaWVzLmdldCgic2Vjb25kX2JyYWluIikKICAgIGRlc2lyZWRfYnJhaW4gPSBkZXNpcmVkX2RlcGVuZGVuY2llcy5nZXQoInNlY29uZF9icmFpbiIpCiAgICBpZiBub3QgaXNpbnN0YW5jZShvYnNlcnZlZF9icmFpbiwgZGljdCkgb3Igbm90IGlzaW5zdGFuY2UoZGVzaXJlZF9icmFpbiwgZGljdCk6CiAgICAgICAgcmV0dXJuIEZhbHNlCiAgICBpbW11dGFibGVfYnJhaW5fZmllbGRzID0gKAogICAgICAgICJzb3VyY2VfcmVwb3NpdG9yeSIsCiAgICAgICAgInNvdXJjZV9yZXZpc2lvbiIsCiAgICAgICAgInB1YmxpY19jaHVua19jb3VudCIsCiAgICAgICAgImNvcnB1c19zaGEyNTYiLAogICAgICAgICJmcm9udGllcl9jYW5kaWRhdGVfY291bnQiLAogICAgICAgICJmcm9udGllcl9zb3VyY2VfY291bnQiLAogICAgICAgICJmcm9udGllcl9jYW5kaWRhdGVfc2V0X3NoYTI1NiIsCiAgICAgICAgImZyb250aWVyX3N0YXRlX3NoYTI1NiIsCiAgICAgICAgImZyb250aWVyX2NhbmRpZGF0ZXNfc2hhMjU2IiwKICAgICAgICAiZm9ybXVsYV9jb3VudHMiLAogICAgICAgICJxdWFudF9kb21haW5fY291bnQiLAogICAgICAgICJsYW1iZGFfc3RhdGUiLAogICAgICAgICJjYW5kaWRhdGVfc3RhdGUiLAogICAgICAgICJhdXRob3JpdHlfc3RhdGUiLAogICAgICAgICJjb250ZW50X2FjY2VzcyIsCiAgICAgICAgInRyYWluaW5nX2F1dGhvcml0eSIsCiAgICAgICAgInByb21vdGlvbl9hdXRob3JpdHkiLAogICAgICAgICJleGVjdXRpb25fYXV0aG9yaXR5IiwKICAgICAgICAibWVyZ2VfYXV0aG9yaXR5IiwKICAgICkKICAgIHJldHVybiBhbGwoCiAgICAgICAgb2JzZXJ2ZWRfYnJhaW4uZ2V0KGtleSkgPT0gZGVzaXJlZF9icmFpbi5nZXQoa2V5KQogICAgICAgIGZvciBrZXkgaW4gaW1tdXRhYmxlX2JyYWluX2ZpZWxkcwogICAgKQo=
+          NOOP_B64: CiAgICBvYnNlcnZlZF9tYW5pZmVzdCA9IGxpdmVfZGVwbG95X21hbmlmZXN0KCkKICAgIGlmIGRlcGxveW1lbnRfaW5wdXRzX21hdGNoKG9ic2VydmVkX21hbmlmZXN0LCBkZXBsb3lfbWFuaWZlc3QpOgogICAgICAgIGluZm8gPSBhcGkucmVwb19pbmZvKHJlcG9faWQ9U1BBQ0VfSUQsIHJlcG9fdHlwZT0ic3BhY2UiKQogICAgICAgIGN1cnJlbnRfc2hhID0gc3RyKGdldGF0dHIoaW5mbywgInNoYSIsICIiKSBvciAiIikKICAgICAgICBvYnNlcnZlZF9ydW5faWQgPSBzdHIob2JzZXJ2ZWRfbWFuaWZlc3QuZ2V0KCJ3b3JrZmxvd19ydW5faWQiKSBvciAiIikKICAgICAgICBpZiBsZW4oY3VycmVudF9zaGEpICE9IDQwOgogICAgICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoInJldXNhYmxlIGNyZWF0b3ItcHJvZmlsZSByZXZpc2lvbiBpcyBpbnZhbGlkIikKICAgICAgICBpZiBub3Qgb2JzZXJ2ZWRfcnVuX2lkLmlzZGlnaXQoKToKICAgICAgICAgICAgcmFpc2UgUnVudGltZUVycm9yKCJyZXVzYWJsZSBkZXBsb3ltZW50IG1hbmlmZXN0IGxhY2tzIGEgd29ya2Zsb3cgcnVuIElEIikKICAgICAgICBwcmludCgKICAgICAgICAgICAgIk5PT1A6IGV4YWN0IEFuYXRvbXksIEJyYWluLCBmcm9udGllciwgZm9ybXVsYSwgYW5kIHF1YW50IGlucHV0cyBhcmUgIgogICAgICAgICAgICBmImFscmVhZHkgZGVwbG95ZWQgYXQge2N1cnJlbnRfc2hhfTsgdmVyaWZ5aW5nIGFuZCBwcmVzZXJ2aW5nIHJldmlzaW9uLiIsCiAgICAgICAgICAgIGZsdXNoPVRydWUsCiAgICAgICAgKQogICAgICAgIHdhaXRfcnVubmluZyhhcGksIGN1cnJlbnRfc2hhKQogICAgICAgIHZlcmlmeV9saXZlKAogICAgICAgICAgICBzb3VyY2VfcmV2aXNpb24sCiAgICAgICAgICAgIGN1cnJlbnRfc2hhLAogICAgICAgICAgICBicmFpbl9yZXZpc2lvbiwKICAgICAgICAgICAgb2JzZXJ2ZWRfcnVuX2lkLAogICAgICAgICAgICBjYW5kaWRhdGVfc2V0X3NoYTI1NiwKICAgICAgICAgICAgZnJvbnRpZXJfY2FuZGlkYXRlX2NvdW50LAogICAgICAgICkKICAgICAgICByZXR1cm4K
+          TEST_B64: ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCB1bml0dGVzdAoKClBVQkxJU0hFUiA9IFBhdGgoInNjcmlwdHMvc3luY19oZl9jcmVhdG9yX3Byb2ZpbGUucHkiKQoKCmNsYXNzIFB1Ymxpc2hlck5vb3BDb250cmFjdFRlc3QodW5pdHRlc3QuVGVzdENhc2UpOgogICAgQGNsYXNzbWV0aG9kCiAgICBkZWYgc2V0VXBDbGFzcyhjbHMpIC0+IE5vbmU6CiAgICAgICAgY2xzLnNvdXJjZSA9IFBVQkxJU0hFUi5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKCiAgICBkZWYgdGVzdF9ub29wX2NvbXBhcmlzb25faXNfZXhhY3RfYW5kX3NvdXJjZV9vd25lZChzZWxmKSAtPiBOb25lOgogICAgICAgIGZvciBjb250cmFjdCBpbiAoCiAgICAgICAgICAgICJkZWYgbGl2ZV9kZXBsb3lfbWFuaWZlc3QoKSIsCiAgICAgICAgICAgICJkZWYgZGVwbG95bWVudF9pbnB1dHNfbWF0Y2goIiwKICAgICAgICAgICAgJ29ic2VydmVkLmdldCgic291cmNlX3JldmlzaW9uIikgIT0gZGVzaXJlZC5nZXQoInNvdXJjZV9yZXZpc2lvbiIpJywKICAgICAgICAgICAgJ29ic2VydmVkX2Rlc3RpbmF0aW9uLmdldChrZXkpICE9IGRlc2lyZWRfZGVzdGluYXRpb24uZ2V0KGtleSknLAogICAgICAgICAgICAnb2JzZXJ2ZWRfYnJhaW4uZ2V0KGtleSkgPT0gZGVzaXJlZF9icmFpbi5nZXQoa2V5KScsCiAgICAgICAgICAgICciZnJvbnRpZXJfY2FuZGlkYXRlX3NldF9zaGEyNTYiJywKICAgICAgICAgICAgJyJmb3JtdWxhX2NvdW50cyInLAogICAgICAgICAgICAnInF1YW50X2RvbWFpbl9jb3VudCInLAogICAgICAgICAgICAnInRyYWluaW5nX2F1dGhvcml0eSInLAogICAgICAgICAgICAnImV4ZWN1dGlvbl9hdXRob3JpdHkiJywKICAgICAgICApOgogICAgICAgICAgICBzZWxmLmFzc2VydEluKGNvbnRyYWN0LCBzZWxmLnNvdXJjZSkKCiAgICBkZWYgdGVzdF9ub29wX3ByZXNlcnZlc19yZXZpc2lvbl9hbmRfcmV2ZXJpZmllc19saXZlKHNlbGYpIC0+IE5vbmU6CiAgICAgICAgZm9yIGNvbnRyYWN0IGluICgKICAgICAgICAgICAgImlmIGRlcGxveW1lbnRfaW5wdXRzX21hdGNoKG9ic2VydmVkX21hbmlmZXN0LCBkZXBsb3lfbWFuaWZlc3QpOiIsCiAgICAgICAgICAgICdjdXJyZW50X3NoYSA9IHN0cihnZXRhdHRyKGluZm8sICJzaGEiLCAiIikgb3IgIiIpJywKICAgICAgICAgICAgIndhaXRfcnVubmluZyhhcGksIGN1cnJlbnRfc2hhKSIsCiAgICAgICAgICAgICJ2ZXJpZnlfbGl2ZSgiLAogICAgICAgICAgICAib2JzZXJ2ZWRfcnVuX2lkIiwKICAgICAgICAgICAgInJldHVybiIsCiAgICAgICAgKToKICAgICAgICAgICAgc2VsZi5hc3NlcnRJbihjb250cmFjdCwgc2VsZi5zb3VyY2UpCiAgICAgICAgbm9vcF9pbmRleCA9IHNlbGYuc291cmNlLmluZGV4KAogICAgICAgICAgICAiaWYgZGVwbG95bWVudF9pbnB1dHNfbWF0Y2gob2JzZXJ2ZWRfbWFuaWZlc3QsIGRlcGxveV9tYW5pZmVzdCk6IgogICAgICAgICkKICAgICAgICBjb21taXRfaW5kZXggPSBzZWxmLnNvdXJjZS5pbmRleCgiYXBpLmNyZWF0ZV9jb21taXQoIikKICAgICAgICBzZWxmLmFzc2VydExlc3Mobm9vcF9pbmRleCwgY29tbWl0X2luZGV4KQoKICAgIGRlZiB0ZXN0X3dvcmtmbG93X3J1bl9pZF9pc19ub3RfYW5faW1tdXRhYmxlX2lucHV0KHNlbGYpIC0+IE5vbmU6CiAgICAgICAgZnVuY3Rpb24gPSBzZWxmLnNvdXJjZS5zcGxpdCgKICAgICAgICAgICAgImRlZiBkZXBsb3ltZW50X2lucHV0c19tYXRjaCgiLAogICAgICAgICAgICAxLAogICAgICAgIClbMV0uc3BsaXQoImRlZiB3YWl0X3J1bm5pbmciLCAxKVswXQogICAgICAgIHNlbGYuYXNzZXJ0Tm90SW4oJ29ic2VydmVkLmdldCgid29ya2Zsb3dfcnVuX2lkIiknLCBmdW5jdGlvbikKICAgICAgICBzZWxmLmFzc2VydE5vdEluKCdkZXNpcmVkLmdldCgid29ya2Zsb3dfcnVuX2lkIiknLCBmdW5jdGlvbikKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgdW5pdHRlc3QubWFpbih2ZXJib3NpdHk9MikK
         run: |
           set -euo pipefail
           python - <<'PY'
+          import base64
+          import os
           from pathlib import Path
 
-          path = Path("scripts/sync_hf_creator_profile.py")
-          text = path.read_text(encoding="utf-8")
+          publisher = Path("scripts/sync_hf_creator_profile.py")
+          text = publisher.read_text(encoding="utf-8")
+          functions = base64.b64decode(os.environ["FUNCTIONS_B64"]).decode("utf-8")
+          noop = base64.b64decode(os.environ["NOOP_B64"]).decode("utf-8")
           function_marker = "\ndef wait_running(api: HfApi, target_sha: str, timeout_seconds: int = 900) -> None:\n"
-          functions = '''
-
-def live_deploy_manifest() -> dict[str, Any] | None:
-    """Read the public deployment record without treating absence as success."""
-
-    url = (
-        "https://huggingface.co/spaces/"
-        + SPACE_ID
-        + "/resolve/main/hf-deploy-manifest.json?download=true"
-    )
-    try:
-        return get_json(url)
-    except Exception as error:
-        print(
-            "No reusable live deployment manifest:",
-            type(error).__name__,
-            flush=True,
-        )
-        return None
-
-
-def deployment_inputs_match(
-    observed: dict[str, Any] | None,
-    desired: dict[str, Any],
-) -> bool:
-    """Compare only immutable release inputs; workflow-run IDs are observations."""
-
-    if not isinstance(observed, dict):
-        return False
-    if observed.get("schema") != "szl.hf-deploy-manifest/v1":
-        return False
-    if observed.get("source_repository") != desired.get("source_repository"):
-        return False
-    if observed.get("source_revision") != desired.get("source_revision"):
-        return False
-    observed_destination = observed.get("destination")
-    desired_destination = desired.get("destination")
-    if not isinstance(observed_destination, dict) or not isinstance(
-        desired_destination,
-        dict,
-    ):
-        return False
-    for key in ("repo_id", "repo_type", "mode", "visibility", "lifecycle"):
-        if observed_destination.get(key) != desired_destination.get(key):
-            return False
-    observed_dependencies = observed.get("dependencies")
-    desired_dependencies = desired.get("dependencies")
-    if not isinstance(observed_dependencies, dict) or not isinstance(
-        desired_dependencies,
-        dict,
-    ):
-        return False
-    observed_brain = observed_dependencies.get("second_brain")
-    desired_brain = desired_dependencies.get("second_brain")
-    if not isinstance(observed_brain, dict) or not isinstance(desired_brain, dict):
-        return False
-    immutable_brain_fields = (
-        "source_repository",
-        "source_revision",
-        "public_chunk_count",
-        "corpus_sha256",
-        "frontier_candidate_count",
-        "frontier_source_count",
-        "frontier_candidate_set_sha256",
-        "frontier_state_sha256",
-        "frontier_candidates_sha256",
-        "formula_counts",
-        "quant_domain_count",
-        "lambda_state",
-        "candidate_state",
-        "authority_state",
-        "content_access",
-        "training_authority",
-        "promotion_authority",
-        "execution_authority",
-        "merge_authority",
-    )
-    return all(
-        observed_brain.get(key) == desired_brain.get(key)
-        for key in immutable_brain_fields
-    )
-'''
           if "def live_deploy_manifest()" not in text:
               if text.count(function_marker) != 1:
                   raise SystemExit("wait_running insertion marker is not unique")
               text = text.replace(function_marker, functions + function_marker, 1)
-
           operations_marker = "\n    operations = [\n"
-          noop = '''
-    observed_manifest = live_deploy_manifest()
-    if deployment_inputs_match(observed_manifest, deploy_manifest):
-        info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
-        current_sha = str(getattr(info, "sha", "") or "")
-        observed_run_id = str(observed_manifest.get("workflow_run_id") or "")
-        if len(current_sha) != 40:
-            raise RuntimeError("reusable creator-profile revision is invalid")
-        if not observed_run_id.isdigit():
-            raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
-        print(
-            "NOOP: exact Anatomy, Brain, frontier, formula, and quant inputs are "
-            f"already deployed at {current_sha}; verifying and preserving revision.",
-            flush=True,
-        )
-        wait_running(api, current_sha)
-        verify_live(
-            source_revision,
-            current_sha,
-            brain_revision,
-            observed_run_id,
-            candidate_set_sha256,
-            frontier_candidate_count,
-        )
-        return
-'''
           if "NOOP: exact Anatomy, Brain, frontier" not in text:
               if text.count(operations_marker) != 1:
                   raise SystemExit("operations insertion marker is not unique")
               text = text.replace(operations_marker, "\n" + noop + operations_marker, 1)
-          path.write_text(text, encoding="utf-8", newline="\n")
+          publisher.write_text(text, encoding="utf-8", newline="\n")
+          Path("tests/test_publisher_noop.py").write_bytes(
+              base64.b64decode(os.environ["TEST_B64"])
+          )
           PY
-
-          cat > tests/test_publisher_noop.py <<'PY'
-          from pathlib import Path
-          import unittest
-
-
-          PUBLISHER = Path("scripts/sync_hf_creator_profile.py")
-
-
-          class PublisherNoopContractTest(unittest.TestCase):
-              @classmethod
-              def setUpClass(cls) -> None:
-                  cls.source = PUBLISHER.read_text(encoding="utf-8")
-
-              def test_noop_comparison_is_exact_and_source_owned(self) -> None:
-                  for contract in (
-                      "def live_deploy_manifest()",
-                      "def deployment_inputs_match(",
-                      'observed.get("source_revision") != desired.get("source_revision")',
-                      'observed_destination.get(key) != desired_destination.get(key)',
-                      'observed_brain.get(key) == desired_brain.get(key)',
-                      '"frontier_candidate_set_sha256"',
-                      '"formula_counts"',
-                      '"quant_domain_count"',
-                      '"training_authority"',
-                      '"execution_authority"',
-                  ):
-                      self.assertIn(contract, self.source)
-
-              def test_noop_preserves_revision_and_reverifies_live(self) -> None:
-                  for contract in (
-                      "if deployment_inputs_match(observed_manifest, deploy_manifest):",
-                      'current_sha = str(getattr(info, "sha", "") or "")',
-                      "wait_running(api, current_sha)",
-                      "verify_live(",
-                      "observed_run_id",
-                      "return",
-                  ):
-                      self.assertIn(contract, self.source)
-                  noop_index = self.source.index(
-                      "if deployment_inputs_match(observed_manifest, deploy_manifest):"
-                  )
-                  commit_index = self.source.index("api.create_commit(")
-                  self.assertLess(noop_index, commit_index)
-
-              def test_workflow_run_id_is_not_an_immutable_input(self) -> None:
-                  function = self.source.split(
-                      "def deployment_inputs_match(",
-                      1,
-                  )[1].split("def wait_running", 1)[0]
-                  self.assertNotIn('observed.get("workflow_run_id")', function)
-                  self.assertNotIn('desired.get("workflow_run_id")', function)
-
-
-          if __name__ == "__main__":
-              unittest.main(verbosity=2)
-          PY
-
           python -m py_compile scripts/sync_hf_creator_profile.py
           python scripts/materialize_second_brain.py --output .runtime/second-brain
           python -m unittest discover -s tests -v
