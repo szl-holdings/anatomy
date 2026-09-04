@@ -149,6 +149,86 @@ def ensure_destination(api: HfApi) -> None:
     )
 
 
+def live_deploy_manifest() -> dict[str, Any] | None:
+    """Read the public deployment record without treating absence as success."""
+
+    url = (
+        "https://huggingface.co/spaces/"
+        + SPACE_ID
+        + "/resolve/main/hf-deploy-manifest.json?download=true"
+    )
+    try:
+        return get_json(url)
+    except Exception as error:
+        print(
+            "No reusable live deployment manifest:",
+            type(error).__name__,
+            flush=True,
+        )
+        return None
+
+
+def deployment_inputs_match(
+    observed: dict[str, Any] | None,
+    desired: dict[str, Any],
+) -> bool:
+    """Compare only immutable release inputs; workflow-run IDs are observations."""
+
+    if not isinstance(observed, dict):
+        return False
+    if observed.get("schema") != "szl.hf-deploy-manifest/v1":
+        return False
+    if observed.get("source_repository") != desired.get("source_repository"):
+        return False
+    if observed.get("source_revision") != desired.get("source_revision"):
+        return False
+    observed_destination = observed.get("destination")
+    desired_destination = desired.get("destination")
+    if not isinstance(observed_destination, dict) or not isinstance(
+        desired_destination,
+        dict,
+    ):
+        return False
+    for key in ("repo_id", "repo_type", "mode", "visibility", "lifecycle"):
+        if observed_destination.get(key) != desired_destination.get(key):
+            return False
+    observed_dependencies = observed.get("dependencies")
+    desired_dependencies = desired.get("dependencies")
+    if not isinstance(observed_dependencies, dict) or not isinstance(
+        desired_dependencies,
+        dict,
+    ):
+        return False
+    observed_brain = observed_dependencies.get("second_brain")
+    desired_brain = desired_dependencies.get("second_brain")
+    if not isinstance(observed_brain, dict) or not isinstance(desired_brain, dict):
+        return False
+    immutable_brain_fields = (
+        "source_repository",
+        "source_revision",
+        "public_chunk_count",
+        "corpus_sha256",
+        "frontier_candidate_count",
+        "frontier_source_count",
+        "frontier_candidate_set_sha256",
+        "frontier_state_sha256",
+        "frontier_candidates_sha256",
+        "formula_counts",
+        "quant_domain_count",
+        "lambda_state",
+        "candidate_state",
+        "authority_state",
+        "content_access",
+        "training_authority",
+        "promotion_authority",
+        "execution_authority",
+        "merge_authority",
+    )
+    return all(
+        observed_brain.get(key) == desired_brain.get(key)
+        for key in immutable_brain_fields
+    )
+
 def wait_running(api: HfApi, target_sha: str, timeout_seconds: int = 900) -> None:
     deadline = time.monotonic() + timeout_seconds
     restarted = False
@@ -492,6 +572,32 @@ def main() -> None:
         },
         "workflow_run_id": workflow_run_id,
     }
+
+
+    observed_manifest = live_deploy_manifest()
+    if deployment_inputs_match(observed_manifest, deploy_manifest):
+        info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
+        current_sha = str(getattr(info, "sha", "") or "")
+        observed_run_id = str(observed_manifest.get("workflow_run_id") or "")
+        if len(current_sha) != 40:
+            raise RuntimeError("reusable creator-profile revision is invalid")
+        if not observed_run_id.isdigit():
+            raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
+        print(
+            "NOOP: exact Anatomy, Brain, frontier, formula, and quant inputs are "
+            f"already deployed at {current_sha}; verifying and preserving revision.",
+            flush=True,
+        )
+        wait_running(api, current_sha)
+        verify_live(
+            source_revision,
+            current_sha,
+            brain_revision,
+            observed_run_id,
+            candidate_set_sha256,
+            frontier_candidate_count,
+        )
+        return
 
     operations = [
         CommitOperationAdd(path_in_repo=path, path_or_fileobj=path)
