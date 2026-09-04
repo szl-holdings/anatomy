@@ -1,0 +1,302 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Apply Living Anatomy v7 v2 once
+
+on:
+  push:
+    branches:
+      - feat/living-anatomy-v7-brain-quant-v2-20260904
+    paths:
+      - .github/workflows/apply-living-anatomy-v7-v2-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact clean v2 branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/living-anatomy-v7-brain-quant-v2-20260904
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Recover only the reviewed source files from the abandoned v1 branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            feat/living-anatomy-v7-brain-quant-v1-20260904:refs/remotes/origin/anatomy-v7-v1
+          for path in \
+            frontier_v7_runtime.py \
+            scripts/materialize_frontier_memory.py \
+            brain-v7.css \
+            brain-v7.js \
+            tests/test_frontier_v7_runtime.py
+          do
+            mkdir -p "$(dirname "$path")"
+            git show "origin/anatomy-v7-v1:$path" > "$path"
+          done
+
+      - name: Apply the source-native v7 integration without credential interpolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import ast
+          import re
+          from pathlib import Path
+
+
+          def read(path: str) -> str:
+              return Path(path).read_text(encoding="utf-8")
+
+
+          def write(path: str, value: str) -> None:
+              Path(path).write_text(value, encoding="utf-8", newline="\n")
+
+
+          runtime_path = Path("living_runtime.py")
+          runtime = read(str(runtime_path))
+          marker = "install_frontier_v7_routes(app)"
+          if marker not in runtime:
+              if not re.search(r"\bapp\b", runtime):
+                  raise SystemExit("living_runtime.py exposes no app symbol")
+              block = (
+                  "\n\n# SZL-LIVING-ANATOMY-V7: source-bound Brain and quant observability.\n"
+                  "from frontier_v7_runtime import install_frontier_v7_routes\n\n"
+                  "install_frontier_v7_routes(app)\n"
+              )
+              entry = re.search(r"(?m)^if __name__ == [\"']__main__[\"']:\s*$", runtime)
+              if entry:
+                  runtime = runtime[: entry.start()] + block + "\n" + runtime[entry.start() :]
+              else:
+                  runtime = runtime.rstrip() + block + "\n"
+              write(str(runtime_path), runtime)
+
+          html_path = Path("index.html")
+          html = read(str(html_path))
+          style_tag = '<link rel="stylesheet" href="/brain-v7.css" data-szl-brain-v7="style" />'
+          script_tag = '<script src="/brain-v7.js" defer data-szl-brain-v7="script"></script>'
+          if html.count('data-szl-brain-v7="style"') > 1 or html.count('data-szl-brain-v7="script"') > 1:
+              raise SystemExit("duplicate Brain v7 asset marker in index.html")
+          if 'data-szl-brain-v7="style"' not in html:
+              match = re.search(r"</head\s*>", html, flags=re.IGNORECASE)
+              if not match:
+                  raise SystemExit("index.html has no closing head")
+              html = html[: match.start()] + "  " + style_tag + "\n" + html[match.start() :]
+          if 'data-szl-brain-v7="script"' not in html:
+              matches = list(re.finditer(r"</body\s*>", html, flags=re.IGNORECASE))
+              if not matches:
+                  raise SystemExit("index.html has no closing body")
+              point = matches[-1].start()
+              html = html[:point] + "  " + script_tag + "\n" + html[point:]
+          write(str(html_path), html)
+
+          frontier_path = Path("frontier_v7_runtime.py")
+          frontier = read(str(frontier_path))
+          frontier = frontier.replace(
+              "from fastapi.responses import JSONResponse",
+              "from fastapi.responses import FileResponse, JSONResponse",
+          )
+          asset_marker = "# SZL-BRAIN-V7-ASSET-ROUTES"
+          if asset_marker not in frontier:
+              anchor = "    @router.get(\"/api/anatomy/v1/frontier-health\")\n"
+              if anchor not in frontier:
+                  raise SystemExit("frontier v7 route anchor is missing")
+              asset_routes = '''    # SZL-BRAIN-V7-ASSET-ROUTES\n    @router.get("/brain-v7.css", include_in_schema=False)\n    def brain_v7_css() -> FileResponse:\n        return FileResponse(\n            ROOT / "brain-v7.css",\n            media_type="text/css; charset=utf-8",\n            headers={"Cache-Control": "public, max-age=300"},\n        )\n\n    @router.get("/brain-v7.js", include_in_schema=False)\n    def brain_v7_js() -> FileResponse:\n        return FileResponse(\n            ROOT / "brain-v7.js",\n            media_type="text/javascript; charset=utf-8",\n            headers={"Cache-Control": "public, max-age=300"},\n        )\n\n'''
+              frontier = frontier.replace(anchor, asset_routes + anchor, 1)
+          write(str(frontier_path), frontier)
+
+          publisher_path = Path("scripts/sync_hf_creator_profile.py")
+          publisher = read(str(publisher_path))
+          if "FRONTIER_V7_PUBLISHER_BOUNDARY" not in publisher:
+              tree = ast.parse(publisher)
+              sequences = []
+              for node in tree.body:
+                  if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                      continue
+                  value = node.value
+                  if not isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                      continue
+                  strings = {
+                      child.value
+                      for child in ast.walk(value)
+                      if isinstance(child, ast.Constant) and isinstance(child.value, str)
+                  }
+                  target = None
+                  if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                      target = node.targets[0].id
+                  elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                      target = node.target.id
+                  if target:
+                      sequences.append((node, target, strings))
+              root_match = next(
+                  (entry for entry in sequences if "second_brain_runtime.py" in entry[2]),
+                  None,
+              )
+              if root_match is None:
+                  raise SystemExit("creator publisher root-file sequence was not found")
+              snapshot_match = next(
+                  (entry for entry in sequences if "brain-corpus.public.jsonl" in entry[2]),
+                  None,
+              )
+              root_node, root_name, _ = root_match
+              insertions = [
+                  (
+                      int(root_node.end_lineno),
+                      "\n# FRONTIER_V7_PUBLISHER_BOUNDARY: source-owned runtime and local assets.\n"
+                      + root_name
+                      + " = tuple(dict.fromkeys((*"
+                      + root_name
+                      + ",\n"
+                      + "    \"frontier_v7_runtime.py\",\n"
+                      + "    \"brain-v7.js\",\n"
+                      + "    \"brain-v7.css\",\n"
+                      + ")))\n",
+                  )
+              ]
+              if snapshot_match is not None:
+                  snapshot_node, snapshot_name, _ = snapshot_match
+                  insertions.append(
+                      (
+                          int(snapshot_node.end_lineno),
+                          "\n# Review-gated frontier snapshot. Public routes filter candidate content.\n"
+                          + snapshot_name
+                          + " = tuple(dict.fromkeys((*"
+                          + snapshot_name
+                          + ",\n"
+                          + "    \"frontier-state.v1.json\",\n"
+                          + "    \"frontier-candidates.public.jsonl\",\n"
+                          + "    \"frontier-source.json\",\n"
+                          + ")))\n",
+                      )
+                  )
+              else:
+                  insertions.append(
+                      (
+                          int(root_node.end_lineno),
+                          '''\nFRONTIER_V7_SNAPSHOT_FILES = (\n    "frontier-state.v1.json",\n    "frontier-candidates.public.jsonl",\n    "frontier-source.json",\n)\n''',
+                      )
+                  )
+              lines = publisher.splitlines(keepends=True)
+              for line_number, addition in sorted(insertions, reverse=True):
+                  lines.insert(line_number, addition)
+              publisher = "".join(lines)
+              write(str(publisher_path), publisher)
+
+          workflow_path = Path(".github/workflows/hf-sync.yml")
+          workflow = read(str(workflow_path))
+          workflow_marker = "Materialize review-gated frontier memory"
+          if workflow_marker not in workflow:
+              workflow_lines = workflow.splitlines(keepends=True)
+              command_index = next(
+                  (
+                      index
+                      for index, line in enumerate(workflow_lines)
+                      if "sync_hf_creator_profile.py" in line
+                  ),
+                  None,
+              )
+              if command_index is None:
+                  raise SystemExit("creator-profile publisher command is missing")
+              step_index = None
+              for index in range(command_index, -1, -1):
+                  if re.match(r"^\s{6}- name:\s", workflow_lines[index]):
+                      step_index = index
+                      break
+              if step_index is None:
+                  raise SystemExit("creator-profile publisher step boundary is missing")
+              block = (
+                  "      - name: Materialize review-gated frontier memory\n"
+                  "        run: python scripts/materialize_frontier_memory.py --output .runtime/second-brain\n\n"
+              )
+              workflow_lines.insert(step_index, block)
+              write(str(workflow_path), "".join(workflow_lines))
+
+          docker_path = Path("Dockerfile")
+          docker = read(str(docker_path))
+          if "frontier_v7_runtime.py" not in docker:
+              copy_line = "COPY frontier_v7_runtime.py brain-v7.js brain-v7.css ./\n"
+              match = re.search(r"(?m)^(USER|EXPOSE|CMD|ENTRYPOINT)\b", docker)
+              if match:
+                  docker = docker[: match.start()] + copy_line + docker[match.start() :]
+              else:
+                  docker = docker.rstrip() + "\n" + copy_line
+              write(str(docker_path), docker)
+
+          for filename in ("README.md", "docs/LIVING_ANATOMY_SECOND_BRAIN.md"):
+              text = read(filename)
+              text = text.replace(
+                  "https://huggingface.co/spaces/SZLHOLDINGS/anatomy",
+                  "https://huggingface.co/spaces/betterwithage/anatomy",
+              )
+              text = text.replace("`SZLHOLDINGS/anatomy`", "`betterwithage/anatomy`")
+              write(filename, text)
+
+          readme_path = Path("README.md")
+          readme = read(str(readme_path))
+          marker = "## v7 — YACHAY Brain and formula/quant atlas"
+          if marker not in readme:
+              readme = readme.rstrip() + '''\n\n## v7 — YACHAY Brain and formula/quant atlas\n\nThe **YACHAY Brain v7** control opens a focused, mobile-safe holographic\ninstrument over the existing Living Anatomy canvas. It renders only public\nSecond Brain handles, exact source revisions, SHA-256 digests, formula classes,\nand quant domains. Candidate content remains inside the runtime and is never\nreturned to the browser.\n\nThe source-bound snapshot includes the current `szl-formulas` atlas: 30\nattributed formula records, 21 executable formulas, and nine explicit quant\ndomains. Per-obligation status, corpus-reported status, and locked-proof\nmembership remain separate. The locked-proven set stays exactly eight and the\nF-number-to-executable mapping stays `UNKNOWN_NOT_INFERRED`. Lambda uniqueness\nremains Conjecture 1 and advisory only.\n\nThe continuous loop proposes public-source memory candidates for human review.\nIt does not silently train weights, promote truth, merge code, execute tools,\nmutate providers, or load the private 9,464-node graph.\n\nAdditional machine-readable routes:\n\n- `GET /api/anatomy/v1/frontier-health`\n- `GET /api/anatomy/v1/brain/frontier`\n- `GET /api/anatomy/v1/brain/formulas`\n- `GET /api/anatomy/v1/brain/quant`\n- `GET /api/anatomy/v1/brain/ouroboros`\n'''
+              write(str(readme_path), readme)
+
+          docs_path = Path("docs/LIVING_ANATOMY_SECOND_BRAIN.md")
+          docs = read(str(docs_path))
+          marker = "## v7 frontier-memory extension"
+          if marker not in docs:
+              docs = docs.rstrip() + '''\n\n## v7 frontier-memory extension\n\nAfter the canonical 575-chunk snapshot is materialized,\n`scripts/materialize_frontier_memory.py` fetches the review-gated frontier state\nand candidate JSONL from the same exact `szl-second-brain` revision. It replays\nevery content digest and the complete candidate-set digest, rejects secret-like\nmaterial, and requires zero training, promotion, merge, and execution authority.\nThe public v7 routes return handles and digests only.\n'''
+              write(str(docs_path), docs)
+          PY
+
+      - name: Install exact test dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          -r requirements.txt "pytest==8.3.5"
+
+      - name: Prove source, runtime, UI, and creator publication closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            frontier_v7_runtime.py \
+            scripts/materialize_frontier_memory.py \
+            living_runtime.py \
+            scripts/sync_hf_creator_profile.py \
+            tests/test_frontier_v7_runtime.py
+          node --check brain-v7.js
+          python -m unittest tests.test_frontier_v7_runtime -v
+          python -m pytest -q
+          test "$(grep -Fc 'data-szl-brain-v7=\"style\"' index.html)" -eq 1
+          test "$(grep -Fc 'data-szl-brain-v7=\"script\"' index.html)" -eq 1
+          test "$(grep -Fc 'install_frontier_v7_routes(app)' living_runtime.py)" -eq 1
+          grep -F 'frontier-state.v1.json' scripts/sync_hf_creator_profile.py
+          grep -F 'frontier-candidates.public.jsonl' scripts/sync_hf_creator_profile.py
+          grep -F 'frontier-source.json' scripts/sync_hf_creator_profile.py
+          grep -F 'scripts/materialize_frontier_memory.py' .github/workflows/hf-sync.yml
+          git diff --check
+
+      - name: Remove temporary controller and commit durable v7 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/apply-living-anatomy-v7-v2-once.yml
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          git add --all
+          git diff --cached --quiet && { echo "::error::No Living Anatomy v7 changes were produced"; exit 1; }
+          git commit -s -m "feat(anatomy): wire YACHAY Brain and quant holograph v7"
+          git push origin HEAD:feat/living-anatomy-v7-brain-quant-v2-20260904
