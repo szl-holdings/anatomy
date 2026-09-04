@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Materialize the public Second Brain projection for Living Anatomy.
+"""Materialize the governed public Second Brain projection for Living Anatomy.
 
-The source repository remains authoritative. This operator resolves an exact
-Git commit, downloads the public manifest and JSONL corpus from that immutable
-revision, validates every row digest and the declared chunk count, then writes a
-source receipt beside the snapshot. It never reads or exports the private
-Second Brain graph.
+The source repository remains authoritative. This operator resolves an exact Git
+commit and downloads only the public corpus, its manifest, and the review-gated
+frontier-memory snapshot from that immutable revision. It validates every row and
+source digest, then writes a source receipt beside the snapshot. It never reads or
+exports the private Second Brain graph.
 """
 from __future__ import annotations
 
@@ -26,22 +26,48 @@ from typing import Any
 DEFAULT_REPOSITORY = "szl-holdings/szl-second-brain"
 DEFAULT_REF = "main"
 EXPECTED_PUBLIC_CHUNKS = 575
+MANIFEST_PATH = "data/manifest.json"
+CORPUS_PATH = "data/brain-corpus.public.jsonl"
+FRONTIER_STATE_PATH = "data/frontier-state.v1.json"
+FRONTIER_CANDIDATES_PATH = "data/frontier-candidates.public.jsonl"
 MAX_MANIFEST_BYTES = 256 * 1024
 MAX_CORPUS_BYTES = 4 * 1024 * 1024
-USER_AGENT = "szl-living-anatomy-second-brain-materializer/1.0"
+MAX_FRONTIER_STATE_BYTES = 512 * 1024
+MAX_FRONTIER_CANDIDATES_BYTES = 4 * 1024 * 1024
+USER_AGENT = "szl-living-anatomy-second-brain-materializer/2.0"
+HEX_40 = re.compile(r"^[0-9a-f]{40}$")
+HEX_64 = re.compile(r"^[0-9a-f]{64}$")
+FRONTIER_ID = re.compile(r"^frontier:[0-9a-f]{32}$")
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def canonical_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
 def request_bytes(url: str, *, token: str | None = None, limit: int) -> bytes:
     headers = {
-        "Accept": "application/vnd.github+json, application/json, text/plain;q=0.9, */*;q=0.8",
+        "Accept": (
+            "application/vnd.github+json, application/json, "
+            "text/plain;q=0.9, */*;q=0.8"
+        ),
         "User-Agent": USER_AGENT,
         "X-GitHub-Api-Version": "2022-11-28",
     }
@@ -52,7 +78,9 @@ def request_bytes(url: str, *, token: str | None = None, limit: int) -> bytes:
         with urllib.request.urlopen(request, timeout=45) as response:
             body = response.read(limit + 1)
     except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
-        raise RuntimeError(f"fetch failed for {url}: {type(exc).__name__}: {exc}") from exc
+        raise RuntimeError(
+            f"fetch failed for {url}: {type(exc).__name__}: {exc}"
+        ) from exc
     if len(body) > limit:
         raise RuntimeError(f"response exceeded {limit} bytes: {url}")
     return body
@@ -79,8 +107,12 @@ def resolve_revision(
             raise
         raw = request_bytes(url, token=None, limit=MAX_MANIFEST_BYTES)
     payload = json.loads(raw)
-    revision = str(payload.get("sha") or "").lower() if isinstance(payload, dict) else ""
-    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+    revision = (
+        str(payload.get("sha") or "").lower()
+        if isinstance(payload, dict)
+        else ""
+    )
+    if not HEX_40.fullmatch(revision):
         raise RuntimeError("GitHub did not return an exact source revision")
     return revision
 
@@ -100,7 +132,9 @@ def validate_snapshot(
     rows = 0
     by_source: dict[str, int] = {}
     ids: set[str] = set()
-    for line_number, line in enumerate(corpus_raw.decode("utf-8").splitlines(), start=1):
+    for line_number, line in enumerate(
+        corpus_raw.decode("utf-8").splitlines(), start=1
+    ):
         if not line.strip():
             continue
         row = json.loads(line)
@@ -108,13 +142,17 @@ def validate_snapshot(
             raise ValueError(f"invalid corpus row at line {line_number}")
         node_id = str(row["id"])
         if node_id in ids:
-            raise ValueError(f"duplicate corpus id at line {line_number}: {node_id}")
+            raise ValueError(
+                f"duplicate corpus id at line {line_number}: {node_id}"
+            )
         ids.add(node_id)
         text = str(row.get("text") or "")
         declared = str(row.get("sha256") or "")
         measured = sha256_bytes(text.encode("utf-8"))
         if declared and declared != measured:
-            raise ValueError(f"row digest mismatch at line {line_number}: {node_id}")
+            raise ValueError(
+                f"row digest mismatch at line {line_number}: {node_id}"
+            )
         source = str(row.get("source") or "unknown")
         by_source[source] = by_source.get(source, 0) + 1
         rows += 1
@@ -122,14 +160,18 @@ def validate_snapshot(
     declared_count = int(manifest.get("publicChunkCount") or 0)
     if rows != declared_count or rows != expected_chunks:
         raise ValueError(
-            f"public chunk count mismatch: loaded={rows}, manifest={declared_count}, expected={expected_chunks}"
+            "public chunk count mismatch: "
+            f"loaded={rows}, manifest={declared_count}, expected={expected_chunks}"
         )
     declared_by_source = manifest.get("bySource")
     if isinstance(declared_by_source, dict):
-        normalized = {str(key): int(value) for key, value in declared_by_source.items()}
+        normalized = {
+            str(key): int(value) for key, value in declared_by_source.items()
+        }
         if normalized != by_source:
             raise ValueError(
-                f"source histogram mismatch: loaded={by_source}, manifest={normalized}"
+                "source histogram mismatch: "
+                f"loaded={by_source}, manifest={normalized}"
             )
     return {
         "public_chunk_count": rows,
@@ -138,6 +180,128 @@ def validate_snapshot(
         "corpus_sha256": sha256_bytes(corpus_raw),
         "manifest_projection_sha256": manifest.get("projectionSha256"),
         "secret_scan": "PASS",
+    }
+
+
+def validate_frontier_snapshot(
+    state_raw: bytes,
+    candidates_raw: bytes,
+) -> dict[str, Any]:
+    """Validate the review-only frontier-memory snapshot byte for byte."""
+
+    state = json.loads(state_raw.decode("utf-8"))
+    if not isinstance(state, dict):
+        raise ValueError("frontier state must be a JSON object")
+    expected = {
+        "schema": "szl.second-brain.frontier-state/v1",
+        "state": "REVIEW_REQUIRED",
+        "public_content_access": "HANDLES_ONLY",
+        "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
+        "training_authority": "NONE",
+        "promotion_authority": "NONE",
+        "execution_authority": "NONE",
+        "merge_authority": "NONE",
+        "lambda": "CONJECTURE_1",
+    }
+    for key, wanted in expected.items():
+        if state.get(key) != wanted:
+            raise ValueError(f"frontier state boundary mismatch: {key}")
+    if int(state.get("private_graph_nodes_loaded") or 0) != 0:
+        raise ValueError("frontier snapshot contains private graph nodes")
+    if int(state.get("raw_graph_nodes_admitted_to_gradients") or 0) != 0:
+        raise ValueError("frontier snapshot admitted graph nodes to gradients")
+
+    rows = 0
+    ids: set[str] = set()
+    source_repositories: set[str] = set()
+    source_kinds: dict[str, int] = {}
+    quant_domains: dict[str, int] = {}
+    canonical_lines: list[bytes] = []
+    for line_number, line in enumerate(
+        candidates_raw.decode("utf-8").splitlines(), start=1
+    ):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"frontier candidate at line {line_number} is not an object"
+            )
+        if row.get("schema") != "szl.second-brain.frontier-candidate/v1":
+            raise ValueError(
+                f"frontier candidate schema mismatch at line {line_number}"
+            )
+        node_id = str(row.get("id") or "")
+        if not FRONTIER_ID.fullmatch(node_id) or node_id in ids:
+            raise ValueError(
+                f"invalid or duplicate frontier id at line {line_number}"
+            )
+        ids.add(node_id)
+        source_revision = str(row.get("source_revision") or "")
+        if not HEX_40.fullmatch(source_revision):
+            raise ValueError(
+                f"frontier source revision is not exact at line {line_number}"
+            )
+        if row.get("candidate_state") != "DISCOVERED_REVIEW_REQUIRED":
+            raise ValueError(
+                f"frontier candidate was promoted at line {line_number}"
+            )
+        if row.get("content_access") != "CONTROLLER_ONLY":
+            raise ValueError(
+                f"frontier content boundary drifted at line {line_number}"
+            )
+        content = str(row.get("content") or "")
+        measured = sha256_bytes(content.encode("utf-8"))
+        if measured != row.get("content_sha256") or not HEX_64.fullmatch(measured):
+            raise ValueError(
+                f"frontier content digest mismatch at line {line_number}"
+            )
+        repository = str(row.get("source_repository") or "")
+        source_repositories.add(repository)
+        source_kind = str(row.get("source_kind") or "unknown")
+        source_kinds[source_kind] = source_kinds.get(source_kind, 0) + 1
+        quant_domain = row.get("quant_domain")
+        if quant_domain:
+            domain = str(quant_domain)
+            quant_domains[domain] = quant_domains.get(domain, 0) + 1
+        canonical_lines.append(canonical_bytes(row) + b"\n")
+        rows += 1
+
+    if rows != int(state.get("candidate_count") or -1):
+        raise ValueError(
+            "frontier candidate count mismatch: "
+            f"loaded={rows}, declared={state.get('candidate_count')}"
+        )
+    candidate_set_sha256 = sha256_bytes(b"".join(canonical_lines))
+    if candidate_set_sha256 != state.get("candidate_set_sha256"):
+        raise ValueError("frontier candidate-set digest mismatch")
+    if rows < 70:
+        raise ValueError("frontier snapshot is unexpectedly sparse")
+    if source_kinds.get("formula-authority") != 1:
+        raise ValueError("frontier formula authority is missing")
+    if source_kinds.get("attributed-formula") != 30:
+        raise ValueError("frontier attributed formula count drifted")
+    if source_kinds.get("executable-formula") != 21:
+        raise ValueError("frontier executable formula count drifted")
+    if source_kinds.get("quant-domain") != 9:
+        raise ValueError("frontier quant domain count drifted")
+
+    return {
+        "state": "REVIEW_REQUIRED",
+        "candidate_count": rows,
+        "candidate_set_sha256": candidate_set_sha256,
+        "state_sha256": sha256_bytes(state_raw),
+        "candidate_file_sha256": sha256_bytes(candidates_raw),
+        "source_repositories": sorted(source_repositories),
+        "source_kind_counts": dict(sorted(source_kinds.items())),
+        "quant_domain_counts": dict(sorted(quant_domains.items())),
+        "content_access": "HANDLES_ONLY_PUBLIC_API",
+        "training_authority": "NONE",
+        "promotion_authority": "NONE",
+        "execution_authority": "NONE",
+        "private_graph_nodes_materialized": 0,
+        "raw_graph_nodes_admitted_to_gradients": 0,
+        "lambda_state": "CONJECTURE_1",
     }
 
 
@@ -174,31 +338,58 @@ def materialize(
         f"{immutable_base}/brain-corpus.public.jsonl",
         limit=MAX_CORPUS_BYTES,
     )
-    validation = validate_snapshot(manifest_raw, corpus_raw)
+    frontier_state_raw = request_bytes(
+        f"{immutable_base}/frontier-state.v1.json",
+        limit=MAX_FRONTIER_STATE_BYTES,
+    )
+    frontier_candidates_raw = request_bytes(
+        f"{immutable_base}/frontier-candidates.public.jsonl",
+        limit=MAX_FRONTIER_CANDIDATES_BYTES,
+    )
+    projection = validate_snapshot(manifest_raw, corpus_raw)
+    frontier = validate_frontier_snapshot(
+        frontier_state_raw,
+        frontier_candidates_raw,
+    )
     receipt = {
-        "schema": "szl.second-brain.snapshot/v1",
+        "schema": "szl.second-brain.snapshot/v2",
         "source_repository": repository,
         "source_ref": ref,
         "source_revision": revision,
-        "source_relation": "github-exact-revision-public-projection",
+        "source_relation": "github-exact-revision-governed-public-projection",
         "canonical_dataset": "SZLHOLDINGS/szl-second-brain-inrepo",
-        "manifest_path": "data/manifest.json",
-        "corpus_path": "data/brain-corpus.public.jsonl",
-        "manifest_sha256": validation["manifest_sha256"],
-        "corpus_sha256": validation["corpus_sha256"],
-        "manifest_projection_sha256": validation["manifest_projection_sha256"],
-        "public_chunk_count": validation["public_chunk_count"],
-        "by_source": validation["by_source"],
-        "secret_scan": validation["secret_scan"],
+        "manifest_path": MANIFEST_PATH,
+        "corpus_path": CORPUS_PATH,
+        "manifest_sha256": projection["manifest_sha256"],
+        "corpus_sha256": projection["corpus_sha256"],
+        "manifest_projection_sha256": projection[
+            "manifest_projection_sha256"
+        ],
+        "public_chunk_count": projection["public_chunk_count"],
+        "by_source": projection["by_source"],
+        "secret_scan": projection["secret_scan"],
+        "frontier": {
+            "state_path": FRONTIER_STATE_PATH,
+            "candidates_path": FRONTIER_CANDIDATES_PATH,
+            **frontier,
+        },
         "materialized_at": utc_now(),
         "authority_state": "READ_ONLY",
         "content_access": "HANDLES_ONLY",
         "private_graph_nodes_materialized": 0,
         "raw_graph_nodes_admitted_to_gradients": 0,
+        "training_authority": "NONE",
+        "promotion_authority": "NONE",
+        "execution_authority": "NONE",
         "lambda_state": "CONJECTURE_1",
     }
     atomic_write(output / "manifest.json", manifest_raw)
     atomic_write(output / "brain-corpus.public.jsonl", corpus_raw)
+    atomic_write(output / "frontier-state.v1.json", frontier_state_raw)
+    atomic_write(
+        output / "frontier-candidates.public.jsonl",
+        frontier_candidates_raw,
+    )
     atomic_write(
         output / "source.json",
         (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode("utf-8"),
@@ -216,10 +407,17 @@ def token_from_environment() -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=Path(".runtime/second-brain"))
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path(".runtime/second-brain"),
+    )
     parser.add_argument("--repository", default=DEFAULT_REPOSITORY)
     parser.add_argument("--ref", default=DEFAULT_REF)
-    parser.add_argument("--api-url", default=os.environ.get("GITHUB_API_URL", "https://api.github.com"))
+    parser.add_argument(
+        "--api-url",
+        default=os.environ.get("GITHUB_API_URL", "https://api.github.com"),
+    )
     parser.add_argument("--raw-url", default="https://raw.githubusercontent.com")
     args = parser.parse_args()
     receipt = materialize(
@@ -237,6 +435,12 @@ def main() -> int:
                 "source_revision": receipt["source_revision"],
                 "public_chunk_count": receipt["public_chunk_count"],
                 "corpus_sha256": receipt["corpus_sha256"],
+                "frontier_candidate_count": receipt["frontier"][
+                    "candidate_count"
+                ],
+                "frontier_candidate_set_sha256": receipt["frontier"][
+                    "candidate_set_sha256"
+                ],
                 "output": str(args.output),
             },
             sort_keys=True,
