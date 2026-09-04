@@ -158,15 +158,15 @@ class FrontierAtlas:
             raise ValueError("Second Brain source repository drifted")
         if not HEX_40.fullmatch(str(source.get("source_revision") or "")):
             raise ValueError("Second Brain source revision is not exact")
-    frontier_receipt = source.get("frontier")
-    if not isinstance(frontier_receipt, dict):
-        # Current main emits these fields at the receipt root. Continue to
-        # accept the nested shape so older materializations remain readable.
-        frontier_receipt = {
-            "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
-            "candidate_count": source.get("frontier_candidate_count"),
-        }
-    if not isinstance(frontier_receipt, dict):
+        frontier_receipt = source.get("frontier")
+        if not isinstance(frontier_receipt, dict):
+            # Current main emits these fields at the receipt root. Continue to
+            # accept the nested shape so older materializations remain readable.
+            frontier_receipt = {
+                "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
+                "candidate_count": source.get("frontier_candidate_count"),
+            }
+        if not isinstance(frontier_receipt, dict):
             raise ValueError("Second Brain frontier source receipt is missing")
 
         seen: set[str] = set()
