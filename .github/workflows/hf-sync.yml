@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 */2 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -21,13 +21,18 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       GITHUB_TOKEN: ${{ github.token }}
       HF_HUB_DISABLE_TELEMETRY: "1"
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
       - name: Checkout exact protected-main source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,11 +44,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install pinned Hugging Face client
-        run: python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==1.23.0"
+      - name: Install pinned publisher and test tools
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          "huggingface_hub==1.23.0"
 
-      - name: Compile publisher
-        run: python -m py_compile scripts/sync_hf_creator_profile.py
+      - name: Compile the source-owned runtime and publisher
+        run: |
+          python -m py_compile \
+            server.py \
+            living_runtime.py \
+            second_brain_runtime.py \
+            scripts/materialize_second_brain.py \
+            scripts/sync_hf_creator_profile.py
+          node --check neural-quant-v7.js
 
       - name: Fail closed if Hugging Face credential is absent
         shell: bash
@@ -52,69 +66,11 @@ jobs:
           test -n "${HF_TOKEN:-}" || { echo "::error::HF_TOKEN absent"; exit 2; }
           echo "::add-mask::$HF_TOKEN"
 
-      - name: Materialize exact public Second Brain projection
+      - name: Materialize exact public Second Brain and frontier memory
         run: python scripts/materialize_second_brain.py --output .runtime/second-brain
 
-      - name: Bind source attestation to the creator-profile destination
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
-
-          transformations = {
-              "server.py": {
-                  'SPACE_ID = "SZLHOLDINGS/anatomy"':
-                      'SPACE_ID = "betterwithage/anatomy"',
-                  '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy?expand[]=sha"':
-                      '"https://huggingface.co/api/spaces/betterwithage/anatomy?expand[]=sha"',
-                  '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1"':
-                      '"https://huggingface.co/api/spaces/betterwithage/anatomy/commits/main?limit=1"',
-                  '"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/':
-                      '"https://huggingface.co/spaces/betterwithage/anatomy/commit/',
-                  '"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/':
-                      '"https://huggingface.co/spaces/betterwithage/anatomy/resolve/',
-              },
-              "scripts/sync_hf_creator_profile.py": {
-                  "hf-sync: creator profile source": "hf-sync: source",
-              },
-          }
-          applied = []
-          hashes = {}
-          for filename, replacements in transformations.items():
-              path = Path(filename)
-              source = path.read_text(encoding="utf-8")
-              for old, new in replacements.items():
-                  count = source.count(old)
-                  if count != 1:
-                      raise SystemExit(
-                          f"expected exactly one binding in {filename}: {old!r}; found {count}"
-                      )
-                  source = source.replace(old, new)
-                  applied.append({"path": filename, "from": old, "to": new})
-              path.write_text(source, encoding="utf-8")
-              hashes[filename] = hashlib.sha256(path.read_bytes()).hexdigest()
-
-          receipt = {
-              "schema": "szl.creator-profile-runtime-overlay/v2",
-              "source_repository": os.environ["GITHUB_REPOSITORY"],
-              "source_revision": os.environ["GITHUB_SHA"],
-              "destination": "betterwithage/anatomy",
-              "purpose": "Bind revision, diff, manifest, and commit-title attestation to the creator-profile Space.",
-              "transforms": applied,
-              "sha256_after": hashes,
-          }
-          receipt_path = Path(".runtime/creator-profile-overlay.json")
-          receipt_path.parent.mkdir(parents=True, exist_ok=True)
-          receipt_path.write_text(
-              json.dumps(receipt, indent=2, sort_keys=True) + "\n",
-              encoding="utf-8",
-          )
-          PY
-          python -m py_compile server.py living_runtime.py scripts/sync_hf_creator_profile.py
+      - name: Re-prove the full local Neural Quant v7 contract
+        run: python -m unittest discover -s tests -v
 
       - name: Publish and verify betterwithage/anatomy
         run: python scripts/sync_hf_creator_profile.py

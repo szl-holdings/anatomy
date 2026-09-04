@@ -1,60 +1,137 @@
-# Living Anatomy + YACHAY Second Brain
+# Living Anatomy + YACHAY Second Brain + Neural Quant v7
 
 ## Production contract
 
-`SZLHOLDINGS/anatomy` is a **KEEP / public / running** Hugging Face flagship. GitHub
-`szl-holdings/anatomy` is the runtime source of truth. The Space is a deployment
-mirror, not an independent source tree.
+The public Living Anatomy surface is the creator-profile Hugging Face Space
+`betterwithage/anatomy`, served at `https://betterwithage-anatomy.hf.space`.
+GitHub `szl-holdings/anatomy` is the runtime source of truth. The Space is a
+source-bound deployment mirror, not an independent source tree and not a second
+command plane.
 
 The Docker entry point is `living_runtime.py`. It extends the existing hardened
-`server.py` in-process and preserves every static, evidence, receipt, organ-integrity,
-and security-header route. The extension adds a read-only YACHAY Brain organ:
+`server.py` in-process and preserves every static, evidence, receipt,
+organ-integrity, and security-header route. The extension adds two read-only
+YACHAY memory planes:
+
+1. the exact 575-chunk public Second Brain retrieval projection; and
+2. the review-gated frontier candidate set built by `szl-second-brain` from six
+   fixed public source contracts.
+
+Neural Quant v7 projects those planes into the 3D Anatomy experience together
+with the attributed formula/quant atlas and bounded Ouroboros observations.
+
+## Public interfaces
 
 | Interface | Purpose |
 |---|---|
-| `GET /api/anatomy/v1/living-health` | Combined Anatomy + Brain readiness |
-| `GET /api/anatomy/v1/brain/health` | Snapshot integrity, source SHA, counts, authority |
-| `GET /api/anatomy/v1/brain/manifest` | Machine-readable source and interface contract |
-| `GET/POST /api/anatomy/v1/brain/search` | BM25-like public-handle retrieval |
-| `GET/POST /api/anatomy/v1/brain/context` | Model-safe handles plus evidence pointers |
+| `GET /api/anatomy/v1/living-health` | Combined Anatomy + Brain + Neural Quant readiness |
+| `GET /api/anatomy/v1/brain/health` | Snapshot integrity, source SHA, counts, formula/quant authority |
+| `GET /api/anatomy/v1/brain/manifest` | Machine-readable source, receipt, and interface contract |
+| `GET/POST /api/anatomy/v1/brain/search` | 575-chunk handles-only lexical retrieval |
+| `GET/POST /api/anatomy/v1/brain/context` | Model-safe retrieval handles and evidence pointers |
+| `GET/POST /api/anatomy/v1/brain/frontier` | Review-candidate handles filtered by query, kind, domain, or source |
+| `GET /api/anatomy/v1/brain/formulas` | Attributed and executable formula handles plus proof boundary |
+| `GET /api/anatomy/v1/brain/quant` | Nine-domain quant lattice and evidence handles |
+| `GET /api/anatomy/v1/brain/ouroboros` | Bounded-loop source and receipt-closure observation |
+| `GET /api/anatomy/v1/brain/neural-quant-v7` | Combined source-bound payload for the v7 holographic instrument |
 
-## Source binding
+All interfaces return handles, counts, source revisions, and SHA-256 digests.
+They do not return corpus or candidate content.
 
-`scripts/materialize_second_brain.py` resolves the exact protected-main revision of
-`szl-holdings/szl-second-brain`, downloads only:
+## Exact source binding
+
+`scripts/materialize_second_brain.py` resolves the exact protected-main revision
+of `szl-holdings/szl-second-brain` and downloads only these public files from
+that immutable commit:
 
 - `data/manifest.json`
 - `data/brain-corpus.public.jsonl`
+- `data/frontier-state.v1.json`
+- `data/frontier-candidates.public.jsonl`
 
 It validates:
 
-1. exactly 575 public chunks;
-2. the declared source histogram;
-3. every row's SHA-256;
+1. exactly 575 public retrieval chunks;
+2. the declared retrieval source histogram;
+3. every retrieval-row SHA-256;
 4. `secretScan: PASS`;
-5. unique public node IDs.
+5. unique public retrieval node IDs;
+6. at least 70 content-addressed frontier candidates;
+7. exactly six frontier source receipts;
+8. every frontier ID, source revision, content digest, and candidate-set digest;
+9. 30 attributed formulas, 21 executable formulas, and nine quant domains;
+10. the locked-proven set count remains exactly eight;
+11. the F-number-to-executable mapping remains `UNKNOWN_NOT_INFERRED`;
+12. Lambda remains `CONJECTURE_1_OPEN_ADVISORY_ONLY`;
+13. zero private graph, training, promotion, execution, or merge authority.
 
 The operator writes `.runtime/second-brain/source.json` with the exact Git SHA,
-manifest digest, corpus digest, count, and authority constraints. The HF sync workflow
-bundles that immutable snapshot and records the dependency in
-`hf-deploy-manifest.json`.
+retrieval digests, frontier digests, candidate-set digest, formula/quant counts,
+and authority constraints. The creator-profile publisher bundles that immutable
+snapshot and records the dependency in `hf-deploy-manifest.json`.
+
+## Neural Quant v7 holographic instrument
+
+`neural-quant-v7.js` and `neural-quant-v7.css` add a local, zero-CDN visual
+instrument to the existing Anatomy scene. It is a desktop overlay and mobile
+bottom sheet with:
+
+- a brain-shaped SVG nervous-system map;
+- nine quant-domain nodes;
+- public-memory, frontier, formula, and domain counts;
+- formula authority and locked-eight readback;
+- source-linked formula and quant handles;
+- bounded Ouroboros and Codex-advisory observations;
+- exact source, candidate-set, and view digests;
+- keyboard focus trapping, Escape close, 44-pixel controls, safe areas,
+  reduced-motion, high-contrast, and forced-color behavior.
+
+The UI fetches only the same-origin
+`/api/anatomy/v1/brain/neural-quant-v7` contract. Network payload values are
+rendered with DOM `textContent`; remote HTML is never injected. A source failure
+shows `UNAVAILABLE` and never synthesizes green state.
+
+## Continuous learning and production
+
+The Second Brain discovery workflow runs every two hours. It can create one
+content-addressed review pull request when its fixed public source set changes.
+That is the operational meaning of continuous learning here: public evidence is
+continually re-indexed for governed review. It is not silent model retraining or
+automatic truth promotion.
+
+Living Anatomy republishes from protected main and also performs scheduled
+reconciliation. The publisher verifies the exact creator-profile Space revision,
+Anatomy source revision, Second Brain source revision, frontier candidate-set
+digest, live formula/quant/Ouroboros routes, and runtime-file access block before
+calling the deployment current.
 
 ## Non-negotiable boundary
 
-The public Space returns **handles only**. It does not expose corpus text through the
-API, load the owner's private 9,464-node graph, train weights, execute tools, or hold
-write authority. Lexical ranking is relevance, never correctness. Lambda remains
-Conjecture 1.
+The public Space:
 
-The richer product-side living-brain loop in `szl-holdings/a11oy` remains a separate
-governed execution surface. The public HF Anatomy is its inspectable, read-only
-anatomical instrument—not a duplicate mutation authority.
+- returns handles only;
+- does not expose raw `.runtime` files;
+- does not expose corpus or candidate content through APIs;
+- does not load the owner's private 9,464-node graph;
+- does not train or alter model weights;
+- does not promote frontier candidates;
+- does not execute tools or consequential actions;
+- does not merge pull requests or mutate providers;
+- does not upgrade empirical or conjectural material into proof.
+
+Lexical ranking is relevance, never correctness. The locked-proven formula set
+remains exactly eight. Lambda remains Conjecture 1.
+
+The richer product-side living-brain loop in `szl-holdings/a11oy` remains a
+separate governed execution surface. Living Anatomy is its inspectable,
+read-only anatomical instrument—not a duplicate mutation authority.
 
 ## Reproduce locally
 
 ```bash
 python scripts/materialize_second_brain.py --output .runtime/second-brain
 python -m unittest discover -s tests -v
+node --check neural-quant-v7.js
 python living_runtime.py
 ```
 
@@ -63,21 +140,27 @@ Then inspect:
 ```text
 http://127.0.0.1:7860/api/anatomy/v1/living-health
 http://127.0.0.1:7860/api/anatomy/v1/brain/health
-http://127.0.0.1:7860/api/anatomy/v1/brain/search?q=governed%20receipts&k=6
+http://127.0.0.1:7860/api/anatomy/v1/brain/frontier?q=formula%20quant&k=12
+http://127.0.0.1:7860/api/anatomy/v1/brain/neural-quant-v7?k=12
+```
+
+Direct access to the following internal path must return HTTP 404:
+
+```text
+http://127.0.0.1:7860/.runtime/second-brain/frontier-candidates.public.jsonl
 ```
 
 ## Lifecycle
 
-`.github/workflows/hf-sync.yml` runs on protected-main changes, manual dispatch, and
-a six-hour reconciliation cadence. It:
+`.github/workflows/hf-sync.yml` runs on protected-main changes, manual dispatch,
+and scheduled reconciliation. It:
 
-1. validates the exact Second Brain projection;
+1. validates the exact Second Brain retrieval and frontier snapshots;
 2. refuses a stale GitHub source revision;
-3. makes `SZLHOLDINGS/anatomy` public;
+3. creates or maintains the public creator-profile Space
+   `betterwithage/anatomy`;
 4. restarts paused, sleeping, stopped, or failed runtime states;
-5. avoids a rebuild when both source revisions are already deployed;
-6. verifies the live Anatomy, Brain, version, evidence, source, and manifest contracts.
-
-A separate estate keep policy in `szl-holdings/a11oy` must include
-`SZLHOLDINGS/anatomy`; otherwise the fleet consolidator will correctly treat it as a
-fold. That policy is part of the same coordinated repair.
+5. avoids an unnecessary rebuild when the exact Anatomy, Brain, and frontier
+   revisions are already deployed;
+6. verifies the live Anatomy, Brain, formula, quant, Ouroboros, Neural Quant v7,
+   version, evidence, source, and manifest contracts.

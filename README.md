@@ -1,7 +1,7 @@
 ---
 title: SZL Living Anatomy
 emoji: 🫀
-thumbnail: "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/main/og-card.png"
+thumbnail: "https://huggingface.co/spaces/betterwithage/anatomy/resolve/main/og-card.png"
 colorFrom: blue
 colorTo: gray
 sdk: docker
@@ -87,6 +87,27 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
   whitelist to the exact current protected-main commit rechecked immediately
   before publication; this is a source-bound deployment claim, not a
   whole-repository byte-parity claim.
+
+## v7 — YACHAY Neural Quant brain
+
+The atlas now mounts a source-bound **Neural Quant v7** instrument over the
+existing 3D organism. It observes the exact 575-chunk public Second Brain, the
+review-gated frontier candidate set, 30 attributed formula records, 21 executable
+formula kernels, nine quant domains, and bounded Ouroboros loop metadata.
+
+The v7 interface is read-only and handles-only. It shows source revisions and
+SHA-256 receipts, never raw candidate content. The private graph is not loaded;
+training, promotion, execution, merge, and provider mutation remain `NONE`.
+Locked-proven remains exactly eight, the F-number mapping remains
+`UNKNOWN_NOT_INFERRED`, and Lambda remains Conjecture 1.
+
+Open the floating **Neural Quant v7** control or use
+`/api/anatomy/v1/brain/neural-quant-v7`. The desktop panel becomes a mobile
+bottom sheet with 44-pixel controls, safe-area support, reduced motion, high
+contrast, forced colors, keyboard focus trapping, and Escape close.
+
+Public creator-profile Space:
+[`betterwithage/anatomy`](https://huggingface.co/spaces/betterwithage/anatomy).
 
 ## v6 — alive-proof layer (ratchet 2026-07-21)
 
@@ -361,7 +382,7 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 ---
 
-Declared source base: `szl-holdings/anatomy` (GitHub) → `SZLHOLDINGS/anatomy` (HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
+Declared source base: `szl-holdings/anatomy` (GitHub) → `betterwithage/anatomy` (creator-profile HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
 
 <sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
 
