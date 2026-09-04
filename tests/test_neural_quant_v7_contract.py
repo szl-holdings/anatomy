@@ -98,6 +98,7 @@ class NeuralQuantV7ContractTest(unittest.TestCase):
 
     def test_materializer_replays_formula_quant_and_authority_boundaries(self) -> None:
         for contract in (
+            "EXPECTED_FRONTIER_SOURCES = 7",
             "EXPECTED_ATTRIBUTED_FORMULAS = 30",
             "EXPECTED_EXECUTABLE_FORMULAS = 21",
             "EXPECTED_QUANT_DOMAINS = 9",
@@ -111,6 +112,7 @@ class NeuralQuantV7ContractTest(unittest.TestCase):
             '"private_graph_nodes_materialized": 0',
         ):
             self.assertIn(contract, self.materializer)
+        self.assertIn("EXPECTED_FRONTIER_SOURCES = 7", self.brain)
 
     def test_script_has_no_unbounded_render_or_duplicate_mount(self) -> None:
         self.assertIn('if (document.getElementById(PANEL_ID)) return;', self.script)

@@ -215,7 +215,7 @@ class PublicSecondBrainTest(unittest.TestCase):
             "state": "REVIEW_REQUIRED",
             "candidate_count": len(frontier_rows),
             "candidate_set_sha256": candidate_set_sha256,
-            "source_count": 6,
+            "source_count": 7,
             "sources": [
                 {
                     "source_id": "ouroboros_runtime" if index == 0 else f"source_{index}",
@@ -230,7 +230,7 @@ class PublicSecondBrainTest(unittest.TestCase):
                     "content_sha256": f"{index + 1:x}" * 64,
                     "candidate_count": 1,
                 }
-                for index in range(6)
+                for index in range(7)
             ],
             "source_kind_counts": source_kind_counts,
             "quant_domain_counts": quant_domain_counts,
@@ -295,7 +295,7 @@ class PublicSecondBrainTest(unittest.TestCase):
         self.assertEqual("HANDLES_ONLY", health["content_access"])
         self.assertEqual(0, health["private_graph_nodes_loaded"])
         self.assertEqual(71, health["frontier"]["candidate_count"])
-        self.assertEqual(6, health["frontier"]["source_count"])
+        self.assertEqual(7, health["frontier"]["source_count"])
         self.assertEqual(30, health["formula_atlas"]["attributed_formula_count"])
         self.assertEqual(21, health["formula_atlas"]["executable_formula_count"])
         self.assertEqual(8, health["formula_atlas"]["locked_proven_count"])

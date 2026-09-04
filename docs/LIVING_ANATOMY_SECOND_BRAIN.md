@@ -14,7 +14,7 @@ organ-integrity, and security-header route. The extension adds two read-only
 YACHAY memory planes:
 
 1. the exact 575-chunk public Second Brain retrieval projection; and
-2. the review-gated frontier candidate set built by `szl-second-brain` from six
+2. the review-gated frontier candidate set built by `szl-second-brain` from seven
    fixed public source contracts.
 
 Neural Quant v7 projects those planes into the 3D Anatomy experience together
@@ -57,7 +57,7 @@ It validates:
 4. `secretScan: PASS`;
 5. unique public retrieval node IDs;
 6. at least 70 content-addressed frontier candidates;
-7. exactly six frontier source receipts;
+7. exactly seven frontier source receipts;
 8. every frontier ID, source revision, content digest, and candidate-set digest;
 9. 30 attributed formulas, 21 executable formulas, and nine quant domains;
 10. the locked-proven set count remains exactly eight;
@@ -171,4 +171,7 @@ Holographic v7 is an additive, read-only surface served by `frontier_runtime.py`
 
 The canonical public surface is `betterwithage/anatomy`. Its source-bound snapshot remains 575 public chunks, 30 attributed formulas, 21 executable formulas, and nine quant domains. Identity is `HANDLES_ONLY`; lambda remains `Conjecture 1`; frontier candidates remain review-gated and cannot be promoted by this instrument.
 
-The container starts `frontier_runtime.py`, which imports the existing living runtime and adds the Holographic v7 routes. Publishing includes the runtime and both local assets. No CDN, browser persistence, telemetry, credential material, or cross-origin data authority is introduced.
+The container starts `living_runtime.py`, which mounts the Frontier/Holographic v7
+routes from `frontier_runtime.py` on the existing Anatomy transport. Publishing
+includes both runtimes and their local assets. No CDN, browser persistence,
+telemetry, credential material, or cross-origin data authority is introduced.
