@@ -60,36 +60,40 @@ jobs:
               yachay = yachay.replace(old, new)
           yachay_path.write_text(yachay, encoding="utf-8")
 
-          test_path = Path("tests/test_public_experience_v3.py")
-          test_path.write_text('''from __future__ import annotations
-
-import unittest
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-class PublicExperienceV3Tests(unittest.TestCase):
-    def test_front_door_exposes_mobile_zoom_contract(self) -> None:
-        source = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn('data-szl-public-experience-v3="true"', source)
-        self.assertIn("viewport-fit=cover", source)
-        self.assertNotIn("maximum-scale", source)
-        self.assertIn("#scene{position:absolute", source)
-        self.assertIn("min-block-size:44px", source)
-        self.assertIn("min-inline-size:44px", source)
-
-    def test_second_brain_panel_reflows_under_css_zoom(self) -> None:
-        source = (ROOT / "yachay-second-brain.js").read_text(encoding="utf-8")
-        self.assertIn('html[style*=\\"zoom\\"] #yachay-sb{position:absolute', source)
-        self.assertIn("#yachay-sb button,#yachay-sb input,#yachay-sb a{min-height:44px}", source)
-        self.assertIn('authority: "READ_ONLY"', source)
-        self.assertIn('contentAccess: "HANDLES_ONLY"', source)
-
-
-if __name__ == "__main__":
-    unittest.main()
-''', encoding="utf-8")
+          test_lines = [
+              "from __future__ import annotations",
+              "",
+              "import unittest",
+              "from pathlib import Path",
+              "",
+              "ROOT = Path(__file__).resolve().parents[1]",
+              "",
+              "",
+              "class PublicExperienceV3Tests(unittest.TestCase):",
+              "    def test_front_door_exposes_mobile_zoom_contract(self) -> None:",
+              "        source = (ROOT / 'index.html').read_text(encoding='utf-8')",
+              "        self.assertIn('data-szl-public-experience-v3=\"true\"', source)",
+              "        self.assertIn('viewport-fit=cover', source)",
+              "        self.assertNotIn('maximum-scale', source)",
+              "        self.assertIn('#scene{position:absolute', source)",
+              "        self.assertIn('min-block-size:44px', source)",
+              "        self.assertIn('min-inline-size:44px', source)",
+              "",
+              "    def test_second_brain_panel_reflows_under_css_zoom(self) -> None:",
+              "        source = (ROOT / 'yachay-second-brain.js').read_text(encoding='utf-8')",
+              "        self.assertIn('html[style*=\\\"zoom\\\"] #yachay-sb{position:absolute', source)",
+              "        self.assertIn('#yachay-sb button,#yachay-sb input,#yachay-sb a{min-height:44px}', source)",
+              "        self.assertIn('authority: \"READ_ONLY\"', source)",
+              "        self.assertIn('contentAccess: \"HANDLES_ONLY\"', source)",
+              "",
+              "",
+              "if __name__ == '__main__':",
+              "    unittest.main()",
+          ]
+          Path("tests/test_public_experience_v3.py").write_text(
+              "\n".join(test_lines) + "\n",
+              encoding="utf-8",
+          )
           PY
           node --check yachay-second-brain.js
           python -m unittest tests.test_public_experience_v3 -v
