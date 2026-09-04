@@ -1,0 +1,187 @@
+name: Reconcile Anatomy v7 after final Brain once
+
+on:
+  push:
+    branches:
+      - feat/holographic-v7-brain-quant-v1-20260904
+    paths:
+      - .github/workflows/reconcile-holographic-v7-after-brain-once.yml
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: reconcile-anatomy-v7-after-final-brain
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact source feature
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/holographic-v7-brain-quant-v1-20260904
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Wait for the merged continuous Brain contract
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + 3600 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            code="$(curl --silent --output /tmp/frontier.json --write-out '%{http_code}' \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              'https://api.github.com/repos/szl-holdings/szl-second-brain/contents/data/frontier-state.v1.json?ref=main')"
+            if [ "$code" = 200 ]; then
+              if python - <<'PY'
+          import base64
+          import json
+          payload = json.load(open('/tmp/frontier.json', encoding='utf-8'))
+          state = json.loads(base64.b64decode(payload['content']).decode('utf-8'))
+          assert state['state'] == 'REVIEW_REQUIRED'
+          assert state['source_count'] == 6
+          assert state['candidate_count'] > 0
+          assert state['training_authority'] == 'NONE'
+          assert state['promotion_authority'] == 'NONE'
+          assert state['execution_authority'] == 'NONE'
+          assert state['private_graph_present'] is False
+          assert state['raw_graph_nodes_admitted_to_gradients'] == 0
+          assert len(state['candidate_set_sha256']) == 64
+          PY
+              then
+                exit 0
+              fi
+            fi
+            sleep 30
+          done
+          echo '::error::The final continuous Second Brain contract did not reach main.'
+          exit 3
+
+      - name: Select or create the current-main successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          feature_sha="$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          branch=repair/holographic-v7-brain-quant-v1-20260904
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch --no-tags origin "refs/heads/$branch:refs/remotes/origin/$branch"
+            git switch -c local-anatomy-v7 "origin/$branch"
+            if ! git merge-base --is-ancestor origin/main HEAD; then
+              git merge --no-edit origin/main
+            fi
+          else
+            git switch --detach origin/main
+            git switch -c local-anatomy-v7
+            set +e
+            git merge --no-commit --no-ff -X theirs "$feature_sha"
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ] || [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+              echo '::error::Unresolved Anatomy semantic conflicts:'
+              git diff --name-only --diff-filter=U >&2 || true
+              exit 4
+            fi
+            for path in \
+              .github/workflows/reconcile-holographic-v7-once.yml \
+              .github/workflows/reconcile-holographic-v7-after-brain-once.yml \
+              .github/workflows/materialize-holographic-v7-once.yml; do
+              git rm -f --ignore-unmatch "$path"
+            done
+            git diff --cached --check
+            git commit -s -m "feat(anatomy): reconcile Holographic v7 after final Brain"
+          fi
+          echo "TARGET_REF=$branch" >> "$GITHUB_ENV"
+
+      - name: Rematerialize current Brain and prove all v7 contracts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            -r requirements.txt "pytest==8.3.5" "httpx>=0.27,<1"
+          rm -rf .runtime/second-brain
+          python scripts/materialize_second_brain.py --output .runtime/second-brain
+          for path in \
+            .runtime/second-brain/manifest.json \
+            .runtime/second-brain/brain-corpus.public.jsonl \
+            .runtime/second-brain/frontier-state.v1.json \
+            .runtime/second-brain/frontier-candidates.public.jsonl \
+            .runtime/second-brain/source.json; do
+            test -s "$path"
+          done
+          python -m py_compile frontier_runtime.py scripts/materialize_second_brain.py
+          node --check holographic-v7.js
+          python -m pytest -q tests/test_frontier_runtime.py tests/test_holographic_v7_contract.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path('.runtime/second-brain/frontier-state.v1.json').read_text(encoding='utf-8'))
+          source = json.loads(Path('.runtime/second-brain/source.json').read_text(encoding='utf-8'))
+          assert state['state'] == 'REVIEW_REQUIRED'
+          assert state['source_count'] == 6
+          assert state['candidate_count'] > 0
+          assert state['training_authority'] == 'NONE'
+          assert state['promotion_authority'] == 'NONE'
+          assert state['execution_authority'] == 'NONE'
+          assert state['private_graph_present'] is False
+          assert state['raw_graph_nodes_admitted_to_gradients'] == 0
+          assert source['repository'] == 'szl-holdings/szl-second-brain'
+          assert len(source['revision']) == 40
+          PY
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - name: Push successor and arm protected auto-merge
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "HEAD:$TARGET_REF"
+          url="$(gh pr list --state open --head "$TARGET_REF" --json url --jq '.[0].url // ""')"
+          if [ -z "$url" ]; then
+            url="$(gh pr create \
+              --base main \
+              --head "$TARGET_REF" \
+              --title 'feat(anatomy): reconcile Holographic v7 on final Brain sources' \
+              --body $'## Current-source successor to #61\n\nThis branch starts from current Anatomy main, preserves the reviewed Holographic v7 feature, and rematerializes the final merged continuous Second Brain before qualification. Public access remains handles-only with no private graph, gradients, training, promotion, execution, merge, or provider authority.\n\nSigned-off-by: Stephen Lutar <stephenlutar2@gmail.com>')"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          gh pr merge "$url" --auto --squash
+
+      - name: Close #61 only after successor merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 120); do
+            merged="$(gh pr view "$PR_URL" --json mergedAt --jq '.mergedAt // ""')"
+            if [ -n "$merged" ]; then
+              sha="$(gh pr view "$PR_URL" --json mergeCommit --jq '.mergeCommit.oid')"
+              gh pr close 61 --comment "Superseded by $PR_URL merged as $sha after exact final-Brain rematerialization."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo 'Auto-merge remains armed; no stale PR closure was performed.'
