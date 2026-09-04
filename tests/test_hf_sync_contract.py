@@ -24,6 +24,13 @@ class HfSyncContractTest(unittest.TestCase):
             "organ_integrity.py",
             "living_runtime.py",
             "second_brain_runtime.py",
+            "neural-quant-v7.js",
+            "neural-quant-v7.css",
+            ".runtime/second-brain/manifest.json",
+            ".runtime/second-brain/brain-corpus.public.jsonl",
+            ".runtime/second-brain/frontier-state.v1.json",
+            ".runtime/second-brain/frontier-candidates.public.jsonl",
+            ".runtime/second-brain/source.json",
         ):
             self.assertIn(f'"{path}"', self.publisher, path)
         self.assertIn('"*.html"', self.publisher)
@@ -36,6 +43,7 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertNotIn("paths:", push_trigger)
         self.assertIn("group: anatomy-hf-creator-sync", self.workflow)
         self.assertIn("cancel-in-progress: false", self.workflow)
+        self.assertIn("python scripts/materialize_second_brain.py", self.workflow)
         self.assertIn("python scripts/sync_hf_creator_profile.py", self.workflow)
 
     def test_creator_profile_is_the_only_public_destination(self) -> None:
@@ -104,13 +112,54 @@ class HfSyncContractTest(unittest.TestCase):
         for contract in (
             'LIVE_BASE + "/healthz"',
             'health["transport_state"] == "REACHABLE"',
-            'living["ready"] is True',
-            'living["organs"]["brain"]["chunk_count"] == 575',
+            'living["experience"] == "NEURAL_QUANT_V7"',
+            'living["organs"]["brain"]["chunk_count"] == EXPECTED_PUBLIC_CHUNKS',
             'brain["private_graph_nodes_loaded"] == 0',
+            'brain["raw_graph_nodes_admitted_to_gradients"] == 0',
             'brain["content_access"] == "HANDLES_ONLY"',
-            'all("text" not in handle for handle in search["handles"])',
+            'brain["training_authority"] == "NONE"',
+            'brain["promotion_authority"] == "NONE"',
+            'brain["execution_authority"] == "NONE"',
+            'brain["merge_authority"] == "NONE"',
+            'assert_handles_only(search)',
         ):
             self.assertIn(contract, self.publisher)
+
+    def test_release_verifies_frontier_formula_quant_and_ouroboros(self) -> None:
+        for route in (
+            "/api/anatomy/v1/brain/frontier",
+            "/api/anatomy/v1/brain/formulas",
+            "/api/anatomy/v1/brain/quant",
+            "/api/anatomy/v1/brain/ouroboros",
+            "/api/anatomy/v1/brain/neural-quant-v7",
+        ):
+            self.assertIn(route, self.publisher)
+        for contract in (
+            'frontier["state"] == "REVIEW_REQUIRED"',
+            'frontier["candidate_set_sha256"] == candidate_set_sha256',
+            'formulas["attributed_formula_count"] == EXPECTED_ATTRIBUTED_FORMULAS',
+            'formulas["executable_formula_count"] == EXPECTED_EXECUTABLE_FORMULAS',
+            'formulas["locked_proven_count"] == EXPECTED_LOCKED_PROVEN',
+            'formulas["f_number_mapping"] == "UNKNOWN_NOT_INFERRED"',
+            'formulas["lambda_status"] == "CONJECTURE_1_OPEN_ADVISORY_ONLY"',
+            'quant["quant_domain_count"] == EXPECTED_QUANT_DOMAINS',
+            'ouroboros["loop_contract"]["bounded"] is True',
+            'ouroboros["loop_contract"]["terminating"] is True',
+            'ouroboros["loop_contract"]["receipt_closed"] is True',
+            'ouroboros["loop_contract"]["recommendations_executed"] is False',
+            'neural["version"] == "7.0.0"',
+        ):
+            self.assertIn(contract, self.publisher)
+
+    def test_release_blocks_raw_runtime_files(self) -> None:
+        self.assertIn(
+            'LIVE_BASE + "/.runtime/second-brain/frontier-candidates.public.jsonl"',
+            self.publisher,
+        )
+        self.assertIn(
+            ') == 404',
+            self.publisher,
+        )
 
     def test_release_verifies_public_version_and_evidence(self) -> None:
         for contract in (
@@ -119,8 +168,11 @@ class HfSyncContractTest(unittest.TestCase):
             'version["gitSha"] == source_revision',
             'version["deploymentRevision"] == target_sha',
             'version["secondBrainSourceRevision"] == brain_revision',
+            'version["secondBrainCandidateSetSha256"] == candidate_set_sha256',
+            'version["experienceVersion"] == "NEURAL_QUANT_V7"',
             'evidence["gitSha"] == source_revision',
             'evidence["source"]["deployment"]["hf_revision"] == target_sha',
+            'evidence["dependencies"]["secondBrain"]["candidateSetSha256"]',
         ):
             self.assertIn(contract, self.publisher)
 
@@ -128,8 +180,17 @@ class HfSyncContractTest(unittest.TestCase):
         for contract in (
             '"authority_state": "READ_ONLY"',
             '"content_access": "HANDLES_ONLY"',
-            'brain_source.get("private_graph_nodes_materialized") != 0',
-            'int(brain_source.get("public_chunk_count") or 0) != 575',
+            '"candidate_state": "DISCOVERED_REVIEW_REQUIRED"',
+            'brain_source.get("private_graph_nodes_materialized")',
+            'brain_source.get("raw_graph_nodes_admitted_to_gradients")',
+            'brain_source.get("training_authority")',
+            'brain_source.get("promotion_authority")',
+            'brain_source.get("execution_authority")',
+            'brain_source.get("merge_authority")',
+            'brain_source.get("public_chunk_count")',
+            'brain_source.get("frontier_candidate_count")',
+            'brain_source.get("frontier_source_count")',
+            'brain_source.get("quant_domain_count")',
         ):
             self.assertIn(contract, self.publisher)
 
