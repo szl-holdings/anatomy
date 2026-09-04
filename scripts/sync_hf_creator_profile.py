@@ -93,6 +93,7 @@ def runtime_files() -> list[str]:
         "README.md",
         "Dockerfile",
         ".dockerignore",
+        "requirements.txt",
         "server.py",
         "organ_integrity.py",
         "living_runtime.py",
@@ -115,6 +116,7 @@ def runtime_files() -> list[str]:
     required = {
         "README.md",
         "Dockerfile",
+        "requirements.txt",
         "server.py",
         "living_runtime.py",
         "frontier_runtime.py",

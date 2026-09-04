@@ -47,7 +47,7 @@ jobs:
       - name: Install pinned publisher and test tools
         run: >-
           python -m pip install --disable-pip-version-check --no-cache-dir
-          "huggingface_hub==1.23.0"
+          -r requirements.txt "huggingface_hub==1.23.0"
 
       - name: Compile the source-owned runtime and publisher
         run: |

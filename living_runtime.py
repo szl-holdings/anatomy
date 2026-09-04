@@ -21,7 +21,23 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 import server as anatomy_server
+from frontier_runtime import (
+    ATLAS as FRONTIER_ATLAS,
+    FORMULA_KINDS,
+    holographic_v7_payload,
+)
 from second_brain_runtime import PublicSecondBrain
+
+try:
+    from fastapi import FastAPI
+except ImportError:  # pragma: no cover - FastAPI is a declared runtime dep
+    FastAPI = None  # type: ignore[misc,assignment]
+
+app = (
+    FastAPI(title="living-anatomy-space", version="1.3.0")
+    if FastAPI is not None
+    else None
+)
 
 BRAIN = PublicSecondBrain()
 
@@ -29,9 +45,12 @@ BRAIN = PublicSecondBrain()
 # Anatomy receipt before the first request can populate any receipt cache.
 _EXTRA_ARTIFACTS = (
     "living_runtime.py",
+    "frontier_runtime.py",
     "second_brain_runtime.py",
     "neural-quant-v7.js",
     "neural-quant-v7.css",
+    "holographic-v7.js",
+    "holographic-v7.css",
     ".runtime/second-brain/manifest.json",
     ".runtime/second-brain/brain-corpus.public.jsonl",
     ".runtime/second-brain/frontier-state.v1.json",
@@ -70,6 +89,11 @@ def _living_manifest() -> dict[str, Any]:
             "brain_quant": "/api/anatomy/v1/brain/quant",
             "brain_ouroboros": "/api/anatomy/v1/brain/ouroboros",
             "neural_quant_v7": "/api/anatomy/v1/brain/neural-quant-v7",
+            "frontier_status": "/api/anatomy/v1/frontier/status",
+            "frontier_handles": "/api/anatomy/v1/frontier/handles",
+            "frontier_formulas": "/api/anatomy/v1/frontier/formulas",
+            "frontier_ouroboros": "/api/anatomy/v1/frontier/ouroboros",
+            "holographic_v7": "/api/anatomy/v1/holographic-v7",
         }
     )
     payload["organs"] = {
@@ -292,6 +316,20 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             extra_headers=self._brain_headers(evidence),
         )
 
+    def _send_frontier_payload(self, payload: dict[str, Any]) -> None:
+        ready = bool(payload.get("ready"))
+        evidence = "COMPUTED" if ready else "UNAVAILABLE"
+        self._send_json(
+            payload,
+            status=200 if ready else 503,
+            evidence_state=evidence,
+            extra_headers={
+                "X-SZL-Surface": "LIVING_ANATOMY_V7",
+                "X-SZL-Authority": "READ_ONLY",
+                "X-SZL-Content-Access": "HANDLES_ONLY",
+            },
+        )
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlsplit(self.path)
         path = parsed.path
@@ -306,6 +344,43 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
                 evidence_state="UNAVAILABLE",
                 extra_headers=self._brain_headers("UNAVAILABLE"),
             )
+            return
+        if path == "/api/anatomy/v1/frontier/status":
+            self._send_frontier_payload(FRONTIER_ATLAS.status())
+            return
+        if path == "/api/anatomy/v1/frontier/handles":
+            phrase = str((query.get("q") or [""])[0])[:2000]
+            k = max(1, min(self._bounded_k((query.get("k") or [24])[0]), 48))
+            self._send_frontier_payload(FRONTIER_ATLAS.search(phrase, k=k))
+            return
+        if path == "/api/anatomy/v1/frontier/formulas":
+            phrase = str((query.get("q") or [""])[0])[:2000]
+            domain = str((query.get("domain") or [""])[0])[:80] or None
+            k = max(1, min(self._bounded_k((query.get("k") or [48])[0]), 48))
+            self._send_frontier_payload(
+                FRONTIER_ATLAS.search(
+                    phrase,
+                    k=k,
+                    allowed_kinds=FORMULA_KINDS,
+                    quant_domain=domain,
+                )
+            )
+            return
+        if path == "/api/anatomy/v1/frontier/ouroboros":
+            phrase = str(
+                (query.get("q") or ["bounded loop convergence receipt"])[0]
+            )[:2000]
+            k = max(1, min(self._bounded_k((query.get("k") or [24])[0]), 48))
+            self._send_frontier_payload(
+                FRONTIER_ATLAS.search(
+                    phrase,
+                    k=k,
+                    source_repository="szl-holdings/szl-ouroboros",
+                )
+            )
+            return
+        if path == "/api/anatomy/v1/holographic-v7":
+            self._send_frontier_payload(holographic_v7_payload())
             return
         if path == "/api/anatomy/v1/living-health":
             if query.get("refresh") == ["1"]:

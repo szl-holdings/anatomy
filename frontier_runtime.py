@@ -19,10 +19,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from fastapi import Query
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
-
-from living_runtime import app
 
 ROOT = Path(__file__).resolve().parent
 SNAPSHOT = ROOT / ".runtime" / "second-brain"
@@ -39,6 +37,13 @@ FORMULA_KINDS = {
     "executable-formula",
     "quant-domain",
 }
+
+app = FastAPI(
+    title="SZL Living Anatomy Holographic v7 contract",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -158,15 +163,15 @@ class FrontierAtlas:
             raise ValueError("Second Brain source repository drifted")
         if not HEX_40.fullmatch(str(source.get("source_revision") or "")):
             raise ValueError("Second Brain source revision is not exact")
-    frontier_receipt = source.get("frontier")
-    if not isinstance(frontier_receipt, dict):
-        # Current main emits these fields at the receipt root. Continue to
-        # accept the nested shape so older materializations remain readable.
-        frontier_receipt = {
-            "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
-            "candidate_count": source.get("frontier_candidate_count"),
-        }
-    if not isinstance(frontier_receipt, dict):
+        frontier_receipt = source.get("frontier")
+        if not isinstance(frontier_receipt, dict):
+            # Current main emits these fields at the receipt root. Continue to
+            # accept the nested shape so older materializations remain readable.
+            frontier_receipt = {
+                "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
+                "candidate_count": source.get("frontier_candidate_count"),
+            }
+        if not isinstance(frontier_receipt, dict):
             raise ValueError("Second Brain frontier source receipt is missing")
 
         seen: set[str] = set()
@@ -386,10 +391,61 @@ class FrontierAtlas:
 ATLAS = FrontierAtlas()
 
 
+def _atlas_response(payload: dict[str, Any]) -> JSONResponse:
+    return _response(payload, status_code=200 if payload.get("ready") else 503)
+
+
+def holographic_v7_payload(
+    status: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    status = ATLAS.status() if status is None else status
+    return {
+        "schema": "szl.anatomy.holographic-v7/v1",
+        "state": (
+            "SOURCE_BOUND_READ_ONLY"
+            if status.get("ready")
+            else "UNAVAILABLE"
+        ),
+        "ready": bool(status.get("ready")),
+        "surface": "LIVING_ANATOMY_HOLOGRAPHIC_V7",
+        "organs": [
+            {
+                "id": "yachay-second-brain",
+                "role": "handles_and_candidate_receipts",
+                "authority": "READ_ONLY",
+            },
+            {
+                "id": "formula-quant-atlas",
+                "role": "constraints_proof_status_and_quant_domains",
+                "authority": "REFERENCE_AND_EVALUATION",
+            },
+            {
+                "id": "ouroboros-loop",
+                "role": "bounded_observe_orient_propose_verify_hold",
+                "authority": "REVIEW_ONLY",
+            },
+            {
+                "id": "codex-review",
+                "role": "structured_recommendation_proposals",
+                "authority": "NO_EXECUTION",
+            },
+        ],
+        "frontier": status,
+        "claims": {
+            "content_exposed": False,
+            "weights_trained": False,
+            "claim_promoted": False,
+            "private_graph_used": False,
+            "execution_performed": False,
+            "human_review_required": True,
+        },
+    }
+
+
 @app.get("/api/anatomy/v1/frontier/status")
 def frontier_status_route() -> JSONResponse:
     payload = ATLAS.status()
-    return _response(payload, status_code=200 if payload.get("ready") else 503)
+    return _atlas_response(payload)
 
 
 @app.get("/api/anatomy/v1/frontier/handles")
@@ -397,7 +453,7 @@ def frontier_handles_route(
     q: str = Query("", alias="q", max_length=2000),
     k: int = Query(24, ge=1, le=48),
 ) -> JSONResponse:
-    return _response(ATLAS.search(q, k=k))
+    return _atlas_response(ATLAS.search(q, k=k))
 
 
 @app.get("/api/anatomy/v1/frontier/formulas")
@@ -406,7 +462,7 @@ def frontier_formulas_route(
     domain: str | None = Query(None, max_length=80),
     k: int = Query(48, ge=1, le=48),
 ) -> JSONResponse:
-    return _response(
+    return _atlas_response(
         ATLAS.search(
             q,
             k=k,
@@ -421,11 +477,11 @@ def frontier_ouroboros_route(
     q: str = Query("bounded loop convergence receipt", max_length=2000),
     k: int = Query(24, ge=1, le=48),
 ) -> JSONResponse:
-    return _response(
+    return _atlas_response(
         ATLAS.search(
             q,
             k=k,
-            source_repository="szl-holdings/ouroboros",
+            source_repository="szl-holdings/szl-ouroboros",
         )
     )
 
@@ -434,47 +490,7 @@ def frontier_ouroboros_route(
 def holographic_v7_route() -> JSONResponse:
     status = ATLAS.status()
     return _response(
-        {
-            "schema": "szl.anatomy.holographic-v7/v1",
-            "state": (
-                "SOURCE_BOUND_READ_ONLY"
-                if status.get("ready")
-                else "UNAVAILABLE"
-            ),
-            "ready": bool(status.get("ready")),
-            "surface": "LIVING_ANATOMY_HOLOGRAPHIC_V7",
-            "organs": [
-                {
-                    "id": "yachay-second-brain",
-                    "role": "handles_and_candidate_receipts",
-                    "authority": "READ_ONLY",
-                },
-                {
-                    "id": "formula-quant-atlas",
-                    "role": "constraints_proof_status_and_quant_domains",
-                    "authority": "REFERENCE_AND_EVALUATION",
-                },
-                {
-                    "id": "ouroboros-loop",
-                    "role": "bounded_observe_orient_propose_verify_hold",
-                    "authority": "REVIEW_ONLY",
-                },
-                {
-                    "id": "codex-review",
-                    "role": "structured_recommendation_proposals",
-                    "authority": "NO_EXECUTION",
-                },
-            ],
-            "frontier": status,
-            "claims": {
-                "content_exposed": False,
-                "weights_trained": False,
-                "claim_promoted": False,
-                "private_graph_used": False,
-                "execution_performed": False,
-                "human_review_required": True,
-            },
-        },
+        holographic_v7_payload(status),
         status_code=200 if status.get("ready") else 503,
     )
 
