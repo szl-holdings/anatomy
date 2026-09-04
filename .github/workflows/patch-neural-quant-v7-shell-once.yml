@@ -1,0 +1,199 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Patch Neural Quant v7 shell once
+
+on:
+  push:
+    branches:
+      - feat/neural-quant-anatomy-v7-20260904
+    paths:
+      - .github/workflows/patch-neural-quant-v7-shell-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/neural-quant-anatomy-v7-20260904
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Converge source-owned creator identity and v7 shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding="utf-8")
+              if new in text and old not in text:
+                  return
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"expected one occurrence in {path}: {old!r}; found {count}"
+                  )
+              path.write_text(
+                  text.replace(old, new),
+                  encoding="utf-8",
+                  newline="\n",
+              )
+
+          index = Path("index.html")
+          index_text = index.read_text(encoding="utf-8")
+          link = '  <link rel="stylesheet" href="./neural-quant-v7.css" />\n'
+          if 'href="./neural-quant-v7.css"' not in index_text:
+              if "</head>" not in index_text:
+                  raise SystemExit("index.html lacks </head>")
+              index_text = index_text.replace("</head>", link + "</head>", 1)
+          script = '  <script src="./neural-quant-v7.js"></script>\n'
+          if 'src="./neural-quant-v7.js"' not in index_text:
+              anchor = '  <script src="./v6_alive.js"></script>\n'
+              if index_text.count(anchor) != 1:
+                  raise SystemExit("v6 script anchor is not unique")
+              index_text = index_text.replace(
+                  anchor,
+                  anchor
+                  + "  <!-- Neural Quant v7: source-bound Second Brain, formula/quant atlas, and bounded Ouroboros observation. Read-only, handles-only, zero CDN. -->\n"
+                  + script,
+                  1,
+              )
+          index.write_text(index_text, encoding="utf-8", newline="\n")
+
+          server = Path("server.py")
+          replacements = {
+              'SPACE_ID = "SZLHOLDINGS/anatomy"':
+                  'SPACE_ID = "betterwithage/anatomy"',
+              '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy?expand[]=sha"':
+                  '"https://huggingface.co/api/spaces/betterwithage/anatomy?expand[]=sha"',
+              '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1"':
+                  '"https://huggingface.co/api/spaces/betterwithage/anatomy/commits/main?limit=1"',
+              '"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/':
+                  '"https://huggingface.co/spaces/betterwithage/anatomy/commit/',
+              '"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/':
+                  '"https://huggingface.co/spaces/betterwithage/anatomy/resolve/',
+          }
+          server_text = server.read_text(encoding="utf-8")
+          for old, new in replacements.items():
+              if new in server_text and old not in server_text:
+                  continue
+              count = server_text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"expected one server identity binding for {old!r}; found {count}"
+                  )
+              server_text = server_text.replace(old, new)
+          artifact_anchor = '    "frontier_anatomy.js",\n'
+          artifact_lines = (
+              artifact_anchor
+              + '    "neural-quant-v7.js",\n'
+              + '    "neural-quant-v7.css",\n'
+          )
+          if '    "neural-quant-v7.js",\n' not in server_text:
+              if server_text.count(artifact_anchor) != 1:
+                  raise SystemExit("server artifact anchor is not unique")
+              server_text = server_text.replace(
+                  artifact_anchor,
+                  artifact_lines,
+                  1,
+              )
+          server.write_text(server_text, encoding="utf-8", newline="\n")
+
+          living = Path("living_runtime.py")
+          living_text = living.read_text(encoding="utf-8")
+          living_anchor = '    "neural-quant-v7.js",\n'
+          if '    "neural-quant-v7.css",\n' not in living_text:
+              if living_text.count(living_anchor) != 1:
+                  raise SystemExit("living runtime v7 artifact anchor is not unique")
+              living_text = living_text.replace(
+                  living_anchor,
+                  living_anchor + '    "neural-quant-v7.css",\n',
+                  1,
+              )
+          living.write_text(living_text, encoding="utf-8", newline="\n")
+
+          tests = Path("tests/test_server_contract.py")
+          tests_text = tests.read_text(encoding="utf-8")
+          tests_text = tests_text.replace(
+              'SZLHOLDINGS/anatomy',
+              'betterwithage/anatomy',
+          )
+          tests.write_text(tests_text, encoding="utf-8", newline="\n")
+
+          readme = Path("README.md")
+          readme_text = readme.read_text(encoding="utf-8")
+          readme_text = readme_text.replace(
+              'thumbnail: "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/main/og-card.png"',
+              'thumbnail: "https://huggingface.co/spaces/betterwithage/anatomy/resolve/main/og-card.png"',
+          )
+          readme_text = readme_text.replace(
+              'Declared source base: `szl-holdings/anatomy` (GitHub) → `SZLHOLDINGS/anatomy` (HF Space).',
+              'Declared source base: `szl-holdings/anatomy` (GitHub) → `betterwithage/anatomy` (creator-profile HF Space).',
+          )
+          v7_heading = "## v7 — YACHAY Neural Quant brain"
+          if v7_heading not in readme_text:
+              anchor = "## v6 — alive-proof layer (ratchet 2026-07-21)"
+              if readme_text.count(anchor) != 1:
+                  raise SystemExit("README v6 anchor is not unique")
+              section = '''## v7 — YACHAY Neural Quant brain
+
+The atlas now mounts a source-bound **Neural Quant v7** instrument over the
+existing 3D organism. It observes the exact 575-chunk public Second Brain, the
+review-gated frontier candidate set, 30 attributed formula records, 21 executable
+formula kernels, nine quant domains, and bounded Ouroboros loop metadata.
+
+The v7 interface is read-only and handles-only. It shows source revisions and
+SHA-256 receipts, never raw candidate content. The private graph is not loaded;
+training, promotion, execution, merge, and provider mutation remain `NONE`.
+Locked-proven remains exactly eight, the F-number mapping remains
+`UNKNOWN_NOT_INFERRED`, and Lambda remains Conjecture 1.
+
+Open the floating **Neural Quant v7** control or use
+`/api/anatomy/v1/brain/neural-quant-v7`. The desktop panel becomes a mobile
+bottom sheet with 44-pixel controls, safe-area support, reduced motion, high
+contrast, forced colors, keyboard focus trapping, and Escape close.
+
+Public creator-profile Space:
+[`betterwithage/anatomy`](https://huggingface.co/spaces/betterwithage/anatomy).
+
+'''
+              readme_text = readme_text.replace(anchor, section + anchor, 1)
+          readme.write_text(readme_text, encoding="utf-8", newline="\n")
+          PY
+          python -m py_compile server.py living_runtime.py second_brain_runtime.py
+          node --check neural-quant-v7.js
+          git diff --check
+
+      - name: Materialize exact current Second Brain memory
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/materialize_second_brain.py --output .runtime/second-brain
+
+      - name: Run the complete source contract
+        run: python -m unittest discover -s tests -v
+
+      - name: Commit durable shell convergence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          git add index.html server.py living_runtime.py README.md tests/test_server_contract.py
+          git diff --cached --quiet && { echo "no shell changes"; exit 1; }
+          git commit -s -m "feat(anatomy): mount Neural Quant v7 in the source-owned shell"
+          git push origin HEAD:feat/neural-quant-anatomy-v7-20260904
