@@ -53,7 +53,11 @@ class HfSyncContractTest(unittest.TestCase):
             'LIVE_BASE = "https://betterwithage-anatomy.hf.space"',
             self.publisher,
         )
-        self.assertIn('"destination": "betterwithage/anatomy"', self.workflow)
+        self.assertIn(
+            "Publish and verify betterwithage/anatomy",
+            self.workflow,
+        )
+        self.assertNotIn('SPACE_ID = "SZLHOLDINGS/anatomy"', self.publisher)
 
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)
@@ -181,12 +185,15 @@ class HfSyncContractTest(unittest.TestCase):
             '"authority_state": "READ_ONLY"',
             '"content_access": "HANDLES_ONLY"',
             '"candidate_state": "DISCOVERED_REVIEW_REQUIRED"',
-            'brain_source.get("private_graph_nodes_materialized")',
-            'brain_source.get("raw_graph_nodes_admitted_to_gradients")',
-            'brain_source.get("training_authority")',
-            'brain_source.get("promotion_authority")',
-            'brain_source.get("execution_authority")',
-            'brain_source.get("merge_authority")',
+            '"private_graph_nodes_materialized": 0',
+            '"raw_graph_nodes_admitted_to_gradients": 0',
+            '"training_authority": "NONE"',
+            '"promotion_authority": "NONE"',
+            '"execution_authority": "NONE"',
+            '"merge_authority": "NONE"',
+            '"lambda_state": "CONJECTURE_1"',
+            'for key, value in expected_zero_authority.items():',
+            'brain_source.get(key)',
             'brain_source.get("public_chunk_count")',
             'brain_source.get("frontier_candidate_count")',
             'brain_source.get("frontier_source_count")',
