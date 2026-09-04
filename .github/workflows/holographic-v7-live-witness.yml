@@ -1,0 +1,258 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Holographic v7 live witness
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - frontier_runtime.py
+      - holographic-v7.js
+      - holographic-v7.css
+      - index.html
+      - Dockerfile
+      - scripts/materialize_second_brain.py
+      - scripts/sync_hf_creator_profile.py
+      - .github/workflows/hf-sync.yml
+      - .github/workflows/holographic-v7-live-witness.yml
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anatomy-holographic-v7-live-witness
+  cancel-in-progress: true
+
+env:
+  LIVE_ORIGIN: https://betterwithage-anatomy.hf.space
+  RECEIPT: reports/holographic-v7-live-witness.json
+
+jobs:
+  contract:
+    name: Source and zero-authority contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact protected source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Prove the local v7 contract
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            -r requirements.txt "pytest==8.3.5" "httpx>=0.27,<1"
+          python -m py_compile frontier_runtime.py scripts/materialize_second_brain.py
+          node --check holographic-v7.js
+          python -m pytest -q \
+            tests/test_frontier_runtime.py \
+            tests/test_holographic_v7_contract.py
+          git diff --check
+
+  live:
+    name: Exact-source creator-profile readback
+    if: github.event_name != 'pull_request'
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout protected main for the expected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Wait for exact source-bound Holographic v7
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports /tmp/anatomy-v7-live
+          expected="$(git rev-parse HEAD)"
+          export EXPECTED_SOURCE_REVISION="$expected"
+          deadline=$(( $(date +%s) + 1200 ))
+          passed=false
+          last_reason="deployment has not converged"
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            set +e
+            curl --fail --silent --show-error --max-time 25 \
+              "$LIVE_ORIGIN/.well-known/szl-source.json?refresh=1" \
+              > /tmp/anatomy-v7-live/source.json
+            source_code=$?
+            curl --fail --silent --show-error --max-time 25 \
+              "$LIVE_ORIGIN/api/anatomy/v1/holographic-v7?refresh=1" \
+              > /tmp/anatomy-v7-live/v7.json
+            v7_code=$?
+            curl --fail --silent --show-error --max-time 25 \
+              "$LIVE_ORIGIN/api/anatomy/v1/frontier/status?refresh=1" \
+              > /tmp/anatomy-v7-live/status.json
+            status_code=$?
+            curl --fail --silent --show-error --max-time 25 \
+              "$LIVE_ORIGIN/api/anatomy/v1/frontier/formulas?k=48&refresh=1" \
+              > /tmp/anatomy-v7-live/formulas.json
+            formula_code=$?
+            curl --fail --silent --show-error --max-time 25 \
+              "$LIVE_ORIGIN/?refresh=1" \
+              > /tmp/anatomy-v7-live/root.html
+            root_code=$?
+            set -e
+
+            if [ "$source_code" -eq 0 ] && [ "$v7_code" -eq 0 ] && \
+               [ "$status_code" -eq 0 ] && [ "$formula_code" -eq 0 ] && \
+               [ "$root_code" -eq 0 ]; then
+              if python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = os.environ["EXPECTED_SOURCE_REVISION"]
+          source = json.loads(Path("/tmp/anatomy-v7-live/source.json").read_text())
+          v7 = json.loads(Path("/tmp/anatomy-v7-live/v7.json").read_text())
+          status = json.loads(Path("/tmp/anatomy-v7-live/status.json").read_text())
+          formulas = json.loads(Path("/tmp/anatomy-v7-live/formulas.json").read_text())
+          root = Path("/tmp/anatomy-v7-live/root.html").read_text(encoding="utf-8")
+
+          assert source["source"]["repository"] == "szl-holdings/anatomy"
+          assert source["source"]["commit"] == expected
+          assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
+          hf_revision = source["deployment"]["hf_revision"]
+          assert isinstance(hf_revision, str) and len(hf_revision) == 40
+
+          assert v7["state"] == "SOURCE_BOUND_READ_ONLY"
+          assert v7["ready"] is True
+          assert v7["surface"] == "LIVING_ANATOMY_HOLOGRAPHIC_V7"
+          assert v7["claims"] == {
+              "content_exposed": False,
+              "weights_trained": False,
+              "claim_promoted": False,
+              "private_graph_used": False,
+              "execution_performed": False,
+              "human_review_required": True,
+          }
+          assert status["state"] == "SOURCE_BOUND_REVIEW_MEMORY"
+          assert status["second_brain_source_repository"] == "szl-holdings/szl-second-brain"
+          assert len(status["second_brain_source_revision"]) == 40
+          assert len(status["candidate_set_sha256"]) == 64
+          atlas = status["formula_atlas"]
+          assert atlas["attributed_formula_count"] == 30
+          assert atlas["executable_formula_count"] == 21
+          assert atlas["quant_domain_count"] == 9
+          assert atlas["locked_proven_formula_count"] == 8
+          assert atlas["f_number_to_executable_mapping"] == "UNKNOWN_NOT_INFERRED"
+          assert status["lambda"] == "CONJECTURE_1"
+          assert status["content_access"] == "HANDLES_ONLY"
+          assert status["training_authority"] == "NONE"
+          assert status["promotion_authority"] == "NONE"
+          assert status["execution_authority"] == "NONE"
+          assert status["private_graph_present"] is False
+          assert status["raw_graph_nodes_admitted_to_gradients"] == 0
+
+          assert formulas["content_access"] == "HANDLES_ONLY"
+          assert formulas["returned_count"] >= 60
+          assert all(handle["contentAccess"] == "HANDLES_ONLY" for handle in formulas["handles"])
+          assert all(handle["authority"] == "NONE" for handle in formulas["handles"])
+
+          for payload in (v7, status, formulas):
+              encoded = json.dumps(payload, sort_keys=True).lower()
+              assert '"content"' not in encoded
+              assert '"text"' not in encoded
+          assert root.count('data-szl-holographic-v7="style"') == 1
+          assert root.count('data-szl-holographic-v7="script"') == 1
+          assert "/holographic-v7.css" in root
+          assert "/holographic-v7.js" in root
+          PY
+              then
+                passed=true
+                break
+              else
+                last_reason="all routes answered but the exact source or v7 contract did not match"
+              fi
+            else
+              last_reason="one or more creator-profile routes are not reachable"
+            fi
+            sleep 30
+          done
+
+          export LIVE_PASSED="$passed"
+          export LIVE_REASON="$last_reason"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def loaded(path):
+              candidate = Path(path)
+              if not candidate.is_file():
+                  return None
+              try:
+                  return json.loads(candidate.read_text())
+              except Exception:
+                  return None
+
+          source = loaded("/tmp/anatomy-v7-live/source.json") or {}
+          status = loaded("/tmp/anatomy-v7-live/status.json") or {}
+          v7 = loaded("/tmp/anatomy-v7-live/v7.json") or {}
+          receipt = {
+              "schema": "szl.anatomy.holographic-v7-live-witness/v1",
+              "state": "LIVE" if os.environ["LIVE_PASSED"] == "true" else "UNAVAILABLE",
+              "source_repository": "szl-holdings/anatomy",
+              "expected_source_revision": os.environ["EXPECTED_SOURCE_REVISION"],
+              "observed_source_revision": (source.get("source") or {}).get("commit"),
+              "observed_hf_revision": (source.get("deployment") or {}).get("hf_revision"),
+              "alignment_state": source.get("alignment_state"),
+              "second_brain_source_revision": status.get("second_brain_source_revision"),
+              "candidate_set_sha256": status.get("candidate_set_sha256"),
+              "candidate_count": status.get("candidate_count"),
+              "formula_atlas": status.get("formula_atlas"),
+              "v7_state": v7.get("state"),
+              "failure_reason": None if os.environ["LIVE_PASSED"] == "true" else os.environ["LIVE_REASON"],
+              "authority": {
+                  "content_access": "HANDLES_ONLY",
+                  "training": "NONE",
+                  "promotion": "NONE",
+                  "execution": "NONE",
+                  "private_graph": "NOT_PRESENT",
+              },
+          }
+          canonical = json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode()
+          receipt["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+          Path(os.environ["RECEIPT"]).write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+          if [ "$passed" != "true" ]; then
+            echo "::error::$last_reason"
+            exit 1
+          fi
+
+      - name: Retain the exact live witness
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: holographic-v7-live-witness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RECEIPT }}
+          if-no-files-found: error
+          retention-days: 90
