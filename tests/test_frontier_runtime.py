@@ -64,7 +64,7 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
         "state": "REVIEW_REQUIRED",
         "candidate_count": len(rows),
         "candidate_set_sha256": candidate_set,
-        "source_count": 6,
+        "source_count": 7,
         "sources": [],
         "source_kind_counts": dict(kinds),
         "quant_domain_counts": dict(domains),
@@ -136,7 +136,7 @@ class FakeAtlas:
             "second_brain_source_revision": "2" * 40,
             "candidate_count": 101,
             "candidate_set_sha256": "3" * 64,
-            "source_count": 6,
+            "source_count": 7,
             "source_kind_counts": {
                 "formula-authority": 1,
                 "attributed-formula": 30,
