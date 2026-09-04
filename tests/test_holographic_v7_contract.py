@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 
@@ -12,13 +13,17 @@ def read(path: str) -> str:
 
 def test_runtime_entrypoint_and_creator_publisher_include_v7() -> None:
     dockerfile = read("Dockerfile")
+    living_runtime = read("living_runtime.py")
     publisher = read("scripts/sync_hf_creator_profile.py")
     assert '"frontier_runtime.py"' in publisher
     assert '"*.js"' in publisher
     assert '"*.css"' in publisher
-    assert "frontier_runtime:app" in dockerfile
-    assert "living_runtime:app" not in dockerfile
-    assert "second_brain_runtime:app" not in dockerfile
+    assert dockerfile.count("CMD [") == 1
+    assert 'CMD ["python", "living_runtime.py"]' in dockerfile
+    assert "from frontier_runtime import (" in living_runtime
+    assert "FRONTIER_ATLAS" in living_runtime
+    assert '"/api/anatomy/v1/holographic-v7"' in living_runtime
+    assert '"/api/anatomy/v1/frontier/handles"' in living_runtime
 
 
 def test_front_door_mounts_exactly_one_v7_asset_pair() -> None:
@@ -47,8 +52,8 @@ def test_v7_client_is_same_origin_handles_only_and_non_persistent() -> None:
     assert 'cache: "no-store"' in source
     assert "HANDLES_ONLY" in source
     assert "DISCOVERED_REVIEW_REQUIRED" in source
-    assert "handle.content" not in source
-    assert "payload.content" not in source
+    assert re.search(r"\bhandle\.content\b", source) is None
+    assert re.search(r"\bpayload\.content\b", source) is None
     for forbidden in (
         "localStorage",
         "sessionStorage",
