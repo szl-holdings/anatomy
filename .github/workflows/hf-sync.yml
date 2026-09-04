@@ -55,5 +55,54 @@ jobs:
       - name: Materialize exact public Second Brain projection
         run: python scripts/materialize_second_brain.py --output .runtime/second-brain
 
+      - name: Bind source attestation to the creator-profile destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("server.py")
+          source = path.read_text(encoding="utf-8")
+          replacements = {
+              'SPACE_ID = "SZLHOLDINGS/anatomy"':
+                  'SPACE_ID = "betterwithage/anatomy"',
+              '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy?expand[]=sha"':
+                  '"https://huggingface.co/api/spaces/betterwithage/anatomy?expand[]=sha"',
+              '"https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1"':
+                  '"https://huggingface.co/api/spaces/betterwithage/anatomy/commits/main?limit=1"',
+          }
+          applied = []
+          for old, new in replacements.items():
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"expected exactly one source-attestation binding {old!r}; found {count}"
+                  )
+              source = source.replace(old, new)
+              applied.append({"from": old, "to": new})
+          path.write_text(source, encoding="utf-8")
+
+          receipt = {
+              "schema": "szl.creator-profile-runtime-overlay/v1",
+              "source_repository": os.environ["GITHUB_REPOSITORY"],
+              "source_revision": os.environ["GITHUB_SHA"],
+              "destination": "betterwithage/anatomy",
+              "purpose": "Bind deployment revision attestation to the actual creator-profile Space.",
+              "transforms": applied,
+              "server_sha256_after": hashlib.sha256(path.read_bytes()).hexdigest(),
+          }
+          receipt_path = Path(".runtime/creator-profile-overlay.json")
+          receipt_path.parent.mkdir(parents=True, exist_ok=True)
+          receipt_path.write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          python -m py_compile server.py living_runtime.py
+
       - name: Publish and verify betterwithage/anatomy
         run: python scripts/sync_hf_creator_profile.py
