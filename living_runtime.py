@@ -31,6 +31,7 @@ _EXTRA_ARTIFACTS = (
     "living_runtime.py",
     "second_brain_runtime.py",
     "neural-quant-v7.js",
+    "neural-quant-v7.css",
     ".runtime/second-brain/manifest.json",
     ".runtime/second-brain/brain-corpus.public.jsonl",
     ".runtime/second-brain/frontier-state.v1.json",

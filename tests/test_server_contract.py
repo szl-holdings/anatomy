@@ -120,7 +120,7 @@ class AnatomyContractTest(unittest.TestCase):
                 "relation": "github-actions-source-bound-deployment",
             },
             "deployment": {
-                "hf_space": "SZLHOLDINGS/anatomy",
+                "hf_space": "betterwithage/anatomy",
                 "hf_revision": "c" * 40,
                 "artifact_set_sha256": "d" * 64,
             },
@@ -376,7 +376,7 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual("szl.deployment-source/v1", body["schema"])
         self.assertEqual("szl-holdings/anatomy", body["source"]["repository"])
-        self.assertEqual("SZLHOLDINGS/anatomy", body["deployment"]["hf_space"])
+        self.assertEqual("betterwithage/anatomy", body["deployment"]["hf_space"])
         self.assertEqual("a" * 40, body["deployment"]["hf_revision"])
         self.assertEqual("PENDING_GITHUB_SYNC", body["alignment_state"])
 
