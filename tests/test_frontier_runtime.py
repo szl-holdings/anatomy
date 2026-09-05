@@ -29,7 +29,7 @@ def make_row(index: int, kind: str, domain: str | None = None) -> dict[str, Any]
         "content_sha256": hashlib.sha256(content.encode()).hexdigest(),
         "source_repository": "szl-holdings/szl-formulas",
         "source_revision": "1" * 40,
-        "source_path": "atlas/formula-atlas.v1.json",
+        "source_path": f"atlas/source-{(index - 1) % 7}.json",
         "source_kind": kind,
         "admission": "REFERENCE_AND_CONSTRAINT_INPUT_ONLY",
         "candidate_state": "DISCOVERED_REVIEW_REQUIRED",
@@ -59,13 +59,43 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
     domains = Counter(
         str(row["quant_domain"]) for row in rows if row.get("quant_domain")
     )
+    source_bindings = sorted(
+        {
+            (
+                str(row["source_repository"]),
+                str(row["source_revision"]),
+                str(row["source_path"]),
+            )
+            for row in rows
+        }
+    )
+    sources = [
+        {
+            "source_id": f"source_{index}",
+            "repository": binding[0],
+            "revision": binding[1],
+            "path": binding[2],
+            "parser": "json",
+            "content_sha256": hashlib.sha256(canonical_bytes(binding)).hexdigest(),
+            "candidate_count": sum(
+                (
+                    str(row["source_repository"]),
+                    str(row["source_revision"]),
+                    str(row["source_path"]),
+                )
+                == binding
+                for row in rows
+            ),
+        }
+        for index, binding in enumerate(source_bindings)
+    ]
     state = {
         "schema": "szl.second-brain.frontier-state/v1",
         "state": "REVIEW_REQUIRED",
         "candidate_count": len(rows),
         "candidate_set_sha256": candidate_set,
-        "source_count": 7,
-        "sources": [],
+        "source_count": len(sources),
+        "sources": sources,
         "source_kind_counts": dict(kinds),
         "quant_domain_counts": dict(domains),
         "public_content_access": "HANDLES_ONLY",
@@ -85,6 +115,7 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
         "frontier": {
             "candidate_count": len(rows),
             "candidate_set_sha256": candidate_set,
+            "source_count": len(sources),
         },
     }
     return state, rows, source
@@ -93,6 +124,38 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
 def test_exact_frontier_snapshot_accepts_formula_and_quant_contract() -> None:
     state, rows, source = snapshot()
     frontier_runtime.FrontierAtlas._validate(state, rows, source)
+
+
+def test_direct_frontier_rejects_incomplete_or_unbound_source_receipts() -> None:
+    state, rows, source = snapshot()
+    state["sources"].pop()
+    state["source_count"] -= 1
+    source["frontier"]["source_count"] -= 1
+    try:
+        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+    except ValueError as error:
+        assert "source inventory" in str(error)
+    else:
+        raise AssertionError("six-source frontier inventory was accepted")
+
+    state, rows, source = snapshot()
+    source["frontier"]["source_count"] += 1
+    try:
+        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+    except ValueError as error:
+        assert "receipt source count" in str(error)
+    else:
+        raise AssertionError("stale frontier receipt source count was accepted")
+
+    state, rows, source = snapshot()
+    state["sources"][0]["candidate_count"] -= 1
+    state["sources"][1]["candidate_count"] += 1
+    try:
+        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+    except ValueError as error:
+        assert "per-source candidate counts" in str(error)
+    else:
+        raise AssertionError("redistributed frontier source counts were accepted")
 
 
 def test_snapshot_rejects_promotion_content_drift_and_private_graph() -> None:
