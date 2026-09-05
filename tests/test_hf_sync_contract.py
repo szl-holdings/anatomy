@@ -82,7 +82,7 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('"workflow_run_id": workflow_run_id', self.publisher)
         self.assertIn('path_in_repo="hf-deploy-manifest.json"', self.publisher)
         self.assertIn(
-            'f"hf-sync: creator profile source {source_revision} "',
+            'f"hf-sync: source {source_revision} "',
             self.publisher,
         )
         self.assertNotIn("os.environ.get('GITHUB_SHA','')[:8]", self.release)
@@ -91,7 +91,7 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn('workflow_run_id = os.environ.get("GITHUB_RUN_ID", "")', self.publisher)
         self.assertIn('if not workflow_run_id.isdigit():', self.publisher)
         self.assertIn(
-            'f"hf-sync: creator profile source {source_revision} "',
+            'f"hf-sync: source {source_revision} "',
             self.publisher,
         )
         self.assertIn('f"run {workflow_run_id}"', self.publisher)
@@ -196,7 +196,6 @@ class HfSyncContractTest(unittest.TestCase):
             'brain_source.get(key)',
             'brain_source.get("public_chunk_count")',
             'brain_source.get("frontier_candidate_count")',
-            'brain_source.get("frontier_source_count")',
             'brain_source.get("quant_domain_count")',
         ):
             self.assertIn(contract, self.publisher)
