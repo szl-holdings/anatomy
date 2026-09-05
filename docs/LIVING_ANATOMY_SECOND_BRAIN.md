@@ -57,7 +57,7 @@ It validates:
 4. `secretScan: PASS`;
 5. unique public retrieval node IDs;
 6. at least 70 content-addressed frontier candidates;
-7. exactly six frontier source receipts;
+7. exactly seven frontier source receipts;
 8. every frontier ID, source revision, content digest, and candidate-set digest;
 9. 30 attributed formulas, 21 executable formulas, and nine quant domains;
 10. the locked-proven set count remains exactly eight;
