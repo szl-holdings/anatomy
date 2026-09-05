@@ -37,6 +37,7 @@ FORMULA_KINDS = {
     "executable-formula",
     "quant-domain",
 }
+MIN_FRONTIER_SOURCES = 7
 
 app = FastAPI(
     title="SZL Living Anatomy Holographic v7 contract",
@@ -173,9 +174,55 @@ class FrontierAtlas:
             frontier_receipt = {
                 "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
                 "candidate_count": source.get("frontier_candidate_count"),
+                "source_count": source.get("frontier_source_count"),
             }
         if not isinstance(frontier_receipt, dict):
             raise ValueError("Second Brain frontier source receipt is missing")
+
+        source_count = state.get("source_count")
+        sources = state.get("sources")
+        if type(source_count) is not int or source_count < MIN_FRONTIER_SOURCES:
+            raise ValueError("frontier source inventory is incomplete")
+        if not isinstance(sources, list) or len(sources) != source_count:
+            raise ValueError("frontier source manifest count drifted")
+        receipt_source_count = frontier_receipt.get("source_count")
+        if type(receipt_source_count) is not int or receipt_source_count != source_count:
+            raise ValueError("source receipt source count mismatch")
+
+        source_ids: set[str] = set()
+        expected_source_counts: dict[tuple[str, str, str], int] = {}
+        observed_source_counts: dict[tuple[str, str, str], int] = {}
+        for index, entry in enumerate(sources, start=1):
+            if not isinstance(entry, dict):
+                raise ValueError(f"invalid frontier source at index {index}")
+            source_id = str(entry.get("source_id") or "")
+            repository = str(entry.get("repository") or "")
+            revision = str(entry.get("revision") or "")
+            digest = str(entry.get("content_sha256") or "")
+            parser = entry.get("parser")
+            path = entry.get("path")
+            candidate_count = entry.get("candidate_count")
+            if not source_id or source_id in source_ids:
+                raise ValueError(f"frontier source identity failed at index {index}")
+            if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+                raise ValueError(f"frontier source repository failed at index {index}")
+            if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+                raise ValueError(f"frontier source binding failed at index {index}")
+            if (
+                not isinstance(parser, str)
+                or not parser.strip()
+                or not isinstance(path, str)
+                or not path.strip()
+                or type(candidate_count) is not int
+                or candidate_count < 1
+            ):
+                raise ValueError(f"frontier source metadata failed at index {index}")
+            binding = (repository, revision, path)
+            if binding in expected_source_counts:
+                raise ValueError(f"duplicate frontier source binding at index {index}")
+            source_ids.add(source_id)
+            expected_source_counts[binding] = candidate_count
+            observed_source_counts[binding] = 0
 
         seen: set[str] = set()
         canonical_lines: list[bytes] = []
@@ -191,6 +238,14 @@ class FrontierAtlas:
             seen.add(node_id)
             if not HEX_40.fullmatch(str(row.get("source_revision") or "")):
                 raise ValueError("frontier candidate source revision is not exact")
+            binding = (
+                str(row.get("source_repository") or ""),
+                str(row.get("source_revision") or ""),
+                str(row.get("source_path") or ""),
+            )
+            if binding not in expected_source_counts:
+                raise ValueError("frontier candidate source manifest binding failed")
+            observed_source_counts[binding] += 1
             if row.get("candidate_state") != "DISCOVERED_REVIEW_REQUIRED":
                 raise ValueError("frontier candidate was promoted")
             if row.get("content_access") != "CONTROLLER_ONLY":
@@ -211,6 +266,8 @@ class FrontierAtlas:
             raise ValueError("source receipt candidate-set digest mismatch")
         if frontier_receipt.get("candidate_count") != len(rows):
             raise ValueError("source receipt candidate count mismatch")
+        if observed_source_counts != expected_source_counts:
+            raise ValueError("frontier per-source candidate counts mismatch")
         if kind_counts["attributed-formula"] != 30:
             raise ValueError("attributed formula count drifted")
         if kind_counts["executable-formula"] != 21:

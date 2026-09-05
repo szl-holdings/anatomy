@@ -14,8 +14,8 @@ organ-integrity, and security-header route. The extension adds two read-only
 YACHAY memory planes:
 
 1. the exact 575-chunk public Second Brain retrieval projection; and
-2. the review-gated frontier candidate set built by `szl-second-brain` from six
-   fixed public source contracts.
+2. the review-gated frontier candidate set built by `szl-second-brain` from a
+   source manifest containing at least seven bound public source contracts.
 
 Neural Quant v7 projects those planes into the 3D Anatomy experience together
 with the attributed formula/quant atlas and bounded Ouroboros observations.
@@ -57,7 +57,8 @@ It validates:
 4. `secretScan: PASS`;
 5. unique public retrieval node IDs;
 6. at least 70 content-addressed frontier candidates;
-7. exactly seven frontier source receipts;
+7. at least seven frontier source receipts, with unique repository/revision/path
+   bindings and matching per-source candidate counts;
 8. every frontier ID, source revision, content digest, and candidate-set digest;
 9. 30 attributed formulas, 21 executable formulas, and nine quant domains;
 10. the locked-proven set count remains exactly eight;
@@ -69,6 +70,9 @@ The operator writes `.runtime/second-brain/source.json` with the exact Git SHA,
 retrieval digests, frontier digests, candidate-set digest, formula/quant counts,
 and authority constraints. The creator-profile publisher bundles that immutable
 snapshot and records the dependency in `hf-deploy-manifest.json`.
+The serving runtime also checks that the receipt's frontier source count equals
+the validated manifest count. Additional sources are accepted only when these
+bindings and the existing formula, digest, and authority checks remain valid.
 
 ## Neural Quant v7 holographic instrument
 

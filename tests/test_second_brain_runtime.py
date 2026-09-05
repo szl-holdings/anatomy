@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -45,6 +46,7 @@ def frontier_row(
     content: str,
     kind: str,
     repository: str = "szl-holdings/szl-formulas",
+    path: str = "fixture/source.md",
     quant_domain: str | None = None,
     admission: str = "DISCOVERED_REVIEW_REQUIRED",
 ) -> dict[str, Any]:
@@ -56,7 +58,7 @@ def frontier_row(
         "content_sha256": hashlib.sha256(content.encode()).hexdigest(),
         "source_repository": repository,
         "source_revision": hashlib.sha1(repository.encode()).hexdigest(),
-        "source_path": "fixture/source.md",
+        "source_path": path,
         "source_kind": kind,
         "admission": admission,
         "candidate_state": "DISCOVERED_REVIEW_REQUIRED",
@@ -191,9 +193,29 @@ class PublicSecondBrainTest(unittest.TestCase):
                     ),
                     kind="source-document",
                     repository=repository,
+                    path=(f"fixture/source-{index}.md" if 4 <= index < 8 else "fixture/source.md"),
                 )
             )
         frontier_rows.sort(key=lambda row: row["id"])
+        source_bindings = sorted({
+            (row["source_repository"], row["source_revision"], row["source_path"])
+            for row in frontier_rows
+        })
+        frontier_sources = [
+            {
+                "source_id": "ouroboros_runtime" if binding[0].endswith("/ouroboros") else f"source_{index}",
+                "repository": binding[0],
+                "revision": binding[1],
+                "path": binding[2],
+                "parser": "markdown",
+                "content_sha256": hashlib.sha256(canonical_bytes(binding)).hexdigest(),
+                "candidate_count": sum(
+                    (row["source_repository"], row["source_revision"], row["source_path"]) == binding
+                    for row in frontier_rows
+                ),
+            }
+            for index, binding in enumerate(source_bindings)
+        ]
         frontier_candidates_raw = b"".join(
             canonical_bytes(row) + b"\n" for row in frontier_rows
         )
@@ -216,23 +238,8 @@ class PublicSecondBrainTest(unittest.TestCase):
             "state": "REVIEW_REQUIRED",
             "candidate_count": len(frontier_rows),
             "candidate_set_sha256": candidate_set_sha256,
-            "source_count": 7,
-            "sources": [
-                {
-                    "source_id": "ouroboros_runtime" if index == 0 else f"source_{index}",
-                    "repository": (
-                        "szl-holdings/ouroboros"
-                        if index == 0
-                        else f"szl-holdings/source-{index}"
-                    ),
-                    "revision": f"{index + 1:x}" * 40,
-                    "path": "README.md",
-                    "parser": "markdown",
-                    "content_sha256": f"{index + 1:x}" * 64,
-                    "candidate_count": len(frontier_rows) - 6 if index == 0 else 1,
-                }
-                for index in range(7)
-            ],
+            "source_count": len(frontier_sources),
+            "sources": frontier_sources,
             "source_kind_counts": source_kind_counts,
             "quant_domain_counts": quant_domain_counts,
             "public_content_access": "HANDLES_ONLY",
@@ -264,6 +271,7 @@ class PublicSecondBrainTest(unittest.TestCase):
                 frontier_candidates_raw
             ).hexdigest(),
             "frontier_candidate_count": len(frontier_rows),
+            "frontier_source_count": len(frontier_sources),
             "frontier_candidate_set_sha256": candidate_set_sha256,
             "private_graph_nodes_materialized": 0,
             "raw_graph_nodes_admitted_to_gradients": 0,
@@ -286,6 +294,147 @@ class PublicSecondBrainTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def _rewrite_frontier(self, state: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        candidates_raw = b"".join(canonical_bytes(row) + b"\n" for row in rows)
+        state["candidate_count"] = len(rows)
+        state["candidate_set_sha256"] = hashlib.sha256(candidates_raw).hexdigest()
+        state_raw = canonical_bytes(state) + b"\n"
+        source = json.loads((self.snapshot / "source.json").read_text(encoding="utf-8"))
+        source.update({
+            "frontier_state_sha256": hashlib.sha256(state_raw).hexdigest(),
+            "frontier_candidates_sha256": hashlib.sha256(candidates_raw).hexdigest(),
+            "frontier_candidate_set_sha256": state["candidate_set_sha256"],
+            "frontier_candidate_count": len(rows),
+            "frontier_source_count": state["source_count"],
+        })
+        (self.snapshot / "frontier-state.v1.json").write_bytes(state_raw)
+        (self.snapshot / "frontier-candidates.public.jsonl").write_bytes(candidates_raw)
+        (self.snapshot / "source.json").write_bytes(canonical_bytes(source) + b"\n")
+
+    def _frontier_fixture(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        state = json.loads((self.snapshot / "frontier-state.v1.json").read_text(encoding="utf-8"))
+        rows = [
+            json.loads(line)
+            for line in (self.snapshot / "frontier-candidates.public.jsonl").read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        return state, rows
+
+    def _assert_frontier_rejected(self, state: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        import scripts.materialize_second_brain as materializer
+
+        self._rewrite_frontier(state, rows)
+        with self.assertRaisesRegex(ValueError, "frontier.*source"):
+            materializer.validate_frontier_snapshot(
+                (self.snapshot / "frontier-state.v1.json").read_bytes(),
+                (self.snapshot / "frontier-candidates.public.jsonl").read_bytes(),
+            )
+        health = PublicSecondBrain(self.snapshot).health()
+        self.assertFalse(health["ready"])
+        self.assertIn("source", str(health["load_error"]))
+
+    def test_additive_eighth_source_materializes_and_serves(self) -> None:
+        import scripts.materialize_second_brain as materializer
+
+        state, rows = self._frontier_fixture()
+        row = frontier_row(
+            "additional-source",
+            title="Additional reviewed-source candidate",
+            content="Public-source candidate awaiting review.",
+            kind="source-document",
+            repository="szl-holdings/additional-source",
+        )
+        rows.append(row)
+        rows.sort(key=lambda candidate: candidate["id"])
+        state["sources"].append({
+            "source_id": "additional_source",
+            "repository": row["source_repository"],
+            "revision": row["source_revision"],
+            "path": row["source_path"],
+            "parser": "markdown",
+            "content_sha256": row["content_sha256"],
+            "candidate_count": 1,
+        })
+        state["source_count"] = len(state["sources"])
+        state["source_kind_counts"]["source-document"] += 1
+        self._rewrite_frontier(state, rows)
+        output = self.snapshot / "additive-materialized"
+        with patch.object(materializer, "resolve_revision", return_value="a" * 40), patch.object(
+            materializer,
+            "request_bytes",
+            side_effect=lambda url, **kwargs: (self.snapshot / url.rsplit("/", 1)[1]).read_bytes(),
+        ):
+            materializer.materialize(output)
+        brain = PublicSecondBrain(output)
+        self.assertTrue(brain.ready, brain.health()["load_error"])
+        self.assertEqual(8, brain.health()["frontier"]["source_count"])
+        self.assertEqual(72, brain.health()["frontier"]["candidate_count"])
+        self.assertTrue(brain.frontier_search("additional reviewed source")["handles"])
+
+    def test_manifest_metadata_must_bind_each_candidate_group(self) -> None:
+        state, rows = self._frontier_fixture()
+        for field, value in (
+            ("repository", "szl-holdings/unrelated"),
+            ("revision", "f" * 40),
+            ("path", "unrelated/path.md"),
+        ):
+            with self.subTest(field=field):
+                changed = deepcopy(state)
+                changed["sources"][0][field] = value
+                self._assert_frontier_rejected(changed, rows)
+
+    def test_per_source_counts_reject_redistribution_with_same_total(self) -> None:
+        state, rows = self._frontier_fixture()
+        donor = next(source for source in state["sources"] if source["candidate_count"] > 1)
+        recipient = next(source for source in state["sources"] if source is not donor)
+        donor["candidate_count"] -= 1
+        recipient["candidate_count"] += 1
+        self._assert_frontier_rejected(state, rows)
+
+    def test_duplicate_source_binding_rejected_even_with_unique_id(self) -> None:
+        state, rows = self._frontier_fixture()
+        duplicate = deepcopy(state["sources"][0])
+        duplicate["source_id"] = "duplicate_binding"
+        state["sources"].append(duplicate)
+        state["source_count"] += 1
+        self._assert_frontier_rejected(state, rows)
+
+    def test_source_counts_require_integers(self) -> None:
+        state, rows = self._frontier_fixture()
+        for count in (True, 1.5, "1"):
+            with self.subTest(count=count):
+                changed = deepcopy(state)
+                changed["sources"][0]["candidate_count"] = count
+                self._assert_frontier_rejected(changed, rows)
+
+    def test_dropping_one_of_seven_sources_fails_closed(self) -> None:
+        state, rows = self._frontier_fixture()
+        removed = next(source for source in state["sources"] if source["candidate_count"] == 1)
+        state["sources"].remove(removed)
+        state["source_count"] -= 1
+        remaining = [
+            row for row in rows
+            if (row["source_repository"], row["source_revision"], row["source_path"])
+            != (removed["repository"], removed["revision"], removed["path"])
+        ]
+        self.assertEqual(70, len(remaining))
+        self._assert_frontier_rejected(state, remaining)
+
+    def test_runtime_rejects_missing_or_stale_receipt_source_count(self) -> None:
+        receipt_path = self.snapshot / "source.json"
+        original = json.loads(receipt_path.read_text(encoding="utf-8"))
+        for count in (None, 6, 8, "7", True):
+            with self.subTest(count=count):
+                receipt = deepcopy(original)
+                if count is None:
+                    receipt.pop("frontier_source_count")
+                else:
+                    receipt["frontier_source_count"] = count
+                receipt_path.write_bytes(canonical_bytes(receipt) + b"\n")
+                health = PublicSecondBrain(self.snapshot).health()
+                self.assertFalse(health["ready"])
+                self.assertIn("source receipt count mismatch", str(health["load_error"]))
 
     def test_source_bound_snapshot_loads_retrieval_and_frontier(self) -> None:
         brain = PublicSecondBrain(self.snapshot)
