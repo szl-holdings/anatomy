@@ -52,8 +52,8 @@ def test_v7_client_is_same_origin_handles_only_and_non_persistent() -> None:
     assert 'cache: "no-store"' in source
     assert "HANDLES_ONLY" in source
     assert "DISCOVERED_REVIEW_REQUIRED" in source
-    assert re.search(r"\bhandle\.content\b", source) is None
-    assert re.search(r"\bpayload\.content\b", source) is None
+    assert re.search(r"\bhandle\.content(?!Access\b|_access\b)", source) is None
+    assert re.search(r"\bpayload\.content(?!Access\b|_access\b)", source) is None
     for forbidden in (
         "localStorage",
         "sessionStorage",

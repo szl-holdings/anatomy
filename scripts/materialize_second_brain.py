@@ -28,7 +28,7 @@ DEFAULT_REPOSITORY = "szl-holdings/szl-second-brain"
 DEFAULT_REF = "main"
 EXPECTED_PUBLIC_CHUNKS = 575
 MIN_FRONTIER_CANDIDATES = 70
-EXPECTED_FRONTIER_SOURCES = 7
+MIN_FRONTIER_SOURCES = 6
 EXPECTED_ATTRIBUTED_FORMULAS = 30
 EXPECTED_EXECUTABLE_FORMULAS = 21
 EXPECTED_QUANT_DOMAINS = 9
@@ -222,8 +222,37 @@ def validate_frontier_snapshot(
         raise ValueError("private graph material entered the frontier snapshot")
     if int(state.get("raw_graph_nodes_admitted_to_gradients") or 0) != 0:
         raise ValueError("frontier snapshot admitted raw graph nodes to gradients")
-    if int(state.get("source_count") or 0) != EXPECTED_FRONTIER_SOURCES:
-        raise ValueError("frontier source count drifted")
+    source_count = int(state.get("source_count") or 0)
+    sources = state.get("sources")
+    if source_count < MIN_FRONTIER_SOURCES:
+        raise ValueError("frontier source inventory is incomplete")
+    if not isinstance(sources, list) or len(sources) != source_count:
+        raise ValueError("frontier source manifest count drifted")
+
+    source_ids: set[str] = set()
+    source_candidate_count = 0
+    for index, source in enumerate(sources, start=1):
+        if not isinstance(source, dict):
+            raise ValueError(f"invalid frontier source at index {index}")
+        source_id = str(source.get("source_id") or "")
+        repository = str(source.get("repository") or "")
+        revision = str(source.get("revision") or "")
+        digest = str(source.get("content_sha256") or "")
+        parser = str(source.get("parser") or "")
+        path = str(source.get("path") or "")
+        candidate_count = int(source.get("candidate_count") or 0)
+        if not source_id or source_id in source_ids:
+            raise ValueError(f"frontier source identity failed at index {index}")
+        if not re.fullmatch(
+            r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository
+        ):
+            raise ValueError(f"frontier source repository failed at index {index}")
+        if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+            raise ValueError(f"frontier source binding failed at index {index}")
+        if not parser or not path or candidate_count < 1:
+            raise ValueError(f"frontier source metadata failed at index {index}")
+        source_ids.add(source_id)
+        source_candidate_count += candidate_count
 
     kind_counts = state.get("source_kind_counts")
     domain_counts = state.get("quant_domain_counts")
@@ -279,6 +308,11 @@ def validate_frontier_snapshot(
             "frontier candidate count mismatch: "
             f"loaded={rows}, declared={declared_count}, minimum={MIN_FRONTIER_CANDIDATES}"
         )
+    if source_candidate_count != declared_count:
+        raise ValueError(
+            "frontier source candidate total mismatch: "
+            f"manifest={source_candidate_count}, declared={declared_count}"
+        )
     measured_set = sha256_bytes(b"".join(canonical_lines))
     if state.get("candidate_set_sha256") != measured_set:
         raise ValueError("frontier candidate-set digest mismatch")
@@ -295,7 +329,7 @@ def validate_frontier_snapshot(
 
     return {
         "frontier_candidate_count": rows,
-        "frontier_source_count": EXPECTED_FRONTIER_SOURCES,
+        "frontier_source_count": source_count,
         "frontier_state_sha256": sha256_bytes(state_raw),
         "frontier_candidates_sha256": sha256_bytes(candidates_raw),
         "frontier_candidate_set_sha256": measured_set,
