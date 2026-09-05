@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -31,6 +32,19 @@ def test_front_door_mounts_exactly_one_v7_asset_pair() -> None:
     assert html.count('data-szl-holographic-v7="style"') == 1
     assert html.count('data-szl-holographic-v7="script"') == 1
     assert 'href="/holographic-v7.css"' in html
+    class Stylesheets(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.hrefs: list[str] = []
+
+        def handle_starttag(self, tag, attrs) -> None:
+            attrs = dict(attrs)
+            if tag == "link" and "stylesheet" in (attrs.get("rel") or "").split():
+                self.hrefs.append(attrs.get("href"))
+
+    stylesheets = Stylesheets()
+    stylesheets.feed(html)
+    assert stylesheets.hrefs.count("/holographic-v7.css") == 1
     assert 'src="/holographic-v7.js"' in html
     assert "http://" not in read("holographic-v7.js")
     assert "https://" not in read("holographic-v7.js")
