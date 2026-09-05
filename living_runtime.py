@@ -272,12 +272,12 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
         }
 
     @staticmethod
-    def _bounded_k(value: Any) -> int:
+    def _bounded_k(value: Any, *, maximum: int = 24) -> int:
         try:
             parsed = int(value)
         except (TypeError, ValueError):
             parsed = 6
-        return max(1, min(parsed, 24))
+        return max(1, min(parsed, maximum))
 
     @staticmethod
     def _blocked_internal_path(path: str) -> bool:
@@ -350,13 +350,13 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             return
         if path == "/api/anatomy/v1/frontier/handles":
             phrase = str((query.get("q") or [""])[0])[:2000]
-            k = max(1, min(self._bounded_k((query.get("k") or [24])[0]), 48))
+            k = self._bounded_k((query.get("k") or [24])[0], maximum=48)
             self._send_frontier_payload(FRONTIER_ATLAS.search(phrase, k=k))
             return
         if path == "/api/anatomy/v1/frontier/formulas":
             phrase = str((query.get("q") or [""])[0])[:2000]
             domain = str((query.get("domain") or [""])[0])[:80] or None
-            k = max(1, min(self._bounded_k((query.get("k") or [48])[0]), 48))
+            k = self._bounded_k((query.get("k") or [48])[0], maximum=48)
             self._send_frontier_payload(
                 FRONTIER_ATLAS.search(
                     phrase,
@@ -370,7 +370,7 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
             phrase = str(
                 (query.get("q") or ["bounded loop convergence receipt"])[0]
             )[:2000]
-            k = max(1, min(self._bounded_k((query.get("k") or [24])[0]), 48))
+            k = self._bounded_k((query.get("k") or [24])[0], maximum=48)
             self._send_frontier_payload(
                 FRONTIER_ATLAS.search(
                     phrase,
