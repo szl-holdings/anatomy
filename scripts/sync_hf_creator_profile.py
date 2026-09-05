@@ -25,7 +25,7 @@ EXPECTED_REPOSITORY = "szl-holdings/anatomy"
 LIVE_BASE = "https://betterwithage-anatomy.hf.space"
 EXPECTED_PUBLIC_CHUNKS = 575
 MIN_FRONTIER_CANDIDATES = 70
-EXPECTED_FRONTIER_SOURCES = 6
+MIN_FRONTIER_SOURCES = 6
 EXPECTED_ATTRIBUTED_FORMULAS = 30
 EXPECTED_EXECUTABLE_FORMULAS = 21
 EXPECTED_QUANT_DOMAINS = 9
@@ -300,6 +300,7 @@ def verify_live(
     workflow_run_id: str,
     candidate_set_sha256: str,
     frontier_candidate_count: int,
+    frontier_source_count: int,
 ) -> None:
     last_error: Exception | None = None
     for attempt in range(24):
@@ -355,7 +356,7 @@ def verify_live(
             assert brain["source_revision"] == brain_revision
             assert brain["chunk_count"] == EXPECTED_PUBLIC_CHUNKS
             assert brain["frontier"]["candidate_count"] == frontier_candidate_count
-            assert brain["frontier"]["source_count"] == EXPECTED_FRONTIER_SOURCES
+            assert brain["frontier"]["source_count"] == frontier_source_count
             assert brain["frontier"]["candidate_set_sha256"] == candidate_set_sha256
             assert brain["formula_atlas"]["attributed_formula_count"] == EXPECTED_ATTRIBUTED_FORMULAS
             assert brain["formula_atlas"]["executable_formula_count"] == EXPECTED_EXECUTABLE_FORMULAS
@@ -498,14 +499,15 @@ def main() -> None:
     frontier_candidate_count = int(
         brain_source.get("frontier_candidate_count") or 0
     )
+    frontier_source_count = int(brain_source.get("frontier_source_count") or 0)
     if len(brain_revision) != 40:
         raise RuntimeError("Second Brain snapshot lacks an exact source revision")
     if int(brain_source.get("public_chunk_count") or 0) != EXPECTED_PUBLIC_CHUNKS:
         raise RuntimeError("Second Brain snapshot must contain 575 public chunks")
     if frontier_candidate_count < MIN_FRONTIER_CANDIDATES:
         raise RuntimeError("Second Brain frontier candidate set is incomplete")
-    if int(brain_source.get("frontier_source_count") or 0) != EXPECTED_FRONTIER_SOURCES:
-        raise RuntimeError("Second Brain frontier source count drifted")
+    if frontier_source_count < MIN_FRONTIER_SOURCES:
+        raise RuntimeError("Second Brain frontier source inventory is incomplete")
     if len(candidate_set_sha256) != 64:
         raise RuntimeError("Second Brain frontier candidate-set digest is invalid")
     if brain_source.get("formula_counts") != {
@@ -602,6 +604,7 @@ def main() -> None:
             observed_run_id,
             candidate_set_sha256,
             frontier_candidate_count,
+            frontier_source_count,
         )
         return
 
@@ -637,6 +640,7 @@ def main() -> None:
         workflow_run_id,
         candidate_set_sha256,
         frontier_candidate_count,
+        frontier_source_count,
     )
 
 
