@@ -168,7 +168,9 @@ jobs:
           assert status["raw_graph_nodes_admitted_to_gradients"] == 0
 
           assert formulas["content_access"] == "HANDLES_ONLY"
-          assert formulas["returned_count"] >= 60
+          assert formulas["matched_count"] >= 60
+          assert formulas["returned_count"] == 48
+          assert len(formulas["handles"]) == formulas["returned_count"]
           assert all(handle["contentAccess"] == "HANDLES_ONLY" for handle in formulas["handles"])
           assert all(handle["authority"] == "NONE" for handle in formulas["handles"])
 

@@ -157,8 +157,11 @@ class FrontierAtlas:
             raise ValueError("raw graph nodes entered gradients")
         if not isinstance(source, dict):
             raise ValueError("Second Brain source receipt is missing")
-        if source.get("schema") != "szl.second-brain.snapshot/v2":
-            raise ValueError("Second Brain source receipt is not v2")
+        if source.get("schema") not in {
+            "szl.second-brain.snapshot/v1",
+            "szl.second-brain.snapshot/v2",
+        }:
+            raise ValueError("Second Brain source receipt schema is unsupported")
         if source.get("source_repository") != "szl-holdings/szl-second-brain":
             raise ValueError("Second Brain source repository drifted")
         if not HEX_40.fullmatch(str(source.get("source_revision") or "")):

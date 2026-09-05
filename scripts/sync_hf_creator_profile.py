@@ -333,6 +333,15 @@ def verify_live(
             neural = get_json(
                 LIVE_BASE + "/api/anatomy/v1/brain/neural-quant-v7?k=12"
             )
+            holographic = get_json(
+                LIVE_BASE + "/api/anatomy/v1/holographic-v7?refresh=1"
+            )
+            atlas = get_json(
+                LIVE_BASE + "/api/anatomy/v1/frontier/status?refresh=1"
+            )
+            atlas_formulas = get_json(
+                LIVE_BASE + "/api/anatomy/v1/frontier/formulas?k=48&refresh=1"
+            )
             version = get_json(LIVE_BASE + "/version?refresh=1")
             evidence = get_json(LIVE_BASE + "/evidence?refresh=1", timeout=25)
             source = get_json(
@@ -420,6 +429,45 @@ def verify_live(
             }
             for group in ("formulas", "quant", "ouroboros"):
                 assert_handles_only(neural[group])
+
+            assert holographic["ready"] is True
+            assert holographic["state"] == "SOURCE_BOUND_READ_ONLY"
+            assert holographic["claims"] == {
+                "content_exposed": False,
+                "weights_trained": False,
+                "claim_promoted": False,
+                "private_graph_used": False,
+                "execution_performed": False,
+                "human_review_required": True,
+            }
+            assert atlas["ready"] is True
+            assert atlas["state"] == "SOURCE_BOUND_REVIEW_MEMORY"
+            assert atlas["second_brain_source_revision"] == brain_revision
+            assert atlas["candidate_set_sha256"] == candidate_set_sha256
+            assert atlas["candidate_count"] == frontier_candidate_count
+            assert atlas["source_count"] == frontier_source_count
+            assert atlas["formula_atlas"] == {
+                "attributed_formula_count": EXPECTED_ATTRIBUTED_FORMULAS,
+                "executable_formula_count": EXPECTED_EXECUTABLE_FORMULAS,
+                "quant_domain_count": EXPECTED_QUANT_DOMAINS,
+                "locked_proven_formula_count": EXPECTED_LOCKED_PROVEN,
+                "f_number_to_executable_mapping": "UNKNOWN_NOT_INFERRED",
+            }
+            assert atlas["content_access"] == "HANDLES_ONLY"
+            assert atlas["training_authority"] == "NONE"
+            assert atlas["promotion_authority"] == "NONE"
+            assert atlas["execution_authority"] == "NONE"
+            assert atlas["private_graph_present"] is False
+            assert atlas_formulas["ready"] is True
+            assert atlas_formulas["matched_count"] >= 60
+            assert atlas_formulas["returned_count"] == 48
+            assert len(atlas_formulas["handles"]) == 48
+            assert_handles_only(atlas_formulas)
+            assert all(
+                handle["contentAccess"] == "HANDLES_ONLY"
+                and handle["authority"] == "NONE"
+                for handle in atlas_formulas["handles"]
+            )
 
             assert get_status(
                 LIVE_BASE + "/.runtime/second-brain/frontier-candidates.public.jsonl"
