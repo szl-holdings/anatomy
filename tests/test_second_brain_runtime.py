@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -228,9 +229,9 @@ class PublicSecondBrainTest(unittest.TestCase):
                     "path": "README.md",
                     "parser": "markdown",
                     "content_sha256": f"{index + 1:x}" * 64,
-                    "candidate_count": 1,
+                    "candidate_count": len(frontier_rows) - 6 if index == 0 else 1,
                 }
-                for index in range(6)
+                for index in range(7)
             ],
             "source_kind_counts": source_kind_counts,
             "quant_domain_counts": quant_domain_counts,
@@ -304,6 +305,46 @@ class PublicSecondBrainTest(unittest.TestCase):
             {"doc": 152, "formula": 269, "ingest": 143, "invariant": 11},
             health["by_source"],
         )
+
+    def test_materializer_receipt_loads_holographic_routes(self) -> None:
+        import frontier_runtime
+        import scripts.materialize_second_brain as materializer
+        from fastapi.testclient import TestClient
+
+        output = self.snapshot / "materialized"
+        with patch.object(materializer, "resolve_revision", return_value="a" * 40), patch.object(
+            materializer,
+            "request_bytes",
+            side_effect=lambda url, **kwargs: (self.snapshot / url.rsplit("/", 1)[1]).read_bytes(),
+        ):
+            materializer.materialize(output)
+
+        with patch.multiple(
+            frontier_runtime,
+            STATE_PATH=output / "frontier-state.v1.json",
+            CANDIDATES_PATH=output / "frontier-candidates.public.jsonl",
+            SOURCE_PATH=output / "source.json",
+            ATLAS=frontier_runtime.FrontierAtlas(),
+        ):
+            client = TestClient(frontier_runtime.app)
+            response = client.get("/api/anatomy/v1/holographic-v7")
+            self.assertEqual(200, response.status_code)
+            self.assertEqual("SOURCE_BOUND_READ_ONLY", response.json()["state"])
+            formulas = client.get("/api/anatomy/v1/frontier/formulas?k=48")
+            self.assertEqual(200, formulas.status_code)
+            payload = formulas.json()
+            self.assertEqual(61, payload["matched_count"])
+            self.assertEqual(48, payload["returned_count"])
+            self.assertEqual(48, len(payload["handles"]))
+            self.assertTrue(all(handle["authority"] == "NONE" for handle in payload["handles"]))
+            self.assertNotIn('"content"', formulas.text)
+            self.assertNotIn('"text"', formulas.text)
+
+            source = json.loads((output / "source.json").read_text(encoding="utf-8"))
+            source["frontier_candidate_set_sha256"] = "0" * 64
+            (output / "source.json").write_text(json.dumps(source), encoding="utf-8")
+            with patch.object(frontier_runtime, "ATLAS", frontier_runtime.FrontierAtlas()):
+                self.assertEqual(503, client.get("/api/anatomy/v1/holographic-v7").status_code)
 
     def test_search_returns_only_receipted_handles(self) -> None:
         brain = PublicSecondBrain(self.snapshot)
