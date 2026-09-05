@@ -322,6 +322,7 @@ class PublicSecondBrainTest(unittest.TestCase):
         return state, rows
 
     def _assert_frontier_rejected(self, state: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        import frontier_runtime
         import scripts.materialize_second_brain as materializer
 
         self._rewrite_frontier(state, rows)
@@ -333,6 +334,9 @@ class PublicSecondBrainTest(unittest.TestCase):
         health = PublicSecondBrain(self.snapshot).health()
         self.assertFalse(health["ready"])
         self.assertIn("source", str(health["load_error"]))
+        receipt = json.loads((self.snapshot / "source.json").read_text(encoding="utf-8"))
+        with self.assertRaisesRegex(ValueError, "frontier.*source"):
+            frontier_runtime.FrontierAtlas._validate(state, rows, receipt)
 
     def test_additive_eighth_source_materializes_and_serves(self) -> None:
         import scripts.materialize_second_brain as materializer
@@ -422,6 +426,9 @@ class PublicSecondBrainTest(unittest.TestCase):
         self._assert_frontier_rejected(state, remaining)
 
     def test_runtime_rejects_missing_or_stale_receipt_source_count(self) -> None:
+        import frontier_runtime
+
+        state, rows = self._frontier_fixture()
         receipt_path = self.snapshot / "source.json"
         original = json.loads(receipt_path.read_text(encoding="utf-8"))
         for count in (None, 6, 8, "7", True):
@@ -435,6 +442,8 @@ class PublicSecondBrainTest(unittest.TestCase):
                 health = PublicSecondBrain(self.snapshot).health()
                 self.assertFalse(health["ready"])
                 self.assertIn("source receipt count mismatch", str(health["load_error"]))
+                with self.assertRaisesRegex(ValueError, "source receipt count mismatch"):
+                    frontier_runtime.FrontierAtlas._validate(state, rows, receipt)
 
     def test_source_bound_snapshot_loads_retrieval_and_frontier(self) -> None:
         brain = PublicSecondBrain(self.snapshot)

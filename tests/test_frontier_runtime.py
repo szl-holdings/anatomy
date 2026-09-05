@@ -50,8 +50,29 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
     for index in range(53, 62):
         rows.append(make_row(index, "quant-domain", f"domain-{index - 53}"))
     for index in range(62, 72):
-        rows.append(make_row(index, "source-document"))
+        row = make_row(index, "source-document")
+        row["source_path"] = f"fixture/source-{index % 6}.md"
+        rows.append(row)
     rows.sort(key=lambda row: row["id"])
+    bindings = sorted({
+        (row["source_repository"], row["source_revision"], row["source_path"])
+        for row in rows
+    })
+    sources = [
+        {
+            "source_id": f"source_{index}",
+            "repository": binding[0],
+            "revision": binding[1],
+            "path": binding[2],
+            "parser": "markdown",
+            "content_sha256": hashlib.sha256(canonical_bytes(binding)).hexdigest(),
+            "candidate_count": sum(
+                (row["source_repository"], row["source_revision"], row["source_path"]) == binding
+                for row in rows
+            ),
+        }
+        for index, binding in enumerate(bindings)
+    ]
     candidate_set = hashlib.sha256(
         b"".join(canonical_bytes(row) + b"\n" for row in rows)
     ).hexdigest()
@@ -65,7 +86,7 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
         "candidate_count": len(rows),
         "candidate_set_sha256": candidate_set,
         "source_count": 7,
-        "sources": [],
+        "sources": sources,
         "source_kind_counts": dict(kinds),
         "quant_domain_counts": dict(domains),
         "public_content_access": "HANDLES_ONLY",
@@ -85,6 +106,7 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
         "frontier": {
             "candidate_count": len(rows),
             "candidate_set_sha256": candidate_set,
+            "source_count": len(sources),
         },
     }
     return state, rows, source

@@ -21,6 +21,7 @@ from typing import Any
 
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
+from second_brain_runtime import MIN_FRONTIER_CANDIDATES, validate_frontier_source_manifest
 
 ROOT = Path(__file__).resolve().parent
 SNAPSHOT = ROOT / ".runtime" / "second-brain"
@@ -173,9 +174,21 @@ class FrontierAtlas:
             frontier_receipt = {
                 "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
                 "candidate_count": source.get("frontier_candidate_count"),
+                "source_count": source.get("frontier_source_count"),
             }
         if not isinstance(frontier_receipt, dict):
             raise ValueError("Second Brain frontier source receipt is missing")
+
+        expected_source_counts = validate_frontier_source_manifest(
+            state,
+            source.get("frontier_source_count", frontier_receipt.get("source_count")),
+        )
+        if "source_count" in frontier_receipt and (
+            type(frontier_receipt["source_count"]) is not int
+            or frontier_receipt["source_count"] != len(expected_source_counts)
+        ):
+            raise ValueError("frontier source receipt count mismatch")
+        observed_source_counts = dict.fromkeys(expected_source_counts, 0)
 
         seen: set[str] = set()
         canonical_lines: list[bytes] = []
@@ -191,6 +204,14 @@ class FrontierAtlas:
             seen.add(node_id)
             if not HEX_40.fullmatch(str(row.get("source_revision") or "")):
                 raise ValueError("frontier candidate source revision is not exact")
+            binding = (
+                str(row.get("source_repository") or ""),
+                str(row.get("source_revision") or ""),
+                str(row.get("source_path") or ""),
+            )
+            if binding not in expected_source_counts:
+                raise ValueError("frontier source manifest binding failed")
+            observed_source_counts[binding] += 1
             if row.get("candidate_state") != "DISCOVERED_REVIEW_REQUIRED":
                 raise ValueError("frontier candidate was promoted")
             if row.get("content_access") != "CONTROLLER_ONLY":
@@ -204,6 +225,10 @@ class FrontierAtlas:
 
         if len(rows) != int(state.get("candidate_count") or -1):
             raise ValueError("frontier candidate count mismatch")
+        if len(rows) < MIN_FRONTIER_CANDIDATES:
+            raise ValueError("frontier candidate inventory is incomplete")
+        if observed_source_counts != expected_source_counts:
+            raise ValueError("frontier per-source candidate counts mismatch")
         candidate_set = _sha256(b"".join(canonical_lines))
         if candidate_set != state.get("candidate_set_sha256"):
             raise ValueError("frontier candidate-set digest mismatch")

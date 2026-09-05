@@ -5,6 +5,7 @@ import json
 import sys
 import threading
 import unittest
+import urllib.error
 import urllib.request
 from contextlib import ExitStack
 from pathlib import Path
@@ -25,6 +26,7 @@ class LivingFrontierContractTest(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.tearDown)
         output = self.fixture.snapshot / "http-materialized"
+        self.output = output
         with patch.object(materializer, "resolve_revision", return_value="a" * 40), patch.object(
             materializer,
             "request_bytes",
@@ -32,15 +34,17 @@ class LivingFrontierContractTest(unittest.TestCase):
         ):
             materializer.materialize(output)
         self.patches = self.enterContext(ExitStack())
+        atlas = frontier_runtime.FrontierAtlas()
         self.patches.enter_context(patch.multiple(
             frontier_runtime,
             STATE_PATH=output / "frontier-state.v1.json",
             CANDIDATES_PATH=output / "frontier-candidates.public.jsonl",
             SOURCE_PATH=output / "source.json",
+            ATLAS=atlas,
         ))
         self.patches.enter_context(patch.multiple(
             living_runtime,
-            FRONTIER_ATLAS=frontier_runtime.FrontierAtlas(),
+            FRONTIER_ATLAS=atlas,
             BRAIN=PublicSecondBrain(output),
         ))
         self.httpd = living_runtime.make_server("127.0.0.1", 0)
@@ -74,6 +78,28 @@ class LivingFrontierContractTest(unittest.TestCase):
         brain = self._get("/api/anatomy/v1/brain/search?q=public%20knowledge&k=48")
         self.assertEqual(48, frontier["returned_count"])
         self.assertEqual(24, len(brain["handles"]))
+
+    def test_all_direct_frontier_routes_reject_stale_source_receipt(self) -> None:
+        receipt_path = self.output / "source.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["frontier_source_count"] += 1
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        self.assertFalse(living_runtime.BRAIN.reload()["ready"])
+        for route in (
+            "/api/anatomy/v1/frontier/status",
+            "/api/anatomy/v1/frontier/handles",
+            "/api/anatomy/v1/frontier/formulas",
+            "/api/anatomy/v1/frontier/ouroboros",
+            "/api/anatomy/v1/holographic-v7",
+        ):
+            with self.subTest(route=route):
+                with self.assertRaises(urllib.error.HTTPError) as captured:
+                    urllib.request.urlopen(self.base + route, timeout=5)
+                with captured.exception as response:
+                    self.assertEqual(503, response.code)
+                    payload = json.load(response)
+                    self.assertFalse(payload["ready"])
+                    self.assertEqual("UNAVAILABLE", payload["state"])
 
 
 if __name__ == "__main__":

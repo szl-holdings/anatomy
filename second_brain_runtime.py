@@ -153,6 +153,53 @@ def _bounded_k(value: Any, default: int = 6) -> int:
     return max(1, min(parsed, MAX_K))
 
 
+def validate_frontier_source_manifest(
+    state: dict[str, Any], receipt_source_count: Any
+) -> dict[tuple[str, str, str], int]:
+    """Validate the source inventory shared by both public serving planes."""
+    source_count = state.get("source_count")
+    sources = state.get("sources")
+    if type(source_count) is not int or source_count < MIN_FRONTIER_SOURCES:
+        raise ValueError("frontier source inventory is incomplete")
+    if not isinstance(sources, list) or len(sources) != source_count:
+        raise ValueError("frontier source manifest count drifted")
+    if type(receipt_source_count) is not int or receipt_source_count != source_count:
+        raise ValueError("frontier source receipt count mismatch")
+    source_ids: set[str] = set()
+    expected_source_counts: dict[tuple[str, str, str], int] = {}
+    for index, entry in enumerate(sources, start=1):
+        if not isinstance(entry, dict):
+            raise ValueError(f"invalid frontier source at index {index}")
+        source_id = str(entry.get("source_id") or "")
+        repository = str(entry.get("repository") or "")
+        revision = str(entry.get("revision") or "")
+        digest = str(entry.get("content_sha256") or "")
+        parser = entry.get("parser")
+        path = entry.get("path")
+        candidate_count = entry.get("candidate_count")
+        if not source_id or source_id in source_ids:
+            raise ValueError(f"frontier source identity failed at index {index}")
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+            raise ValueError(f"frontier source repository failed at index {index}")
+        if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+            raise ValueError(f"frontier source binding failed at index {index}")
+        if (
+            not isinstance(parser, str)
+            or not parser.strip()
+            or not isinstance(path, str)
+            or not path.strip()
+            or type(candidate_count) is not int
+            or candidate_count < 1
+        ):
+            raise ValueError(f"frontier source metadata failed at index {index}")
+        binding = (repository, revision, path)
+        if binding in expected_source_counts:
+            raise ValueError(f"duplicate frontier source binding at index {index}")
+        source_ids.add(source_id)
+        expected_source_counts[binding] = candidate_count
+    return expected_source_counts
+
+
 class PublicSecondBrain:
     """Validated read-only index over retrieval and frontier public memory."""
 
@@ -352,49 +399,10 @@ class PublicSecondBrain:
             raise ValueError("private graph material entered the frontier index")
         if int(state.get("raw_graph_nodes_admitted_to_gradients") or 0) != 0:
             raise ValueError("frontier index admitted raw graph nodes to gradients")
-        source_count = state.get("source_count")
-        sources = state.get("sources")
-        if type(source_count) is not int or source_count < MIN_FRONTIER_SOURCES:
-            raise ValueError("frontier source inventory is incomplete")
-        if not isinstance(sources, list) or len(sources) != source_count:
-            raise ValueError("frontier source manifest count drifted")
-        receipt_source_count = source.get("frontier_source_count")
-        if type(receipt_source_count) is not int or receipt_source_count != source_count:
-            raise ValueError("frontier source receipt count mismatch")
-        source_ids: set[str] = set()
-        expected_source_counts: dict[tuple[str, str, str], int] = {}
-        observed_source_counts: dict[tuple[str, str, str], int] = {}
-        for index, entry in enumerate(sources, start=1):
-            if not isinstance(entry, dict):
-                raise ValueError(f"invalid frontier source at index {index}")
-            source_id = str(entry.get("source_id") or "")
-            repository = str(entry.get("repository") or "")
-            revision = str(entry.get("revision") or "")
-            digest = str(entry.get("content_sha256") or "")
-            parser = entry.get("parser")
-            path = entry.get("path")
-            candidate_count = entry.get("candidate_count")
-            if not source_id or source_id in source_ids:
-                raise ValueError(f"frontier source identity failed at index {index}")
-            if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
-                raise ValueError(f"frontier source repository failed at index {index}")
-            if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
-                raise ValueError(f"frontier source binding failed at index {index}")
-            if (
-                not isinstance(parser, str)
-                or not parser.strip()
-                or not isinstance(path, str)
-                or not path.strip()
-                or type(candidate_count) is not int
-                or candidate_count < 1
-            ):
-                raise ValueError(f"frontier source metadata failed at index {index}")
-            binding = (repository, revision, path)
-            if binding in expected_source_counts:
-                raise ValueError(f"duplicate frontier source binding at index {index}")
-            source_ids.add(source_id)
-            expected_source_counts[binding] = candidate_count
-            observed_source_counts[binding] = 0
+        expected_source_counts = validate_frontier_source_manifest(
+            state, source.get("frontier_source_count")
+        )
+        observed_source_counts = dict.fromkeys(expected_source_counts, 0)
 
         kind_counts = state.get("source_kind_counts")
         domain_counts = state.get("quant_domain_counts")
