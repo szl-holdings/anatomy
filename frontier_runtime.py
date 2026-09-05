@@ -96,6 +96,20 @@ class FrontierAtlas:
                 state_raw = STATE_PATH.read_bytes()
                 candidates_raw = CANDIDATES_PATH.read_bytes()
                 source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+                if not isinstance(source, dict):
+                    raise ValueError("Second Brain source receipt is missing")
+                nested_receipt = source.get("frontier")
+                for field, payload in (
+                    ("frontier_state_sha256", state_raw),
+                    ("frontier_candidates_sha256", candidates_raw),
+                ):
+                    expected_digest = source.get(field)
+                    if expected_digest is None and isinstance(nested_receipt, dict):
+                        expected_digest = nested_receipt.get(field.removeprefix("frontier_"))
+                    if not isinstance(expected_digest, str) or not HEX_64.fullmatch(expected_digest):
+                        raise ValueError(f"Second Brain {field} is missing or malformed")
+                    if _sha256(payload) != expected_digest:
+                        raise ValueError(f"Second Brain {field} mismatch")
                 state = json.loads(state_raw)
                 rows = [
                     json.loads(line)
