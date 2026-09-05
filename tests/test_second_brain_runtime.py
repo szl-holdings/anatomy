@@ -271,6 +271,7 @@ class PublicSecondBrainTest(unittest.TestCase):
                 frontier_candidates_raw
             ).hexdigest(),
             "frontier_candidate_count": len(frontier_rows),
+            "frontier_source_count": len(frontier_sources),
             "frontier_candidate_set_sha256": candidate_set_sha256,
             "private_graph_nodes_materialized": 0,
             "raw_graph_nodes_admitted_to_gradients": 0,
@@ -406,6 +407,34 @@ class PublicSecondBrainTest(unittest.TestCase):
                 changed = deepcopy(state)
                 changed["sources"][0]["candidate_count"] = count
                 self._assert_frontier_rejected(changed, rows)
+
+    def test_dropping_one_of_seven_sources_fails_closed(self) -> None:
+        state, rows = self._frontier_fixture()
+        removed = next(source for source in state["sources"] if source["candidate_count"] == 1)
+        state["sources"].remove(removed)
+        state["source_count"] -= 1
+        remaining = [
+            row for row in rows
+            if (row["source_repository"], row["source_revision"], row["source_path"])
+            != (removed["repository"], removed["revision"], removed["path"])
+        ]
+        self.assertEqual(70, len(remaining))
+        self._assert_frontier_rejected(state, remaining)
+
+    def test_runtime_rejects_missing_or_stale_receipt_source_count(self) -> None:
+        receipt_path = self.snapshot / "source.json"
+        original = json.loads(receipt_path.read_text(encoding="utf-8"))
+        for count in (None, 6, 8, "7", True):
+            with self.subTest(count=count):
+                receipt = deepcopy(original)
+                if count is None:
+                    receipt.pop("frontier_source_count")
+                else:
+                    receipt["frontier_source_count"] = count
+                receipt_path.write_bytes(canonical_bytes(receipt) + b"\n")
+                health = PublicSecondBrain(self.snapshot).health()
+                self.assertFalse(health["ready"])
+                self.assertIn("source receipt count mismatch", str(health["load_error"]))
 
     def test_source_bound_snapshot_loads_retrieval_and_frontier(self) -> None:
         brain = PublicSecondBrain(self.snapshot)

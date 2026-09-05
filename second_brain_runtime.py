@@ -40,7 +40,7 @@ SOURCE_REPOSITORY = "szl-holdings/szl-second-brain"
 CANONICAL_DATASET = "SZLHOLDINGS/szl-second-brain-inrepo"
 PUBLIC_CHUNK_COUNT = 575
 MIN_FRONTIER_CANDIDATES = 70
-MIN_FRONTIER_SOURCES = 6
+MIN_FRONTIER_SOURCES = 7
 EXPECTED_ATTRIBUTED_FORMULAS = 30
 EXPECTED_EXECUTABLE_FORMULAS = 21
 EXPECTED_QUANT_DOMAINS = 9
@@ -358,6 +358,9 @@ class PublicSecondBrain:
             raise ValueError("frontier source inventory is incomplete")
         if not isinstance(sources, list) or len(sources) != source_count:
             raise ValueError("frontier source manifest count drifted")
+        receipt_source_count = source.get("frontier_source_count")
+        if type(receipt_source_count) is not int or receipt_source_count != source_count:
+            raise ValueError("frontier source receipt count mismatch")
         source_ids: set[str] = set()
         expected_source_counts: dict[tuple[str, str, str], int] = {}
         observed_source_counts: dict[tuple[str, str, str], int] = {}
