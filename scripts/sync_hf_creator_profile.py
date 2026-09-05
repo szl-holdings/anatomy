@@ -622,7 +622,7 @@ def main() -> None:
         repo_type="space",
         operations=operations,
         commit_message=(
-            f"hf-sync: creator profile source {source_revision} "
+            f"hf-sync: source {source_revision} "
             f"run {workflow_run_id}"
         ),
     )
