@@ -108,6 +108,7 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
         "merge_authority": "NONE",
         "lambda": "CONJECTURE_1",
     }
+    state_raw = canonical_bytes(state)
     source = {
         "schema": "szl.second-brain.snapshot/v2",
         "source_repository": "szl-holdings/szl-second-brain",
@@ -116,14 +117,28 @@ def snapshot() -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
             "candidate_count": len(rows),
             "candidate_set_sha256": candidate_set,
             "source_count": len(sources),
+            "state_sha256": hashlib.sha256(state_raw).hexdigest(),
         },
     }
     return state, rows, source
 
 
+def validate_snapshot(
+    state: dict[str, Any],
+    rows: list[dict[str, Any]],
+    source: dict[str, Any],
+) -> None:
+    frontier_runtime.FrontierAtlas._validate(
+        state,
+        rows,
+        source,
+        canonical_bytes(state),
+    )
+
+
 def test_exact_frontier_snapshot_accepts_formula_and_quant_contract() -> None:
     state, rows, source = snapshot()
-    frontier_runtime.FrontierAtlas._validate(state, rows, source)
+    validate_snapshot(state, rows, source)
 
 
 def test_direct_frontier_rejects_incomplete_or_unbound_source_receipts() -> None:
@@ -132,7 +147,7 @@ def test_direct_frontier_rejects_incomplete_or_unbound_source_receipts() -> None
     state["source_count"] -= 1
     source["frontier"]["source_count"] -= 1
     try:
-        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+        validate_snapshot(state, rows, source)
     except ValueError as error:
         assert "source inventory" in str(error)
     else:
@@ -141,7 +156,7 @@ def test_direct_frontier_rejects_incomplete_or_unbound_source_receipts() -> None
     state, rows, source = snapshot()
     source["frontier"]["source_count"] += 1
     try:
-        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+        validate_snapshot(state, rows, source)
     except ValueError as error:
         assert "receipt source count" in str(error)
     else:
@@ -151,11 +166,20 @@ def test_direct_frontier_rejects_incomplete_or_unbound_source_receipts() -> None
     state["sources"][0]["candidate_count"] -= 1
     state["sources"][1]["candidate_count"] += 1
     try:
-        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+        validate_snapshot(state, rows, source)
     except ValueError as error:
         assert "per-source candidate counts" in str(error)
     else:
         raise AssertionError("redistributed frontier source counts were accepted")
+
+    state, rows, source = snapshot()
+    state["sources"][0]["content_sha256"] = "f" * 64
+    try:
+        validate_snapshot(state, rows, source)
+    except ValueError as error:
+        assert "state digest" in str(error)
+    else:
+        raise AssertionError("unreceipted frontier state drift was accepted")
 
 
 def test_snapshot_rejects_promotion_content_drift_and_private_graph() -> None:
@@ -163,7 +187,7 @@ def test_snapshot_rejects_promotion_content_drift_and_private_graph() -> None:
     promoted = [dict(row) for row in rows]
     promoted[0]["candidate_state"] = "PROMOTED"
     try:
-        frontier_runtime.FrontierAtlas._validate(state, promoted, source)
+        validate_snapshot(state, promoted, source)
     except ValueError as error:
         assert "promoted" in str(error)
     else:
@@ -172,7 +196,7 @@ def test_snapshot_rejects_promotion_content_drift_and_private_graph() -> None:
     state, rows, source = snapshot()
     rows[0]["content_sha256"] = "0" * 64
     try:
-        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+        validate_snapshot(state, rows, source)
     except ValueError as error:
         assert "digest" in str(error)
     else:
@@ -181,7 +205,7 @@ def test_snapshot_rejects_promotion_content_drift_and_private_graph() -> None:
     state, rows, source = snapshot()
     state["private_graph_nodes_loaded"] = 1
     try:
-        frontier_runtime.FrontierAtlas._validate(state, rows, source)
+        validate_snapshot(state, rows, source)
     except ValueError as error:
         assert "private graph" in str(error)
     else:
