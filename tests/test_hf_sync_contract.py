@@ -196,6 +196,7 @@ class HfSyncContractTest(unittest.TestCase):
             'brain_source.get(key)',
             'brain_source.get("public_chunk_count")',
             'brain_source.get("frontier_candidate_count")',
+            'brain_source.get("frontier_source_count")',
             'brain_source.get("quant_domain_count")',
         ):
             self.assertIn(contract, self.publisher)
