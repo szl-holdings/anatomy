@@ -102,7 +102,7 @@ class FrontierAtlas:
                     for line in candidates_raw.splitlines()
                     if line.strip()
                 ]
-                self._validate(state, rows, source)
+                self._validate(state, rows, source, state_raw)
                 frequencies: list[Counter[str]] = []
                 document_frequency: Counter[str] = Counter()
                 for row in rows:
@@ -135,6 +135,7 @@ class FrontierAtlas:
         state: Any,
         rows: list[Any],
         source: Any,
+        state_raw: bytes,
     ) -> None:
         if not isinstance(state, dict):
             raise ValueError("frontier state must be an object")
@@ -175,6 +176,7 @@ class FrontierAtlas:
                 "candidate_set_sha256": source.get("frontier_candidate_set_sha256"),
                 "candidate_count": source.get("frontier_candidate_count"),
                 "source_count": source.get("frontier_source_count"),
+                "state_sha256": source.get("frontier_state_sha256"),
             }
         if not isinstance(frontier_receipt, dict):
             raise ValueError("Second Brain frontier source receipt is missing")
@@ -268,6 +270,9 @@ class FrontierAtlas:
             raise ValueError("source receipt candidate count mismatch")
         if observed_source_counts != expected_source_counts:
             raise ValueError("frontier per-source candidate counts mismatch")
+        state_digest = _sha256(state_raw)
+        if frontier_receipt.get("state_sha256") != state_digest:
+            raise ValueError("source receipt frontier state digest mismatch")
         if kind_counts["attributed-formula"] != 30:
             raise ValueError("attributed formula count drifted")
         if kind_counts["executable-formula"] != 21:
