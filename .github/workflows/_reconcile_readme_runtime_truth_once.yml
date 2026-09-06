@@ -1,0 +1,170 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Reconcile README runtime truth once
+
+on:
+  push:
+    branches:
+      - fix/readme-runtime-truth-20260906
+    paths:
+      - .github/workflows/_reconcile_readme_runtime_truth_once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anatomy-readme-runtime-truth-20260906
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository == 'szl-holdings/anatomy' && github.ref == 'refs/heads/fix/readme-runtime-truth-20260906'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Check out exact repair branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: fix/readme-runtime-truth-20260906
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reconcile exact stale claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=fix/readme-runtime-truth-20260906
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote origin refs/heads/$branch | cut -f1)" = "$GITHUB_SHA"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("README.md")
+          text = path.read_text(encoding="utf-8")
+
+          required_runtime = (
+              "server.py",
+              "frontier_runtime.py",
+              "second_brain_runtime.py",
+              "living_runtime.py",
+              "organ_integrity.py",
+              "requirements.txt",
+          )
+          missing = [name for name in required_runtime if not Path(name).is_file()]
+          if missing:
+              raise SystemExit(f"runtime tree changed; missing={missing}")
+
+          protected = (
+              "Locked-proven stays **exactly 8** {F1,F4,F7,F11,F12,F18,F19,F22} @ `c7c0ba17`; the doctrine\nfooter is unchanged.",
+              "Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE)",
+              "Khipu BFT safety = Conjecture 2",
+          )
+          for sentence in protected:
+              if sentence not in text:
+                  raise SystemExit(f"load-bearing doctrine sentence missing before edit: {sentence!r}")
+
+          replacements = (
+              (
+                  "**Supply-chain posture:** this Space is a fully static visualization served by a thin\n"
+                  "Docker wrapper (`sdk: docker`; a static file server, no application backend) — SLSA L1 honest.\n",
+                  "**Supply-chain posture:** this Space runs a hardened Python/FastAPI runtime that serves\n"
+                  "the sovereign static atlas and its read-only evidence, integrity, and v7 API routes\n"
+                  "inside the Docker image (`sdk: docker`). The atlas shell (`index.html`, `app.js`,\n"
+                  "`data.js`, and vendored `lib/three.min.js`) remains a zero-CDN, no-build,\n"
+                  "static and offline-capable bundle. The runtime image is presented as SLSA L1 honest;\n"
+                  "that posture does not prove runtime correctness, safety, or model quality.\n",
+              ),
+              (
+                  "This Space is a static bundle served by a thin Docker wrapper (`sdk: docker`; a\n"
+                  "`python http.server` on port 7860) — no application backend, and the bundle itself is\n"
+                  "static and offline-capable. To run and test locally:\n",
+                  "This Space is a hardened Python/FastAPI runtime in a Docker Space (`sdk: docker`).\n"
+                  "It serves the sovereign static atlas plus the read-only `/api/anatomy/v1/*`,\n"
+                  "`/version`, `/evidence`, and `/.well-known/szl-source.json` contracts. The atlas\n"
+                  "shell itself remains static and offline-capable; the API service is required for\n"
+                  "runtime evidence and the v7 instruments. To run and test locally:\n",
+              ),
+              (
+                  "# run: serve the bundle from the repo root with any static server\n"
+                  "python3 -m http.server 8000          # then open http://localhost:8000/index.html\n",
+                  "# run: launch the same application runtime used by the Docker image\n"
+                  "python3 -m pip install -r requirements.txt\n"
+                  "python3 living_runtime.py            # then open http://localhost:7860/\n"
+                  "\n"
+                  "# atlas-shell-only mode (API/evidence routes are intentionally unavailable)\n"
+                  "python3 -m http.server 8000          # then open http://localhost:8000/index.html\n",
+              ),
+              (
+                  "This Space serves a fully static bundle via a thin Docker wrapper (`sdk: docker`;\n"
+                  "a `python http.server` on port 7860). Under `sdk: docker` Hugging Face does **not**\n"
+                  "apply a README `custom_headers` block (that lever is static-SDK only), so the\n"
+                  "cross-origin headers are emitted by the container's own static server. Hardening is\n",
+                  "This Space serves the atlas and read-only API contracts through the repository's\n"
+                  "Python/FastAPI runtime (`sdk: docker`; `living_runtime.py` on port 7860). Under\n"
+                  "`sdk: docker` Hugging Face does **not** apply a README `custom_headers` block\n"
+                  "(that lever is static-SDK only), so the cross-origin headers are emitted by the\n"
+                  "application server. Hardening is\n",
+              ),
+              (
+                  "Because the bundle is fully static and\n"
+                  "self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just\n"
+                  "\"serve the older files\" — there is no migration or state to unwind.\n",
+                  "Because the atlas shell is self-contained (vendored `lib/three.min.js`, no\n"
+                  "runtime CDN) and the application service is read-only and stateless, rollback\n"
+                  "means redeploying the older source-bound image; there is no data migration to unwind.\n",
+              ),
+          )
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected exactly one stale block, observed={count}: {old[:80]!r}")
+              text = text.replace(old, new, 1)
+
+          if "no application backend" in text:
+              raise SystemExit("stale no-backend claim survived")
+          if "`python http.server` on port 7860" in text:
+              raise SystemExit("stale production server claim survived")
+          for sentence in protected:
+              if sentence not in text:
+                  raise SystemExit(f"load-bearing doctrine sentence changed: {sentence!r}")
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+          test "$(git diff --name-only)" = "README.md"
+          git diff --check
+          python -m py_compile tests/test_readme_runtime_truth.py
+          python - <<'PY'
+          import runpy
+
+          namespace = runpy.run_path("tests/test_readme_runtime_truth.py")
+          for name in (
+              "test_runtime_files_exist",
+              "test_readme_describes_application_runtime_not_static_server",
+              "test_load_bearing_doctrine_sentences_remain_present",
+          ):
+              namespace[name]()
+          print("README_RUNTIME_TRUTH_VERIFIED")
+          PY
+
+      - name: Commit permanent repair and self-remove
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=fix/readme-runtime-truth-20260906
+          test "$(git ls-remote origin refs/heads/$branch | cut -f1)" = "$GITHUB_SHA"
+          git rm -- .github/workflows/_reconcile_readme_runtime_truth_once.yml
+          git add -- README.md
+          git diff --cached --check
+          expected=$'.github/workflows/_reconcile_readme_runtime_truth_once.yml\nREADME.md'
+          test "$(git diff --cached --name-only | sort)" = "$expected"
+          git config user.name 'Lutar, Stephen P.'
+          git config user.email 'stephenlutar2@gmail.com'
+          git commit -s -m 'docs: align README with FastAPI runtime'
+          git push origin "HEAD:refs/heads/$branch"
