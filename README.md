@@ -243,8 +243,12 @@ Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
 ~185 experimental CI-green · trust never 100% · no AGI.
 
-**Supply-chain posture:** this Space is a fully static visualization served by a thin
-Docker wrapper (`sdk: docker`; a static file server, no application backend) — SLSA L1 honest.
+**Supply-chain posture:** this Space runs a hardened Python/FastAPI runtime that serves
+the sovereign static atlas and its read-only evidence, integrity, and v7 API routes
+inside the Docker image (`sdk: docker`). The atlas shell (`index.html`, `app.js`,
+`data.js`, and vendored `lib/three.min.js`) remains a zero-CDN, no-build,
+static and offline-capable bundle. The runtime image is presented as SLSA L1 honest;
+that posture does not prove runtime correctness, safety, or model quality.
 The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
 (container provenance via attest-build-provenance, Sigstore keyless, Rekor-anchored; L3 roadmap) —
 see the active canonical successors [a11oy](https://github.com/szl-holdings/a11oy),
@@ -300,12 +304,18 @@ deploy preview.
 
 ## Run, test, rollback (operability)
 
-This Space is a static bundle served by a thin Docker wrapper (`sdk: docker`; a
-`python http.server` on port 7860) — no application backend, and the bundle itself is
-static and offline-capable. To run and test locally:
+This Space is a hardened Python/FastAPI runtime in a Docker Space (`sdk: docker`).
+It serves the sovereign static atlas plus the read-only `/api/anatomy/v1/*`,
+`/version`, `/evidence`, and `/.well-known/szl-source.json` contracts. The atlas
+shell itself remains static and offline-capable; the API service is required for
+runtime evidence and the v7 instruments. To run and test locally:
 
 ```bash
-# run: serve the bundle from the repo root with any static server
+# run: launch the same application runtime used by the Docker image
+python3 -m pip install -r requirements.txt
+python3 living_runtime.py            # then open http://localhost:7860/
+
+# atlas-shell-only mode (API/evidence routes are intentionally unavailable)
 python3 -m http.server 8000          # then open http://localhost:8000/index.html
 
 # test: the headless QA harness (Playwright/Chromium) renders all three
@@ -322,18 +332,19 @@ endpoint is unreachable — an offline endpoint is an expected state, not an out
 
 **Rollback (one step):** every deploy is a git commit; to revert the live Space to a
 known-good state, redeploy the previous tag/commit — `git revert <bad-sha>` (or reset
-the HF Space mirror to the prior commit). Because the bundle is fully static and
-self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just
-"serve the older files" — there is no migration or state to unwind.
+the HF Space mirror to the prior commit). Because the atlas shell is self-contained (vendored `lib/three.min.js`, no
+runtime CDN) and the application service is read-only and stateless, rollback
+means redeploying the older source-bound image; there is no data migration to unwind.
 
 **Service ownership:** see `.github/CODEOWNERS`.
 
 ## Security headers (SAFE-NOW hardening, R2)
 
-This Space serves a fully static bundle via a thin Docker wrapper (`sdk: docker`;
-a `python http.server` on port 7860). Under `sdk: docker` Hugging Face does **not**
-apply a README `custom_headers` block (that lever is static-SDK only), so the
-cross-origin headers are emitted by the container's own static server. Hardening is
+This Space serves the atlas and read-only API contracts through the repository's
+Python/FastAPI runtime (`sdk: docker`; `living_runtime.py` on port 7860). Under
+`sdk: docker` Hugging Face does **not** apply a README `custom_headers` block
+(that lever is static-SDK only), so the cross-origin headers are emitted by the
+application server. Hardening is
 split across the two levers that actually take effect, and nothing is set that the
 browser would silently ignore (doctrine v11: never fabricate):
 
