@@ -243,8 +243,7 @@ Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
 ~185 experimental CI-green · trust never 100% · no AGI.
 
-**Supply-chain posture:** this Space is a fully static visualization served by a thin
-Docker wrapper (`sdk: docker`; a static file server, no application backend) — SLSA L1 honest.
+**Supply-chain posture:** this Space is a hardened Python runtime (`server.py` — FastAPI, port 7860, with the v7 modules `second_brain_runtime.py`, `living_runtime.py`, `organ_integrity.py`, `frontier_runtime.py`) serving the static, offline-capable atlas bundle plus the read-only `/api/anatomy/v1/*` inspection APIs, packaged as a Docker image (`sdk: docker`) — SLSA L1 honest.
 The product images it depicts (**a11oy**, **killinchu**) are **SLSA L1 honest · L2 build-attested**
 (container provenance via attest-build-provenance, Sigstore keyless, Rekor-anchored; L3 roadmap) —
 see the active canonical successors [a11oy](https://github.com/szl-holdings/a11oy),
@@ -300,9 +299,9 @@ deploy preview.
 
 ## Run, test, rollback (operability)
 
-This Space is a static bundle served by a thin Docker wrapper (`sdk: docker`; a
-`python http.server` on port 7860) — no application backend, and the bundle itself is
-static and offline-capable. To run and test locally:
+This Space runs a hardened Python runtime (`server.py`, port 7860) that serves the
+static, offline-capable atlas bundle and the read-only v7 API routes from one Docker
+image (`sdk: docker`). To run and test the atlas bundle locally:
 
 ```bash
 # run: serve the bundle from the repo root with any static server
@@ -322,22 +321,22 @@ endpoint is unreachable — an offline endpoint is an expected state, not an out
 
 **Rollback (one step):** every deploy is a git commit; to revert the live Space to a
 known-good state, redeploy the previous tag/commit — `git revert <bad-sha>` (or reset
-the HF Space mirror to the prior commit). Because the bundle is fully static and
-self-contained (vendored `lib/three.min.js`, no runtime CDN), a rollback is just
-"serve the older files" — there is no migration or state to unwind.
+the HF Space mirror to the prior commit). Because the image is self-contained
+(vendored `lib/three.min.js`, no runtime CDN) and the runtime is stateless, a rollback
+is just "deploy the older image" — there is no migration or state to unwind.
 
 **Service ownership:** see `.github/CODEOWNERS`.
 
 ## Security headers (SAFE-NOW hardening, R2)
 
-This Space serves a fully static bundle via a thin Docker wrapper (`sdk: docker`;
-a `python http.server` on port 7860). Under `sdk: docker` Hugging Face does **not**
-apply a README `custom_headers` block (that lever is static-SDK only), so the
-cross-origin headers are emitted by the container's own static server. Hardening is
-split across the two levers that actually take effect, and nothing is set that the
+This Space serves the static atlas bundle and its read-only v7 runtime APIs from
+one Docker image (`sdk: docker`; `server.py` on port 7860). Under `sdk: docker`
+Hugging Face does **not** apply a README `custom_headers` block (that lever is
+static-SDK only), so the cross-origin headers are emitted by the container's own
+server. Hardening is split across the two levers that actually take effect, and nothing is set that the
 browser would silently ignore (doctrine v11: never fabricate):
 
-- **Response headers emitted by the Space's static server** (set on every response):
+- **Response headers emitted by the Space's container server** (set on every response):
   - `cross-origin-opener-policy: same-origin-allow-popups`
   - `cross-origin-resource-policy: cross-origin` (keeps the page loadable inside
     the legitimate `huggingface.co` / `*.hf.space` embed iframe).
@@ -358,7 +357,7 @@ browser would silently ignore (doctrine v11: never fabricate):
 
 **Why no HSTS / `frame-ancestors` / Report-Only here:** browsers ignore HSTS,
 CSP `frame-ancestors`, and `Content-Security-Policy-Report-Only` when delivered
-via `<meta>`, and the static server does not emit them as real headers — so setting
+via `<meta>`, and the container server does not emit them as real headers — so setting
 them in-repo would be security theater. HF already terminates TLS and redirects to
 HTTPS at the edge. **Embedding is deliberately left enabled** (no
 `X-Frame-Options: DENY`, no `disable_embedding`) so the Space keeps working inside
