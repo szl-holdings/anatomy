@@ -43,6 +43,9 @@ jobs:
       - name: Run server and Second Brain contract tests
         run: python -m unittest discover -s tests -v
 
+      - name: Verify typed observation display behavior
+        run: node --test tests/test_dependency_observations.cjs
+
       - name: Build pinned Space image
         run: docker build --tag anatomy-space-ci .
 

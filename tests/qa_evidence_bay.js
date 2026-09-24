@@ -5,6 +5,8 @@ const path = require('path');
 
 const BASE = process.env.ANATOMY_BASE_URL || 'http://127.0.0.1:7860';
 const EDGE = process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined;
+const {observationView} = require('../frontier_anatomy.js');
+const EXPECTED_DEPENDENCIES = ['a11oy.honesty','a11oy.public-verifier','a11oy.organ-integrity','killinchu.evidence','receipt-verifier.space'];
 const OUT = process.env.ANATOMY_QA_OUTPUT || __dirname;
 const VIEWPORTS = [
   { name:'desktop', width:1440, height:900 },
@@ -13,8 +15,8 @@ const VIEWPORTS = [
 
 async function run(browser, vp) {
   const page = await browser.newPage({viewport:{width:vp.width,height:vp.height}});
-  const errors = [];
-  page.on('console', msg => { if (msg.type()==='error') errors.push(msg.text()); });
+  const errors = [], networkErrors = [];
+  page.on('console', msg => { if (msg.type()==='error') { const text=msg.text(); (/^Failed to load resource:|^Access to fetch /.test(text)?networkErrors:errors).push(text); } });
   page.on('pageerror', err => errors.push('PAGEERROR: '+err.message));
   const initialEvidence = page.waitForResponse(response => {
     const url = new URL(response.url());
@@ -27,6 +29,7 @@ async function run(browser, vp) {
   const initialEvidenceResponse = await initialEvidence;
   if (initialEvidenceResponse.status() !== 200) throw new Error(vp.name+' initial evidence HTTP '+initialEvidenceResponse.status());
 
+  const observedEvidence = await initialEvidenceResponse.json();
   const overview = await page.evaluate(() => ({
     title: document.querySelector('.fa-title')?.textContent,
     dimensions: [...document.querySelectorAll('.fa-dim-value')].map(x=>x.textContent),
@@ -51,6 +54,8 @@ async function run(browser, vp) {
   }
   const dependencyCount = await page.locator('.fa-dep').count();
   const dependencyStates = await page.locator('.fa-dep-state').allInnerTexts();
+  const dependencyIds = await page.locator('.fa-dep-name').allTextContents();
+  const evidenceText = await page.locator('#fa-body').innerText();
 
   await page.click('[data-tab="reproduce"]');
   const endpointTexts = await page.locator('.fa-endpoint a').allInnerTexts();
@@ -80,7 +85,16 @@ async function run(browser, vp) {
   for (const field of ['Purpose','Try','Evidence','Limits','Reproduce']) {
     if (!shellText.includes(field)) throw new Error(vp.name+' missing '+field+' shell');
   }
-  if (dependencyCount !== 4) throw new Error(vp.name+' dependency count '+dependencyCount);
+  if (JSON.stringify([...dependencyIds].sort()) !== JSON.stringify([...EXPECTED_DEPENDENCIES].sort())) throw new Error(vp.name+' dependency IDs '+dependencyIds);
+  if (observedEvidence.observation_contract !== 'szl.anatomy-dependency-observation/v1') throw new Error(vp.name+' missing typed observation contract');
+  if (observedEvidence.dependencies.length !== EXPECTED_DEPENDENCIES.length) throw new Error(vp.name+' unexpected observed dependency count');
+  for (const dep of observedEvidence.dependencies) {
+    const index=dependencyIds.indexOf(dep.id), view=observationView(dep,Date.now());
+    if (index<0) throw new Error(vp.name+' observed dependency not rendered '+dep.id);
+    if (!view.validated && dependencyStates[index].includes('Contract VALIDATED')) throw new Error(vp.name+' false validation '+dep.id);
+    if (view.evidence!=='LIVE' && /Evidence LIVE/.test(dependencyStates[index])) throw new Error(vp.name+' false live organ '+dep.id);
+  }
+  if (!evidenceText.includes('Body observations')) throw new Error(vp.name+' missing observation instrument');
   if (!endpointTexts.some(text => text.includes('/version'))) throw new Error(vp.name+' missing /version discovery');
   if (!endpointTexts.some(text => text.includes('/evidence'))) throw new Error(vp.name+' missing /evidence discovery');
   if (contracts.version.schemaVersion !== 'szl.vertical-conformance.version.v1') throw new Error(vp.name+' version schema failed');
@@ -90,7 +104,7 @@ async function run(browser, vp) {
   if (!['MEASURED','UNAVAILABLE'].includes(contracts.version.evidenceState)) throw new Error(vp.name+' unexpected version evidence state '+contracts.version.evidenceState);
   if (!['PARTIAL','UNAVAILABLE'].includes(contracts.evidence.evidenceState)) throw new Error(vp.name+' unexpected evidence state '+contracts.evidence.evidenceState);
   if (!verification.includes('STRUCTURAL-ONLY')) throw new Error(vp.name+' receipt verdict '+verification);
-  return {viewport:vp.name, overview, capabilityCount, dependencyCount, dependencyStates, endpointTexts, contracts, verification};
+  return {viewport:vp.name, overview, capabilityCount, dependencyCount, dependencyStates, networkErrors, endpointTexts, contracts, verification};
 }
 
 (async()=>{

@@ -104,6 +104,7 @@ def runtime_files() -> list[str]:
         "*.html",
         "*.js",
         "*.css",
+        "*.svg",
         "lib/**/*",
     ]
     files: set[str] = set()
@@ -119,6 +120,9 @@ def runtime_files() -> list[str]:
         "requirements.txt",
         "server.py",
         "living_runtime.py",
+        "organ_integrity.py",
+        "style.css",
+        "favicon.svg",
         "frontier_runtime.py",
         "second_brain_runtime.py",
         "neural-quant-v7.js",
@@ -293,6 +297,61 @@ def assert_handles_only(payload: dict[str, Any], key: str = "handles") -> None:
         assert len(str(handle.get("sha256") or "")) == 64
 
 
+def verify_dependency_observations(payload: dict[str, Any]) -> None:
+    """Check the released observation contract without requiring healthy upstreams."""
+    marker = "szl.anatomy-dependency-observation/v1"
+    expected = {
+        "a11oy.honesty", "a11oy.public-verifier", "a11oy.organ-integrity",
+        "killinchu.evidence", "receipt-verifier.space",
+    }
+    assert payload.get("observation_contract") == marker
+    rows = payload.get("dependencies")
+    assert isinstance(rows, list) and len(rows) == len(expected)
+    assert {row.get("id") for row in rows} == expected
+    assert payload.get("authority_state") == "READ_ONLY"
+    for row in rows:
+        assert row.get("observation_contract") == marker
+        assert type(row.get("contract_validated")) is bool
+        assert bool(row["contract_validated"]) == (row.get("contract_state") == "AVAILABLE")
+        assert isinstance(row.get("observed_at"), str) and row["observed_at"]
+        assert isinstance(row.get("measured"), dict)
+        state = row.get("evidence_state")
+        assert state in {"LIVE", "MEASURED", "UNAVAILABLE"}
+        if state in {"LIVE", "MEASURED"}:
+            assert row["contract_validated"] is True
+        if state == "LIVE":
+            measured = row["measured"]
+            assert row.get("posture_state") == "OBSERVED_LIVE"
+            assert measured.get("state") == "LIVE"
+            assert measured.get("live") is True
+            assert measured.get("blocked") is False
+            assert type(measured.get("live_count")) is int and measured["live_count"] > 0
+            organs = measured.get("organs")
+            assert isinstance(organs, list) and organs
+            assert type(measured.get("organ_count")) is int
+            assert measured["organ_count"] == measured["live_count"] == len(organs)
+            assert all(isinstance(organ, dict) and isinstance(organ.get("id"), str)
+                       and organ["id"] and organ.get("status") == "LIVE" for organ in organs)
+            assert len({organ["id"] for organ in organs}) == len(organs)
+        if row.get("posture_state") == "UNKNOWN":
+            assert state == "UNAVAILABLE"
+    summary = payload.get("summary", {})
+    assert summary.get("total") == len(rows)
+    assert summary.get("live") == sum(row["evidence_state"] == "LIVE" for row in rows)
+    assert summary.get("measured") == sum(row["evidence_state"] in {"LIVE", "MEASURED"} for row in rows)
+
+
+def publication_parent(api: HfApi, repository: str, token: str, source: str) -> str:
+    """Refresh both release heads just before the compare-and-swap publication."""
+    info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
+    parent = str(getattr(info, "sha", "") or "").lower()
+    if len(parent) != 40 or any(c not in "0123456789abcdef" for c in parent):
+        raise RuntimeError("destination lacks an exact parent revision")
+    if current_protected_main(repository, token) != source:
+        raise RuntimeError("refusing stale source at the publication boundary")
+    return parent
+
+
 def verify_live(
     source_revision: str,
     target_sha: str,
@@ -344,6 +403,10 @@ def verify_live(
             )
             version = get_json(LIVE_BASE + "/version?refresh=1")
             evidence = get_json(LIVE_BASE + "/evidence?refresh=1", timeout=25)
+            observations = get_json(
+                LIVE_BASE + "/api/anatomy/v1/evidence?refresh=1", timeout=25
+            )
+            verify_dependency_observations(observations)
             source = get_json(
                 LIVE_BASE + "/.well-known/szl-source.json?refresh=1"
             )
@@ -672,6 +735,7 @@ def main() -> None:
         repo_id=SPACE_ID,
         repo_type="space",
         operations=operations,
+        parent_commit=publication_parent(api, repository, github_token, source_revision),
         commit_message=(
             f"hf-sync: source {source_revision} "
             f"run {workflow_run_id}"
