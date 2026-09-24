@@ -72,6 +72,10 @@ KERNEL_COMMIT = "c7c0ba17"
 LOCKED_FORMULAS = ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"]
 
 ARTIFACT_PATHS = (
+    "Dockerfile",
+    "requirements.txt",
+    "organ_integrity.py",
+    "style.css",
     "index.html",
     "covenant-cockpit.html",
     "favicon.svg",
@@ -261,6 +265,7 @@ CAPABILITIES = [
 DEPENDENCIES = (
     {
         "id": "a11oy.honesty",
+        "contract_kind": "a11oy.honesty",
         "url": "https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest",
         "method": "GET",
         "purpose": "Doctrine and runtime honesty posture",
@@ -268,6 +273,7 @@ DEPENDENCIES = (
     },
     {
         "id": "a11oy.public-verifier",
+        "contract_kind": "a11oy.verifier-no-input",
         "url": "https://szlholdings-a11oy.hf.space/api/a11oy/v1/verify/receipt",
         "method": "POST",
         "purpose": "Canonical public DSSE/Khipu receipt-verifier contract",
@@ -275,20 +281,23 @@ DEPENDENCIES = (
     },
     {
         "id": "a11oy.organ-integrity",
+        "contract_kind": "a11oy.organ-integrity",
         "url": "https://a-11-oy.com/api/a11oy/v1/organs/integrity",
         "method": "GET",
         "purpose": "Fail-closed five-organ kernel on the command body",
         "critical": False,
     },
     {
-        "id": "killinchu.experience-manifest",
-        "url": "https://szlholdings-killinchu.hf.space/api/killinchu/v1/experience/manifest",
+        "id": "killinchu.evidence",
+        "contract_kind": "killinchu.evidence",
+        "url": "https://szlholdings-killinchu.hf.space/evidence",
         "method": "GET",
-        "purpose": "Killinchu surface and evidence inventory",
+        "purpose": "Killinchu source and partial evidence declarations",
         "critical": False,
     },
     {
         "id": "receipt-verifier.space",
+        "contract_kind": "browser-surface",
         "url": "https://szlholdings-governed-receipt-verifier.static.hf.space/",
         "method": "GET",
         "purpose": "Standalone browser verifier",
@@ -477,84 +486,199 @@ def _check_local_receipt(candidate: object) -> tuple[int, dict[str, object]]:
     }
 
 
+DEPENDENCY_OBSERVATION_CONTRACT = "szl.anatomy-dependency-observation/v1"
+DEPENDENCY_MAX_BYTES = 65536
+DEPENDENCY_TIMEOUT_SECONDS = 4
+
+
+def _dependency_measurement(kind: str, status: int, payload: object) -> tuple[dict[str, object], str, bool]:
+    """Validate known public response shapes; return only selected typed fields.
+
+    These are observations of upstream declarations, never independently proved
+    health, authenticity, production readiness, or biological measurements.
+    """
+    if not isinstance(payload, dict):
+        raise ValueError("JSON_OBJECT_REQUIRED")
+    if kind == "a11oy.honesty":
+        lock = payload.get("doctrine_lock")
+        count = payload.get("locked_formula_count")
+        if (status != 200 or payload.get("organ") != "a11oy"
+                or not _is_full_revision(payload.get("git_sha"))
+                or not isinstance(lock, dict)
+                or lock.get("state") not in ("LOCKED", "UNLOCKED")
+                or type(count) is not int or not 0 <= count <= 64):
+            raise ValueError("HONESTY_CONTRACT_MISMATCH")
+        return {"organ": "a11oy", "source_revision": payload["git_sha"],
+                "doctrine_state": lock["state"], "locked_formula_count": count}, "REPORTED", True
+    if kind == "a11oy.verifier-no-input":
+        if (status not in (400, 422) or payload.get("service") != "public.verify.receipt"
+                or payload.get("ok") is not False or payload.get("error") != "no_input"
+                or payload.get("verdict") != "NO_INPUT"):
+            raise ValueError("VERIFIER_REJECTION_CONTRACT_MISMATCH")
+        return {"service": "public.verify.receipt", "verification_result": "REJECTED_INVALID_INPUT",
+                "receipt_verified": False}, "REPORTED", True
+    if kind == "a11oy.organ-integrity":
+        body = payload.get("body")
+        if (status != 200 or payload.get("surface") != "szl-organ-integrity"
+                or not isinstance(body, dict) or not isinstance(body.get("organs"), list)
+                or type(body.get("live")) is not bool or type(body.get("blocked")) is not bool
+                or body.get("state") not in ("UNKNOWN", "LIVE", "BLOCKED", "DEGRADED", "ADVISORY_BODY")
+                or len(body["organs"]) > 32):
+            raise ValueError("ORGAN_CONTRACT_MISMATCH")
+        count = body.get("live_count")
+        if count is not None and (type(count) is not int or not 0 <= count <= len(body["organs"])):
+            raise ValueError("ORGAN_COUNT_MISMATCH")
+        organ_rows = body["organs"]
+        for organ in organ_rows:
+            if (not isinstance(organ, dict) or not isinstance(organ.get("id"), str)
+                    or not 1 <= len(organ["id"]) <= 64
+                    or organ.get("status") not in ("LIVE", "DOWN", "UNKNOWN", "UNAVAILABLE")):
+                raise ValueError("ORGAN_OBSERVATION_MISMATCH")
+        if len({row["id"] for row in organ_rows}) != len(organ_rows):
+            raise ValueError("ORGAN_IDENTITY_MISMATCH")
+        if count is not None and count != sum(row["status"] == "LIVE" for row in organ_rows):
+            raise ValueError("ORGAN_COUNT_MISMATCH")
+        observed = bool(organ_rows) and count is not None and body["state"] != "UNKNOWN"
+        live = observed and body["state"] == "LIVE" and body["live"] and not body["blocked"] and count == len(organ_rows)
+        posture = ("OBSERVED_LIVE" if live else
+                   ("BLOCKED" if observed and body["blocked"] else
+                    ("OBSERVED_DEGRADED" if observed else "UNKNOWN")))
+        measured: dict[str, object] = {"state": body["state"], "live": body["live"],
+            "blocked": body["blocked"], "live_count": count, "organ_count": len(organ_rows),
+            "organs": [{"id": row["id"], "status": row["status"]} for row in organ_rows]}
+        if body.get("energy") == "UNAVAILABLE":
+            measured["energy"] = "UNAVAILABLE"
+        return measured, posture, observed
+    if kind == "killinchu.evidence":
+        # Source contract: killinchu_public_route_repair.py at 0fa0fdf5.
+        # PARTIAL describes declared evidence, not live health or a verified receipt.
+        receipts = payload.get("receipts")
+        release = payload.get("releaseReceipt")
+        limitations = payload.get("limitations")
+        if (status != 200
+                or payload.get("schemaVersion") != "szl.vertical-conformance.evidence.v1"
+                or payload.get("service") != "killinchu" or payload.get("surface") != "vessels"
+                or payload.get("evidenceState") != "PARTIAL"
+                or not _is_full_revision(payload.get("gitSha"))
+                or not isinstance(receipts, list) or len(receipts) > 128
+                or not all(isinstance(receipt, dict) for receipt in receipts)
+                or not isinstance(release, dict)
+                or release.get("state") not in ("UNAVAILABLE", "GITHUB_OIDC_ATTESTED")
+                or not isinstance(limitations, list) or len(limitations) > 64
+                or not all(isinstance(limit, str) and len(limit) <= 2048 for limit in limitations)):
+            raise ValueError("KILLINCHU_EVIDENCE_CONTRACT_MISMATCH")
+        return {"service": "killinchu", "surface": "vessels",
+                "source_revision": payload["gitSha"], "reported_evidence_state": "PARTIAL",
+                "receipt_count": len(receipts)}, "REPORTED", True
+    raise ValueError("UNPINNED_CONTRACT")
+
+
 def _probe_dependency(dep: dict[str, object]) -> dict[str, object]:
+    started = time.monotonic()
     method = str(dep["method"])
+    kind = str(dep.get("contract_kind") or "unversioned-json")
+    headers = {"User-Agent": "szl-anatomy-evidence/1.1", "Accept": "application/json", "Accept-Encoding": "identity"}
     data = b"{}" if method == "POST" else None
-    headers = {
-        "User-Agent": "szl-anatomy-evidence/1.0",
-        "Accept": "application/json,text/html;q=0.8",
-    }
     if data is not None:
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(str(dep["url"]), data=data, headers=headers, method=method)
-    status: int | None = None
-    error: str | None = None
+    result: dict[str, object] = {
+        **dep, "observation_contract": DEPENDENCY_OBSERVATION_CONTRACT,
+        "transport_state": "UNREACHABLE", "contract_state": "UNREACHABLE",
+        "contract_validated": False, "evidence_state": "UNAVAILABLE", "posture_state": "UNKNOWN",
+        "http_status": None, "content_type": None, "response_bytes": 0, "response_sha256": None,
+        "error": None, "measured": {},
+        "limits": ["Observed public response fields are upstream declarations, not independent health or authenticity proof.",
+                   "Receipt rejection confirms an input-validation response, not successful receipt verification."]}
     try:
-        with urllib.request.urlopen(req, timeout=4) as response:
-            status = response.status
-            response.read(256)
-    except urllib.error.HTTPError as exc:
-        status = exc.code
-        error = f"HTTP {exc.code}"
-    except Exception as exc:  # network state is evidence, not a server failure
-        error = type(exc).__name__
-
-    reachable = status is not None
-    if method == "POST":
-        contract_available = status in (200, 201, 400, 422, 429)
-    else:
-        contract_available = status is not None and 200 <= status < 400
-    if contract_available:
-        contract_state = "AVAILABLE"
-        evidence_state = "LIVE"
-    elif status == 404:
-        contract_state = "MISSING"
-        evidence_state = "UNAVAILABLE"
-    elif reachable:
-        contract_state = "DEGRADED"
-        evidence_state = "UNAVAILABLE"
-    else:
-        contract_state = "UNREACHABLE"
-        evidence_state = "UNAVAILABLE"
-    return {
-        **dep,
-        "transport_state": "REACHABLE" if reachable else "UNREACHABLE",
-        "contract_state": contract_state,
-        "evidence_state": evidence_state,
-        "http_status": status,
-        "error": error,
-    }
+        try:
+            response = urllib.request.urlopen(req, timeout=DEPENDENCY_TIMEOUT_SECONDS)
+        except urllib.error.HTTPError as exc:
+            response = exc  # Error responses may carry the expected verifier rejection contract.
+        with response:
+            status = response.status if response.status is not None else response.code
+            media_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()[:128]
+            result.update(transport_state="REACHABLE", http_status=status, content_type=media_type)
+            # read1 returns currently available bytes rather than waiting for the
+            # whole cap, allowing the wall-clock deadline to stop trickle bodies.
+            read = getattr(response, "read1", response.read)
+            parts: list[bytes] = []
+            size = 0
+            while size <= DEPENDENCY_MAX_BYTES:
+                if time.monotonic() - started >= DEPENDENCY_TIMEOUT_SECONDS:
+                    raise TimeoutError()
+                part = read(min(8192, DEPENDENCY_MAX_BYTES + 1 - size))
+                if not part:
+                    break
+                parts.append(part)
+                size += len(part)
+            raw = b"".join(parts)
+            result["response_bytes"] = size
+            if size > DEPENDENCY_MAX_BYTES:
+                raise ValueError("RESPONSE_TOO_LARGE")
+            result["response_sha256"] = _sha256(raw)
+        if status == 429:
+            result.update(contract_state="RATE_LIMITED", error="HTTP_429")
+        elif status == 404:
+            result.update(contract_state="MISSING", error="HTTP_404")
+        elif status in (401, 403):
+            result.update(contract_state="ACCESS_DENIED", error=f"HTTP_{status}")
+        elif status >= 500 or status < 200 or (status >= 300 and not (kind == "a11oy.verifier-no-input" and status in (400, 422))):
+            result.update(contract_state="DEGRADED", error=f"HTTP_{status}")
+        elif kind == "browser-surface":
+            result.update(contract_state="UNKNOWN", error="BROWSER_REACHABILITY_ONLY")
+        elif media_type != "application/json" and not media_type.endswith("+json"):
+            raise ValueError("JSON_CONTENT_TYPE_REQUIRED")
+        else:
+            try:
+                payload = json.loads(raw.decode("utf-8"))
+            except (ValueError, UnicodeError, RecursionError):
+                raise ValueError("MALFORMED_JSON") from None
+            measured, posture, available = _dependency_measurement(kind, status, payload)
+            result.update(contract_state="AVAILABLE", contract_validated=True, measured=measured,
+                          posture_state=posture, evidence_state="LIVE" if posture == "OBSERVED_LIVE" else ("MEASURED" if available else "UNAVAILABLE"))
+    except ValueError as exc:
+        code = str(exc)
+        result.update(contract_state="UNKNOWN" if code == "UNPINNED_CONTRACT" else "INVALID_RESPONSE", error=code)
+    except (TimeoutError, urllib.error.URLError) as exc:
+        result.update(contract_state="UNAVAILABLE", error="TIMEOUT" if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError) else "NETWORK_ERROR")
+    except Exception:
+        result.update(contract_state="UNAVAILABLE", error="RESPONSE_READ_FAILED")
+    result["observed_at"] = _utc_now()
+    result["latency_ms"] = round(max(0, time.monotonic() - started) * 1000, 1)
+    return result
 
 
 def _dependency_evidence(force: bool = False) -> dict[str, object]:
-    now = time.monotonic()
+    requested_at = time.monotonic()
+    # One in-flight batch per process. Concurrent refresh requests share its
+    # result instead of spawning an additional pool for every HTTP request.
     with _probe_lock:
         cached = _probe_cache.get("value")
-        if not force and cached is not None and now - float(_probe_cache["at"]) < 30:
+        cached_at = float(_probe_cache["at"])
+        if cached is not None and (cached_at >= requested_at or not force and requested_at - cached_at < 30):
             return cached  # type: ignore[return-value]
-    with ThreadPoolExecutor(max_workers=len(DEPENDENCIES)) as pool:
-        rows = list(pool.map(_probe_dependency, DEPENDENCIES))
-    live_count = sum(row["evidence_state"] == "LIVE" for row in rows)
-    evidence_state = "LIVE" if live_count == len(rows) else ("MIXED" if live_count else "UNAVAILABLE")
-    verifier = next(row for row in rows if row["id"] == "a11oy.public-verifier")
-    value: dict[str, object] = {
-        "schema": "szl.anatomy-evidence/v1",
-        "observed_at": _utc_now(),
-        "scope": "Endpoint reachability and declared contract presence only.",
-        "transport_state": "REACHABLE",
-        "evidence_state": evidence_state,
-        "verification_state": "AVAILABLE" if verifier["contract_state"] == "AVAILABLE" else "UNAVAILABLE",
-        "authority_state": "READ_ONLY",
-        "summary": {"live": live_count, "total": len(rows)},
-        "dependencies": rows,
-        "limits": [
-            "Reachability does not certify quality, safety, freshness, or business performance.",
-            "The local anatomy integrity verifier remains STRUCTURAL_ONLY because it is unsigned.",
-        ],
-    }
-    with _probe_lock:
+        with ThreadPoolExecutor(max_workers=len(DEPENDENCIES)) as pool:
+            rows = list(pool.map(_probe_dependency, DEPENDENCIES))
+        measured_count = sum(row["evidence_state"] in ("MEASURED", "LIVE") for row in rows)
+        live_count = sum(row["posture_state"] == "OBSERVED_LIVE" for row in rows)
+        verifier = next(row for row in rows if row["id"] == "a11oy.public-verifier")
+        value: dict[str, object] = {
+            "schema": "szl.anatomy-evidence/v1", "observation_contract": DEPENDENCY_OBSERVATION_CONTRACT,
+            "observed_at": _utc_now(), "scope": "Bounded typed public contract observations; synthetic organ evaluation is separate.",
+            "transport_state": "REACHABLE",
+            "evidence_state": "MEASURED" if measured_count == len(rows) else ("MIXED" if measured_count else "UNAVAILABLE"),
+            "verification_state": "AVAILABLE" if verifier["contract_validated"] else "UNAVAILABLE", "authority_state": "READ_ONLY",
+            "summary": {"live": live_count, "total": len(rows), "measured": measured_count,
+                        "validated": sum(bool(row["contract_validated"]) for row in rows),
+                        "reachable": sum(row["transport_state"] == "REACHABLE" for row in rows),
+                        "unavailable": len(rows) - measured_count},
+            "dependencies": rows,
+            "limits": ["Live counts only explicit nonempty upstream organ observations; validated contracts can still report UNKNOWN.",
+                       "Measured means response fields observed, not independently verified runtime health, signatures, or model quality.",
+                       "The local anatomy integrity verifier remains STRUCTURAL_ONLY because it is unsigned."]}
         _probe_cache.update({"at": time.monotonic(), "value": value})
-    return value
+        return value
 
 
 def _is_full_revision(value: object) -> bool:

@@ -77,8 +77,18 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
   verifier recomputes every declared file and deliberately returns
   `STRUCTURAL-ONLY` because the public visualization has no signing key.
 - Live A11OY, Killinchu, and receipt-verifier dependencies are probed separately
-  and timestamped. Missing contracts stay `MISSING` or `UNAVAILABLE`; no green is
-  synthesized from an unrelated endpoint.
+  and timestamped. The Evidence Bay validates bounded, typed JSON responses;
+  HTTP 200, HTML fallbacks, rate limits, and an empty `UNKNOWN` organ response
+  cannot establish live organ measurements. It separates reachability, contract
+  validation, reported posture, and measured fields, with latency and SHA-256
+  response fingerprints. A verifier rejecting an empty request is recorded as
+  an input-validation observation, never a successfully verified receipt.
+- Killinchu observations use its source-declared `/evidence` contract and retain
+  its `PARTIAL` evidence state. The legacy standalone verifier remains separately
+  observable; an unavailable surface is not silently replaced or declared healthy.
+- Observations are shared across concurrent refresh requests, bounded to 64 KiB
+  per response, and cached for 30 seconds. The UI marks observations older than
+  60 seconds stale. Upstream declarations remain distinct from independent proof.
 - Formula claims link to their source files. This Space presents a declared
   snapshot—it does not run Lean—and Λ remains Conjecture 1.
 - `/.well-known/szl-source.json` exposes the declared GitHub base, measured HF
@@ -87,6 +97,10 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
   whitelist to the exact current protected-main commit rechecked immediately
   before publication; this is a source-bound deployment claim, not a
   whole-repository byte-parity claim.
+- Bundle receipts include the organ kernel, container definition, pinned runtime
+  requirements and base stylesheet. Publication includes the source favicon,
+  checks the typed observation contract, and uses the exact HF parent revision
+  after rechecking GitHub main at the upload boundary.
 
 ## v7 — YACHAY Neural Quant brain
 

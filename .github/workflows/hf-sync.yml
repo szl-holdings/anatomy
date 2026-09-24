@@ -60,6 +60,8 @@ jobs:
             scripts/sync_hf_creator_profile.py
           node --check neural-quant-v7.js
           node --check holographic-v7.js
+          node --check frontier_anatomy.js
+          node --test tests/test_dependency_observations.cjs
 
       - name: Fail closed if Hugging Face credential is absent
         shell: bash
