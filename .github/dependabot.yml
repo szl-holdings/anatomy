@@ -16,7 +16,16 @@ updates:
       # Group low-risk patch/minor bumps; major bumps arrive as separate PRs.
       actions:
         patterns:
-          - "*"
+        - '*'
         update-types:
-          - "minor"
-          - "patch"
+        - minor
+        - patch
+        exclude-patterns:
+        - torch*
+        - transformers
+        - accelerate
+        - vllm
+        - unsloth*
+        - openai
+    cooldown:
+      default-days: 3
