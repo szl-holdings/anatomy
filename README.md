@@ -424,7 +424,7 @@ Declared source base: `szl-holdings/anatomy` (GitHub) → `betterwithage/anatomy
 
 ## ◇ Part of the SZL Holdings estate — *governed AI you can prove*
 
-One sovereign substrate, many organs — every decision carries a signed, checkable receipt.
+One sovereign substrate, many organs — every decision carries a hash-chained, checkable receipt.
 
 **[◇ Holographic Estate — the showcase](https://szlholdings-holographic.hf.space)** ·
 [🛡️ a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) ·
