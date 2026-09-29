@@ -29,18 +29,19 @@ class ObservationPublicationTest(unittest.TestCase):
                            and isinstance(node.value, ast.Call)
                            and isinstance(node.value.func, ast.Attribute)
                            and node.value.func.attr == "create_commit")
+        dependency_ids = (
+            "a11oy.honesty", "a11oy.public-verifier", "a11oy.organ-integrity",
+            "killinchu.evidence",
+        )
         self.payload = {
             "observation_contract": MARKER, "authority_state": "READ_ONLY",
-            "summary": {"total": 5, "live": 0, "measured": 0},
+            "summary": {"total": len(dependency_ids), "live": 0, "measured": 0},
             "dependencies": [{
                 "id": name, "observation_contract": MARKER,
                 "contract_validated": False, "contract_state": "UNREACHABLE",
                 "observed_at": "2026-09-24T13:00:00Z", "measured": {},
                 "evidence_state": "UNAVAILABLE", "posture_state": "UNKNOWN",
-            } for name in (
-                "a11oy.honesty", "a11oy.public-verifier", "a11oy.organ-integrity",
-                "killinchu.evidence", "receipt-verifier.space",
-            )],
+            } for name in dependency_ids],
         }
 
     def check(self, payload=None):

@@ -24,7 +24,6 @@ tags:
   <a href="https://github.com/szl-holdings/.github/tree/main/doctrine"><img src="https://img.shields.io/badge/doctrine-v11%20LOCKED-0B1F3A?style=flat-square" alt="doctrine v11"></a>
   <a href="https://a-11-oy.com/"><img src="https://img.shields.io/badge/evidence%20wall-LIVE%20%C2%B7%20verify%20in%20browser-3AF4C8?style=flat-square" alt="live evidence wall"></a>
   <a href="https://huggingface.co/datasets/SZLHOLDINGS/szl-lake"><img src="https://img.shields.io/badge/szl--lake-offline%20verifiable-C9B787?style=flat-square" alt="szl-lake offline verifiable"></a>
-  <a href="https://huggingface.co/spaces/SZLHOLDINGS/holographic"><img src="https://img.shields.io/badge/estate%20map-holographic-5B8DEE?style=flat-square" alt="holographic estate map"></a>
 </p>
 <p align="center"><sub>Part of the <a href="https://huggingface.co/SZLHOLDINGS">SZL Holdings</a> governed estate — claims are designed to carry checkable receipts. Verification proves integrity &amp; origin, never accuracy or performance.</sub></p>
 <!-- SZL-ESTATE-CARD:v2:END -->
@@ -76,16 +75,17 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
 - The deployed bundle emits a deterministic SHA-256 integrity receipt. Its local
   verifier recomputes every declared file and deliberately returns
   `STRUCTURAL-ONLY` because the public visualization has no signing key.
-- Live A11OY, Killinchu, and receipt-verifier dependencies are probed separately
-  and timestamped. The Evidence Bay validates bounded, typed JSON responses;
+- Live A11OY (including its public receipt verifier) and Killinchu dependencies
+  are probed separately and timestamped. The Evidence Bay validates bounded, typed JSON responses;
   HTTP 200, HTML fallbacks, rate limits, and an empty `UNKNOWN` organ response
   cannot establish live organ measurements. It separates reachability, contract
   validation, reported posture, and measured fields, with latency and SHA-256
   response fingerprints. A verifier rejecting an empty request is recorded as
   an input-validation observation, never a successfully verified receipt.
 - Killinchu observations use its source-declared `/evidence` contract and retain
-  its `PARTIAL` evidence state. The legacy standalone verifier remains separately
-  observable; an unavailable surface is not silently replaced or declared healthy.
+  its `PARTIAL` evidence state. The retired standalone receipt-verifier Space is
+  absent from the Hub and is no longer probed; an unavailable surface is never
+  silently replaced or declared healthy.
 - Observations are shared across concurrent refresh requests, bounded to 64 KiB
   per response, and cached for 30 seconds. The UI marks observations older than
   60 seconds stale. Upstream declarations remain distinct from independent proof.
@@ -404,11 +404,12 @@ live products it depicts:
 # Confirm the live doctrine posture the heart reports
 curl -s https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest | jq .kernel_commit   # => "c7c0ba17"
 # Inspect and replay the Anatomy bundle receipt (result is STRUCTURAL-ONLY, not signed)
-curl -s https://szlholdings-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
+curl -s https://betterwithage-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
 curl -s -X POST -H "Content-Type: application/json" --data-binary @anatomy-receipt.json \
-  https://szlholdings-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
-# Open the independent browser verifier for signed governed receipts
-open https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier
+  https://betterwithage-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
+# Verify signed governed receipts offline with the independent spec verifier
+git clone https://github.com/szl-holdings/governed-receipt-spec
+python governed-receipt-spec/verify.py <receipts.json>
 ```
 
 Read the thesis → [szl-papers](https://github.com/szl-holdings/szl-papers) ·
@@ -426,19 +427,15 @@ Declared source base: `szl-holdings/anatomy` (GitHub) → `betterwithage/anatomy
 
 One sovereign substrate, many organs — every decision carries a hash-chained, checkable receipt.
 
-**[◇ Holographic Estate — the showcase](https://szlholdings-holographic.hf.space)** ·
 [🛡️ a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) ·
 [🧬 IMMUNE](https://huggingface.co/spaces/SZLHOLDINGS/immune) ·
 [🦅 killinchu](https://huggingface.co/spaces/SZLHOLDINGS/killinchu) ·
 [🫀 anatomy](https://huggingface.co/spaces/betterwithage/anatomy) ·
-[🌌 cosmos](https://huggingface.co/spaces/SZLHOLDINGS/cosmos) ·
-[🛰️ SDA](https://huggingface.co/spaces/SZLHOLDINGS/sda) ·
 [🌊 yarqa](https://huggingface.co/spaces/SZLHOLDINGS/yarqa) ·
 [🤗 all Spaces](https://huggingface.co/SZLHOLDINGS)
 
 **Governed-receipt cluster** — the open receipt format, an offline verifier, and a conformance bench (the DSSE Khipu receipts this organism depicts conform to this spec):
-[📐 governed-receipt-spec](https://github.com/szl-holdings/governed-receipt-spec) ·
-[✅ receipt verifier](https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier) ·
+[📐 governed-receipt-spec](https://github.com/szl-holdings/governed-receipt-spec) (with the offline `verify.py`) ·
 [📦 receipts bench](https://huggingface.co/datasets/SZLHOLDINGS/governed-receipts-bench)
 
 <sub>Doctrine v11 · Λ = Conjecture 1 (advisory — never "green"/theorem; open) · honest by design · public data only.</sub>
