@@ -161,7 +161,7 @@ CAPABILITIES = [
     {
         "id": "anatomy.live-lens",
         "name": "Live organ posture lens",
-        "purpose": "Project current reachability and contract responses from A11OY, Killinchu, and the verifier estate into the body.",
+        "purpose": "Project current reachability and contract responses from A11OY (including its public receipt verifier) and Killinchu into the body.",
         "try": {"method": "GET", "path": "/api/anatomy/v1/evidence?refresh=1", "action": "Refresh measured dependencies."},
         "evidence": {
             "state": "MIXED",
@@ -177,7 +177,6 @@ CAPABILITIES = [
         "provenance": [
             "https://huggingface.co/spaces/SZLHOLDINGS/a11oy",
             "https://huggingface.co/spaces/SZLHOLDINGS/killinchu",
-            "https://huggingface.co/spaces/SZLHOLDINGS/governed-receipt-verifier",
         ],
     },
     {
@@ -293,14 +292,6 @@ DEPENDENCIES = (
         "url": "https://szlholdings-killinchu.hf.space/evidence",
         "method": "GET",
         "purpose": "Killinchu source and partial evidence declarations",
-        "critical": False,
-    },
-    {
-        "id": "receipt-verifier.space",
-        "contract_kind": "browser-surface",
-        "url": "https://szlholdings-governed-receipt-verifier.static.hf.space/",
-        "method": "GET",
-        "purpose": "Standalone browser verifier",
         "critical": False,
     },
 )

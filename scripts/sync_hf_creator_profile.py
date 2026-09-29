@@ -302,7 +302,7 @@ def verify_dependency_observations(payload: dict[str, Any]) -> None:
     marker = "szl.anatomy-dependency-observation/v1"
     expected = {
         "a11oy.honesty", "a11oy.public-verifier", "a11oy.organ-integrity",
-        "killinchu.evidence", "receipt-verifier.space",
+        "killinchu.evidence",
     }
     assert payload.get("observation_contract") == marker
     rows = payload.get("dependencies")

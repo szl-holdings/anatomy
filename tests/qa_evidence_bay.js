@@ -6,7 +6,7 @@ const path = require('path');
 const BASE = process.env.ANATOMY_BASE_URL || 'http://127.0.0.1:7860';
 const EDGE = process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined;
 const {observationView} = require('../frontier_anatomy.js');
-const EXPECTED_DEPENDENCIES = ['a11oy.honesty','a11oy.public-verifier','a11oy.organ-integrity','killinchu.evidence','receipt-verifier.space'];
+const EXPECTED_DEPENDENCIES = ['a11oy.honesty','a11oy.public-verifier','a11oy.organ-integrity','killinchu.evidence'];
 const OUT = process.env.ANATOMY_QA_OUTPUT || __dirname;
 const VIEWPORTS = [
   { name:'desktop', width:1440, height:900 },

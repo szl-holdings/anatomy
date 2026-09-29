@@ -45,7 +45,8 @@ class Response(io.BytesIO):
 class DependencyObservationsTest(unittest.TestCase):
     def probe(self, identity="a11oy.honesty", payload=HONESTY, *, status=200,
               content_type="application/json", raw=None, error=None):
-        dep = next(row for row in server.DEPENDENCIES if row["id"] == identity)
+        dep = identity if isinstance(identity, dict) else next(
+            row for row in server.DEPENDENCIES if row["id"] == identity)
         body = raw if raw is not None else json.dumps(payload).encode()
         response = Response(body, status, content_type)
         effect = error
@@ -163,11 +164,23 @@ class DependencyObservationsTest(unittest.TestCase):
             self.assertNotIn("must-not-appear", json.dumps(row))
 
     def test_unpinned_contract_and_html_browser_surface_remain_unknown(self):
-        row = self.probe("receipt-verifier.space", content_type="text/html")
+        surface = {"id": "fixture.browser-surface", "contract_kind": "browser-surface",
+                   "url": "https://surface.example.invalid/", "method": "GET",
+                   "purpose": "Fixture browser surface", "critical": False}
+        row = self.probe(surface, content_type="text/html")
         self.assertEqual("UNKNOWN", row["contract_state"])
         self.assertFalse(row["contract_validated"])
         with self.assertRaisesRegex(ValueError, "UNPINNED_CONTRACT"):
             server._dependency_measurement("unversioned-json", 200, HONESTY)
+
+    def test_no_dependency_probes_a_retired_space(self):
+        # The standalone receipt-verifier Space is absent from the Hub; it is no
+        # longer a dependency, and the live A11OY verifier contract remains.
+        ids = [dep["id"] for dep in server.DEPENDENCIES]
+        self.assertNotIn("receipt-verifier.space", ids)
+        self.assertIn("a11oy.public-verifier", ids)
+        for dep in server.DEPENDENCIES:
+            self.assertNotIn("governed-receipt-verifier", dep["url"])
 
     def test_killinchu_partial_source_contract_is_measured_not_live(self):
         fixture = {**KILLINCHU_EVIDENCE, "private_diagnostic": "must-not-appear"}
@@ -239,7 +252,7 @@ class DependencyObservationsTest(unittest.TestCase):
             self.assertTrue(all(item is results[0] for item in results))
             self.assertEqual(0, results[0]["summary"]["live"])
             self.assertEqual(0, results[0]["summary"]["measured"])
-            self.assertEqual(5, results[0]["summary"]["validated"])
+            self.assertEqual(len(server.DEPENDENCIES), results[0]["summary"]["validated"])
 
 
 if __name__ == "__main__":

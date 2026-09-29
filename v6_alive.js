@@ -13,8 +13,9 @@
      - The public key is pinned below AND cross-checked against the
        committed copy at hatun-mcp/main/PUBKEY_szlholdings-ec-p256.pem.
        A mismatch is displayed as a key-pin failure, not silently ignored.
-     - The Hatun MCP gateway chip goes LIVE only on a real 2xx server-card
-       fetch with a parseable tool inventory.
+     - The Hatun MCP gateway chip reads RETIRED: its standalone Hugging Face
+       Space no longer exists, so no server-card fetch is attempted and no
+       gateway liveness is implied. The pinned-key check above is unchanged.
      - Doctrine v11 LOCKED is unchanged: locked-proven stays EXACTLY 8
        (F1 F4 F7 F11 F12 F18 F19 F22); Λ is Conjecture 1, never a theorem.
        A signed GREEN harness run proves liveness, not doctrine upgrades.
@@ -26,7 +27,6 @@
   var SINK = 'https://huggingface.co/datasets/SZLHOLDINGS/test-results';
   var RUNS_URL = SINK + '/resolve/main/harness_runs.jsonl';
   var PUBKEY_URL = 'https://raw.githubusercontent.com/szl-holdings/hatun-mcp/main/PUBKEY_szlholdings-ec-p256.pem';
-  var HATUN_CARD = 'https://szlholdings-hatun-mcp.hf.space/.well-known/mcp/server-card.json';
 
   /* Pinned committed org public key (SPKI, P-256) — szlholdings-ec-p256 */
   var PIN_PEM = '-----BEGIN PUBLIC KEY-----\n'
@@ -146,8 +146,8 @@
     }
 
     var c3 = el('div', 'v6-card');
-    c3.appendChild(el('div', 'h', 'Hatun MCP gateway <span class="v6-chip ' + (state.hatun ? 'ok' : 'bad') + '">' + (state.hatun ? 'LIVE · ' + state.hatun + ' tools' : 'UNREACHABLE') + '</span>'));
-    c3.appendChild(el('p', null, 'The signer of this record: the live MCP gateway (dsse_sign, ECDSA-P256). Runs are published fail-closed — the publisher verifies before and after upload.'));
+    c3.appendChild(el('div', 'h', 'Hatun MCP gateway <span class="v6-chip warn">RETIRED · standalone Space</span>'));
+    c3.appendChild(el('p', null, 'Runs were signed by the Hatun MCP gateway (dsse_sign, ECDSA-P256) and are published fail-closed: the publisher verifies before and after upload. Its standalone Space is retired, so this panel verifies each run against the pinned org key and implies no live gateway. The Hatun product route is <a href="https://a-11-oy.com/wires" target="_blank" rel="noopener" style="color:#5ad1ff">a-11-oy.com/wires</a>.'));
     body.appendChild(c3);
 
     body.appendChild(el('div', 'v6-note',
@@ -158,12 +158,7 @@
   }
 
   function refresh() {
-    var state = { status: 'UNREACHABLE', detail: '', hatun: 0, pinMatch: null };
-    var pHatun = fetchText(HATUN_CARD).then(function (t) {
-      var card = JSON.parse(t);
-      var tools = (card.tools && card.tools.length) || (card.capabilities && card.capabilities.tools && card.capabilities.tools.count) || 0;
-      state.hatun = tools || 'yes';
-    }).catch(function () { state.hatun = 0; });
+    var state = { status: 'UNREACHABLE', detail: '', pinMatch: null };
     var pPin = fetchText(PUBKEY_URL).then(function (t) {
       state.pinMatch = t.replace(/\s+/g, '') === PIN_PEM.replace(/\s+/g, '');
     }).catch(function () { state.pinMatch = null; });
@@ -180,7 +175,7 @@
           .then(function (ev) { state.layers = JSON.parse(ev).layers; }).catch(function () { /* layers optional */ });
       });
     }).catch(function (e) { state.status = 'UNREACHABLE'; state.detail = 'Could not fetch the signed sink (' + e.message + ').'; });
-    Promise.all([pHatun, pPin, pRun]).then(function () { render(state); });
+    Promise.all([pPin, pRun]).then(function () { render(state); });
   }
 
   /* ---------------- button (injected next to the v5 cluster) ---------------- */
