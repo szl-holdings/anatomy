@@ -1,0 +1,108 @@
+{
+  "generated": "2026-07-02T11:27:47Z",
+  "org": "SZLHOLDINGS",
+  "note": "Catalog snapshot of the live SZL Holdings Hugging Face constellation. Node HTTP status is a BUILD-TIME snapshot (honest, not runtime-live). Live health is polled only for CORS-open endpoints (a11oy, killinchu).",
+  "count": 11,
+  "nodes": [
+    {
+      "slug": "a11oy",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "a11oy — governed-AI Command Center, signed receipts",
+      "url": "https://szlholdings-a11oy.hf.space/",
+      "group": "core",
+      "seen": 200
+    },
+    {
+      "slug": "anatomy",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "",
+      "url": "https://szlholdings-anatomy.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "cathedral",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "3D a11oy brain-sun + capabilities + killinchu node",
+      "url": "https://szlholdings-cathedral.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "david-leads",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Audit-defensible, public-data lead intelligence for NYL pros",
+      "url": "https://szlholdings-david-leads.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "hatun-mcp",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Live MCP server for the SZL governance substrate",
+      "url": "https://szlholdings-hatun-mcp.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "immune",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Append-only SHA-256 receipt chain + HUKLLA tripwires demo",
+      "url": "https://szlholdings-immune.hf.space/",
+      "group": "product",
+      "seen": 200
+    },
+    {
+      "slug": "killinchu",
+      "sdk": "docker",
+      "likes": 2,
+      "blurb": "counter-UAS edge organ · 13-axis Λ-gate · DSSE receipts",
+      "url": "https://szlholdings-killinchu.hf.space/",
+      "group": "field",
+      "seen": 200
+    },
+    {
+      "slug": "llm-router-live",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Public status view of SZL sovereign-first LLM router",
+      "url": "https://szlholdings-llm-router-live.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "sda",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Sovereign domain superiority; signed receipt per verdict.",
+      "url": "https://szlholdings-sda.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "yarqa",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "Clean-room CFD compartments — live or sample, always honest",
+      "url": "https://szlholdings-yarqa.hf.space/",
+      "group": "space",
+      "seen": 200
+    },
+    {
+      "slug": "cosmos",
+      "sdk": "docker",
+      "likes": 0,
+      "blurb": "you are viewing this — the consolidated holographic constellation (org-map + cathedral + khipu, folded into one)",
+      "url": "https://betterwithage-cosmos.hf.space/",
+      "group": "product",
+      "seen": 200,
+      "self": true
+    }
+  ]
+}
