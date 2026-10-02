@@ -227,7 +227,6 @@ CAPABILITIES.forEach((cap)=>{
  * a11oy (sun) and killinchu (field node) are represented bespoke, so excluded. */
 const orgGroup = new THREE.Group(); scene.add(orgGroup);
 const ORG_R = 360; let orgNodes = [];
-const GROUP_COLOR = { core:0xd7b96b, product:0xe6c875, field:0x5c8fd1, space:0x7ad7ff };
 function fibPoint(i, n, radius){
   const off = 2/n, y = i*off - 1 + off/2;
   const r = Math.sqrt(Math.max(0,1 - y*y)), phi = i * Math.PI * (3 - Math.sqrt(5));
