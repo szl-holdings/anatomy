@@ -61,7 +61,7 @@ jobs:
           node --check neural-quant-v7.js
           node --check holographic-v7.js
           node --check frontier_anatomy.js
-          node --test tests/test_dependency_observations.cjs
+          node --test tests/test_dependency_observations.cjs tests/test_focus_restoration.cjs tests/test_instrument_dock.cjs
 
       - name: Fail closed if Hugging Face credential is absent
         shell: bash
