@@ -1,0 +1,163 @@
+{
+  "bytes": 839247,
+  "captured_at": "2026-09-04T01:04:16+00:00",
+  "destination": "betterwithage/cosmos",
+  "file_count": 29,
+  "files": [
+    {
+      "bytes": 1562,
+      "path": "__gitattributes__.txt",
+      "sha256": "4655b2ee0cb378530501fe4c00a4bc52a5cb556837e40e520aba2aa33f945ca9"
+    },
+    {
+      "bytes": 86,
+      "path": "Dockerfile",
+      "sha256": "fddf62e17786f0417d4615e1bee307c012afa7240950c4fde79e7fadce97f8e9"
+    },
+    {
+      "bytes": 420,
+      "path": "NOTICE",
+      "sha256": "1df49f680ab7843f68ff7fc101da5c54bd0368caec2c1408117c0c8f635b23b0"
+    },
+    {
+      "bytes": 6376,
+      "path": "README.md",
+      "sha256": "d443660de32bf689392340e8d9ba8335236d94ed5cade79ac3e6853e114095c2"
+    },
+    {
+      "bytes": 2611,
+      "path": "SPACE_PROVENANCE.json",
+      "sha256": "006bc34befb1db750607621bc0a611c391fabefcc8cf44f429054c216d4c21c4"
+    },
+    {
+      "bytes": 34402,
+      "path": "app.js",
+      "sha256": "704b6d9413945e6fd8d55caa16e1d8f9005dbc8f882756dbb0cb8cd095397beb"
+    },
+    {
+      "bytes": 3106,
+      "path": "data/org_nodes.json",
+      "sha256": "47c56f86f40d861c0564a089c049cbdfadf79cecafa655347ab78474b4efa483"
+    },
+    {
+      "bytes": 417,
+      "path": "hf-deploy-manifest.json",
+      "sha256": "6dc28b4a413cd70c80cdf4b8f82bb1882e8fd4dd3ed5bd8cea68b14f908d6a7a"
+    },
+    {
+      "bytes": 28093,
+      "path": "index.html",
+      "sha256": "fc0ce55776335b578fd3af24d71492a0b70d63a464002cabb92fd3055a826fe0"
+    },
+    {
+      "bytes": 273,
+      "path": "og.png.lfs-pointer.json",
+      "sha256": "5eb8fe8b878da4266bceefba26511803c05957c2e6ce1a87e6128ddff8bb7e45"
+    },
+    {
+      "bytes": 6041,
+      "path": "og.svg",
+      "sha256": "4059c27452d65379e0e40c57696bd740640c564ffcec6fd60239ba875dd1403c"
+    },
+    {
+      "bytes": 4577,
+      "path": "server.py",
+      "sha256": "9f550aaba730b487da7c5f53fd7f5972e92d959882952d705dd691775b409ed7"
+    },
+    {
+      "bytes": 3390,
+      "path": "szl_source_attestation.py",
+      "sha256": "b2c50b1cb80a5c2ab28c61a8628672a914cadb8c913a18a96eb531e4705f1f8d"
+    },
+    {
+      "bytes": 1050,
+      "path": "tests/test_canonical_domain.py",
+      "sha256": "bc76579ba6c071c4248bcade02d1c2660d13ff662f553b27787025273ac6d62e"
+    },
+    {
+      "bytes": 2394,
+      "path": "tests/test_source_attestation.py",
+      "sha256": "b9e56b657c2fd9b5bfb92054c14544cb27e380f07f52db098996d70bdecbc957"
+    },
+    {
+      "bytes": 29868,
+      "path": "vendor/OrbitControls.js",
+      "sha256": "5a44a9e86a2a0fb11933eed69bc2cd33c76a496854c1aed6ed776efa87d7b064"
+    },
+    {
+      "bytes": 1081,
+      "path": "vendor/THREE_LICENSE.txt",
+      "sha256": "852e0e8699169bf9f6fdc6bda3e682d078dcbc738b5d33e74df594721bff271d"
+    },
+    {
+      "bytes": 4651,
+      "path": "vendor/postprocessing/EffectComposer.js",
+      "sha256": "d234e578618fa816955ebdc059c049c577e203e650e33cf22bde3f232c29e669"
+    },
+    {
+      "bytes": 2231,
+      "path": "vendor/postprocessing/MaskPass.js",
+      "sha256": "328cf7db0da5d9be83ffe39d54b01d5ac1fddf108cc98182ddbb056f5c8b537f"
+    },
+    {
+      "bytes": 2398,
+      "path": "vendor/postprocessing/OutputPass.js",
+      "sha256": "13817fc7a87f662d29d2c5e00f44d3a4588c9afac4a372de0cacb0e44e368ffd"
+    },
+    {
+      "bytes": 1706,
+      "path": "vendor/postprocessing/Pass.js",
+      "sha256": "b3c6128340eaa37e40a6a2f1b738e894c855239417d50959759b34a2b5e89f92"
+    },
+    {
+      "bytes": 1915,
+      "path": "vendor/postprocessing/RenderPass.js",
+      "sha256": "1c90c085312871c4bcdccfcf519499c6276dd503363fcf7cb7f703add45cf4a2"
+    },
+    {
+      "bytes": 1576,
+      "path": "vendor/postprocessing/ShaderPass.js",
+      "sha256": "3b28a1ee27e0eb96c0eab137a1f442ccf127a926904eced2d51e125ec44af781"
+    },
+    {
+      "bytes": 12406,
+      "path": "vendor/postprocessing/UnrealBloomPass.js",
+      "sha256": "8f09315c0cec117a0ca2494d3e3586035b3c4323d6dcb037537cc51b04c3cdba"
+    },
+    {
+      "bytes": 571,
+      "path": "vendor/shaders/CopyShader.js",
+      "sha256": "4e3346db194db56a596cd074e9bdb39fb5eb52040c333e0d29dc4eb1324d3b1d"
+    },
+    {
+      "bytes": 1192,
+      "path": "vendor/shaders/LuminosityHighPassShader.js",
+      "sha256": "3d841cc594a0c1767d1b0185720b32761a0133c5f1b70b56658e28f2fb9b7900"
+    },
+    {
+      "bytes": 1393,
+      "path": "vendor/shaders/OutputShader.js",
+      "sha256": "53a52e430c27bc36ceaab8ae90a2b4af7b02672d7ee4b29d6ba3c28e09c92c2a"
+    },
+    {
+      "bytes": 12780,
+      "path": "vendor/szl_verify_widget.js",
+      "sha256": "1fd8e9efd2080fae92c1d3633f4291accd296a088ca06bd64dce6b4cc94d1dec"
+    },
+    {
+      "bytes": 670681,
+      "path": "vendor/three.module.min.js",
+      "sha256": "3e690ac7d180b0aadf0891bea39eec643e29e2d3e75c99b18689518665f69ba6"
+    }
+  ],
+  "source": "https://github.com/szl-holdings/cosmos.git",
+  "source_sha": "af6ff5ec87e25ee057271312823d40dd4f433c20",
+  "unresolved_lfs": [
+    {
+      "original_path": "og.png",
+      "pointer": "version https://git-lfs.github.com/spec/v1\noid sha256:7654cf6c8ce6bc45ca4d7868e03ce137478a920028099f67311f02e1b3589d62\nsize 215902",
+      "preserved_as": "og.png.lfs-pointer.json",
+      "record_type": "unresolved_git_lfs_pointer"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs>
+<radialGradient id="bg" cx="62%" cy="40%" r="85%"><stop offset="0%" stop-color="#0c1533"/><stop offset="55%" stop-color="#070c1e"/><stop offset="100%" stop-color="#03060f"/></radialGradient>
+<radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff3d2"/><stop offset="32%" stop-color="#ecbb54" stop-opacity="0.9"/><stop offset="100%" stop-color="#d79a2e" stop-opacity="0"/></radialGradient></defs>
+<rect width="1200" height="630" fill="#03060f"/>
+<rect width="1200" height="630" fill="url(#bg)"/>
+<rect x="14" y="14" width="1172" height="602" rx="18" fill="none" stroke="#3af4c8" stroke-opacity="0.18" stroke-width="1.5"/>
+<line x1="952" y1="300" x2="1143.6" y2="237.7" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="1144.7" y2="360.1" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="1033.0" y2="447.4" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="873.8" y2="448.3" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="760.4" y2="362.3" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="759.3" y2="239.9" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="871.0" y2="152.6" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<line x1="952" y1="300" x2="1030.2" y2="151.7" stroke="#3ab4f4" stroke-opacity="0.28" stroke-width="1.4"/>
+<circle cx="953.9" cy="70.6" r="2.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1013.7" cy="397.7" r="3.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="819.9" cy="73.0" r="1.9" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="576.3" cy="157.8" r="2.6" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="695.8" cy="353.8" r="2.9" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1056.4" cy="408.5" r="2.1" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1149.6" cy="227.0" r="1.7" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1082.1" cy="361.1" r="2.9" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="890.3" cy="546.5" r="2.2" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1070.9" cy="368.5" r="3.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="994.0" cy="81.0" r="2.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="609.2" cy="174.9" r="1.8" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="951.6" cy="241.1" r="2.2" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="724.5" cy="528.2" r="2.6" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="665.4" cy="424.0" r="1.9" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1169.5" cy="379.3" r="2.5" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="1079.2" cy="447.6" r="2.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="754.3" cy="192.4" r="1.9" fill="#e0584a" fill-opacity="0.85"/>
+<circle cx="1099.8" cy="216.0" r="2.6" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1123.4" cy="288.3" r="2.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="905.8" cy="189.9" r="2.5" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="806.0" cy="168.1" r="3.2" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="616.0" cy="81.7" r="1.8" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="1047.9" cy="269.9" r="1.7" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="1173.6" cy="323.6" r="3.2" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="567.1" cy="419.8" r="2.7" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="724.4" cy="379.8" r="1.8" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="839.5" cy="536.8" r="3.0" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="868.4" cy="147.7" r="3.1" fill="#e6c875" fill-opacity="0.85"/>
+<circle cx="743.8" cy="378.8" r="2.6" fill="#4fd18b" fill-opacity="0.85"/>
+<circle cx="952" cy="300" r="168" fill="url(#sun)"/>
+<circle cx="952" cy="300" r="46" fill="#ffe9b8"/>
+<circle cx="952" cy="300" r="46" fill="none" stroke="#fff6df" stroke-opacity="0.7" stroke-width="1.5"/>
+<circle cx="1143.6" cy="237.7" r="20" fill="#7ad7ff" fill-opacity="0.16"/>
+<circle cx="1143.6" cy="237.7" r="8" fill="#7ad7ff"/>
+<circle cx="1144.7" cy="360.1" r="20" fill="#d7b96b" fill-opacity="0.16"/>
+<circle cx="1144.7" cy="360.1" r="8" fill="#d7b96b"/>
+<circle cx="1033.0" cy="447.4" r="20" fill="#e6c875" fill-opacity="0.16"/>
+<circle cx="1033.0" cy="447.4" r="8" fill="#e6c875"/>
+<circle cx="873.8" cy="448.3" r="20" fill="#5c8fd1" fill-opacity="0.16"/>
+<circle cx="873.8" cy="448.3" r="8" fill="#5c8fd1"/>
+<circle cx="760.4" cy="362.3" r="20" fill="#7ad7ff" fill-opacity="0.16"/>
+<circle cx="760.4" cy="362.3" r="8" fill="#7ad7ff"/>
+<circle cx="759.3" cy="239.9" r="20" fill="#e6c875" fill-opacity="0.16"/>
+<circle cx="759.3" cy="239.9" r="8" fill="#e6c875"/>
+<circle cx="871.0" cy="152.6" r="20" fill="#5c8fd1" fill-opacity="0.16"/>
+<circle cx="871.0" cy="152.6" r="8" fill="#5c8fd1"/>
+<circle cx="1030.2" cy="151.7" r="20" fill="#d7b96b" fill-opacity="0.16"/>
+<circle cx="1030.2" cy="151.7" r="8" fill="#d7b96b"/>
+<text x="84" y="150" font-family="DejaVu Sans Mono" font-size="23" fill="#3af4c8" letter-spacing="3">SZL HOLDINGS — SOVEREIGN GOVERNED-AI</text>
+<text x="80" y="268" font-family="DejaVu Sans" font-weight="bold" font-size="104" fill="#f2f6ff">SZL COSMOS</text>
+<text x="84" y="322" font-family="DejaVu Sans" font-size="38" fill="#d7b96b">· Hanan Pacha — the celestial upper-world</text>
+<text x="84" y="404" font-family="DejaVu Sans Mono" font-size="23" fill="#a9b4d6">One holographic map of the whole sovereign substrate:</text>
+<text x="84" y="438" font-family="DejaVu Sans Mono" font-size="23" fill="#a9b4d6">brain-sun · live HF constellation · Khipu receipt-cords.</text>
+<text x="84" y="512" font-family="DejaVu Sans Mono" font-size="21" fill="#3af4c8">Vendored 3D · real bloom · no CDN · Λ = Conjecture 1</text>
+<text x="84" y="566" font-family="DejaVu Sans Mono" font-size="20" fill="#6c7aa0">betterwithage-cosmos.hf.space</text>
+</svg>

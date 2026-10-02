@@ -1,0 +1,15 @@
+{
+  "dependencies": {},
+  "destination": {
+    "lifecycle": "PUBLIC_CREATIVE",
+    "mode": "creator-profile",
+    "repo_id": "betterwithage/cosmos",
+    "repo_type": "space",
+    "visibility": "public"
+  },
+  "schema": "szl.hf-deploy-manifest/v1",
+  "source_path": "",
+  "source_repository": "szl-holdings/cosmos",
+  "source_revision": "af6ff5ec87e25ee057271312823d40dd4f433c20",
+  "workflow_run_id": "33824294773"
+}
