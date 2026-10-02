@@ -31,6 +31,8 @@ jobs:
         working-directory: spaces/cosmos
       - run: node --input-type=module --check < app.js && node --input-type=module --check < catalog-ui.js
         working-directory: spaces/cosmos
+      - run: node --test tests/test_source_verification.cjs
+        working-directory: spaces/cosmos
   publish:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: test

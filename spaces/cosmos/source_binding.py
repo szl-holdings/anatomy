@@ -1,8 +1,35 @@
 """Validate the generated source binding against the mounted Cosmos payload."""
 import hashlib
 import json
+import os
 import re
 from pathlib import Path, PurePosixPath
+
+
+def mounted_files(root, declared):
+    """Inventory payload; allow only CPython caches for declared Python modules."""
+    result = set()
+    def fail(error):
+        raise error
+    for directory, directories, filenames in os.walk(root, followlinks=False, onerror=fail):
+        for name in directories + filenames:
+            target = Path(directory) / name
+            if target.is_symlink() or getattr(target, 'is_junction', lambda: False)():
+                raise ValueError('mounted link')
+        for name in filenames:
+            target = Path(directory) / name
+            if not target.is_file():
+                raise ValueError('nonregular mounted entry')
+            relative = target.relative_to(root)
+            if relative.as_posix() == 'COSMOS_SOURCE_BINDING.json':
+                continue
+            if relative.parent.name == '__pycache__':
+                match = re.fullmatch(r'(.+)\.cpython-[0-9]+(?:\.opt-[012])?\.pyc', name)
+                source = relative.parent.parent / ((match[1] if match else '') + '.py')
+                if match and source.as_posix() in declared:
+                    continue
+            result.add(relative.as_posix())
+    return result
 
 
 def bound_source(directory):
@@ -18,6 +45,8 @@ def bound_source(directory):
         files = binding['files']
         if not isinstance(files, dict) or not {'server.py', 'catalog.py', 'source_binding.py', 'index.html', 'vendor/three.module.min.js'}.issubset(files):
             raise ValueError('incomplete binding')
+        if mounted_files(root, files) != set(files):
+            raise ValueError('mounted file set mismatch')
         for name, digest in files.items():
             path = PurePosixPath(name)
             if not name or path.as_posix() != name or path.is_absolute() or '..' in path.parts or ':' in name or '\\' in name or not re.fullmatch('[0-9a-f]{64}', digest):

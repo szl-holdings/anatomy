@@ -28,6 +28,31 @@ class CosmosPublisherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.stage(tmp);(Path(tmp)/'vendor/three.module.min.js').write_text('changed')
             self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_extra_mounted_html_rejects_source_binding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp);(Path(tmp)/'unbound.html').write_text('extra')
+            self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_removed_mounted_file_rejects_source_binding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp);(Path(tmp)/'NOTICE').unlink()
+            self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_only_declared_module_bytecode_is_excluded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp);cache=Path(tmp)/'__pycache__';cache.mkdir()
+            (cache/'server.cpython-311.pyc').write_bytes(b'runtime cache')
+            self.assertEqual(binding.bound_source(tmp)[1],'SOURCE_BOUND_LOCAL_BYTES')
+            (cache/'unknown.cpython-311.pyc').write_bytes(b'unbound module')
+            self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_html_in_bytecode_directory_is_not_excluded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp);cache=Path(tmp)/'__pycache__';cache.mkdir()
+            (cache/'unbound.html').write_text('extra')
+            self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_symlink_directory_rejects_source_binding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp)
+            with patch.object(Path,'is_symlink',lambda path:path.name=='vendor'):
+                self.assertIsNone(binding.bound_source(tmp)[0])
     def test_traversal_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.stage(tmp);p=Path(tmp)/'COSMOS_SOURCE_BINDING.json';b=json.loads(p.read_text());b['files']['../outside']='0'*64;p.write_text(json.dumps(b))
