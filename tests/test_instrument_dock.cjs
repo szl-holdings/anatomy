@@ -12,6 +12,25 @@ function extractDockScript(source) {
 }
 const script = extractDockScript(html);
 
+test('dock yields to every native open panel, including dynamically created legacy panels', () => {
+  const rule = html.match(/body:has\(#panel\.open,([\s\S]*?)\{\s*visibility:\s*hidden;\s*\}/);
+  assert.ok(rule, 'native panel rule must hide the dock');
+  const selectors = rule[0];
+  // Derive panel states from their own styles so newly introduced native panels
+  // cannot silently escape the dock contract. Exclude the dock rule itself.
+  const nativeSources = [html.slice(0, html.indexOf('#anatomy-instruments {')),
+    ...['v5_organs.js', 'v6_alive.js'].map(file => fs.readFileSync(path.join(root, file), 'utf8'))];
+  const states = new Set(nativeSources.flatMap(source =>
+    [...source.matchAll(/#[\w-]+\.open\b/g)].map(match => match[0])));
+  assert.ok(states.has('#v8-flow.open'));
+  assert.ok(states.has('#v5panel.open'));
+  assert.ok(states.has('#v6panel.open'));
+  for (const state of states) assert.ok(selectors.includes(state), `dock must yield to ${state}`);
+  for (const state of ['#tour.show', '#v9-tour.show', '#btn-v10-lens.active']) {
+    assert.ok(selectors.includes(state), `dock must yield to ${state}`);
+  }
+});
+
 test('dock extraction accepts uppercase and mixed-case HTML script tags', () => {
   assert.equal(typeof script, 'string');
   for (const [open, close] of [['SCRIPT', 'SCRIPT'], ['ScRiPt', 'sCrIpT']]) {
