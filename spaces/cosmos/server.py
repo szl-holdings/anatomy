@@ -53,6 +53,24 @@ CONTENT_SECURITY_POLICY = (
 
 
 class HardenedHandler(SimpleHTTPRequestHandler):
+    def _private_static_path(self):
+        path = urllib.parse.unquote(urllib.parse.urlsplit(self.path).path)
+        return any(part.startswith('.') or part == '__pycache__' or part.endswith('.pyc')
+                   for part in path.replace('\\', '/').split('/') if part)
+
+    def do_HEAD(self):
+        # The explicit source route is public; HEAD returns its headers only.
+        if urllib.parse.urlsplit(self.path).path == '/.well-known/szl-source.json':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            return
+        if self._private_static_path():
+            self.send_error(404)
+            return
+        super().do_HEAD()
+
     def _send_json(self, payload):
         body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         self.send_response(200)
@@ -106,6 +124,9 @@ class HardenedHandler(SimpleHTTPRequestHandler):
                     force=force,
                 )
             )
+            return
+        if self._private_static_path():
+            self.send_error(404)
             return
         super().do_GET()
 

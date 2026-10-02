@@ -56,7 +56,7 @@ def source_files(revision):
         name = raw_path.decode('utf-8')[len(PREFIX):]
         if kind != b'blob' or mode not in (b'100644', b'100755'):
             raise ValueError('non-regular source entry: ' + name)
-        if (name != '.gitattributes' and any(part.startswith('.') for part in name.split('/'))) or '__pycache__' in name.split('/') or name.endswith('.pyc'):
+        if (name not in ('.gitattributes', '.dockerignore') and any(part.startswith('.') for part in name.split('/'))) or '__pycache__' in name.split('/') or name.endswith('.pyc'):
             raise ValueError('unintended source entry: ' + name)
         files[name] = git('cat-file', 'blob', blob.decode())
     if not {'server.py','source_binding.py','catalog.py','index.html','vendor/three.module.min.js'}.issubset(files):

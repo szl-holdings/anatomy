@@ -1,4 +1,5 @@
 import importlib.util
+import fnmatch
 import json
 import tempfile
 import unittest
@@ -32,6 +33,28 @@ class CosmosPublisherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.stage(tmp);(Path(tmp)/'unbound.html').write_text('extra')
             self.assertIsNone(binding.bound_source(tmp)[0])
+    def test_git_metadata_is_rejected_and_docker_context_excludes_it(self):
+        # Model only the simple checked-in ignore patterns; no container claim.
+        with tempfile.TemporaryDirectory() as tmp:
+            self.stage(tmp);root=Path(tmp);(root/'.git').mkdir();(root/'.git/config').write_text('metadata')
+            self.assertIsNone(binding.bound_source(tmp)[0])
+            patterns=(ROOT/'spaces/cosmos/.dockerignore').read_text().splitlines()
+            def ignored(name):
+                parts=Path(name).parts
+                prefixes=['/'.join(parts[:i]) for i in range(1,len(parts)+1)]
+                return any(fnmatch.fnmatchcase(prefix,pattern) for prefix in prefixes for pattern in patterns)
+            for name in ['.git/config','vendor/.git/config','__pycache__/server.cpython-311.pyc','tests/__pycache__/test.pyc','loose.pyc']:
+                self.assertTrue(ignored(name),name)
+            self.assertFalse(ignored('Dockerfile'))
+            self.assertFalse(ignored('.dockerignore'))
+            (root/'.git/config').unlink();(root/'.git').rmdir()
+            self.assertEqual(binding.bound_source(tmp)[1],'SOURCE_BOUND_LOCAL_BYTES')
+    def test_root_dockerignore_allowed_but_nested_hidden_path_rejected(self):
+        row=b'100644 blob '+b'a'*40+b'\tspaces/cosmos/.dockerignore\0'
+        with patch.object(publisher,'git',side_effect=[row,b'.git\n']):
+            with self.assertRaisesRegex(ValueError,'incomplete'):publisher.source_files('b'*40)
+        with patch.object(publisher,'git',return_value=b'100644 blob '+b'a'*40+b'\tspaces/cosmos/.dockerignore/secret\0'):
+            with self.assertRaisesRegex(ValueError,'unintended'):publisher.source_files('b'*40)
     def test_removed_mounted_file_rejects_source_binding(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.stage(tmp);(Path(tmp)/'NOTICE').unlink()
