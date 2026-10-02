@@ -62,7 +62,7 @@
     var box = node("aside");
     box.id = "yachay-sb";
     box.dataset.state = "loading";
-    box.dataset.collapsed = "false";
+    box.dataset.collapsed = "true";
     box.setAttribute("aria-label", "YACHAY Second Brain instrument");
 
     var head = node("div", "yh");
@@ -71,9 +71,10 @@
     var state = node("span", "state", "CONNECTING");
     state.setAttribute("aria-live", "polite");
     head.appendChild(state);
-    var toggle = node("button", "toggle", "–");
+    var toggle = node("button", "toggle", "+");
     toggle.type = "button";
-    toggle.setAttribute("aria-label", "Collapse Second Brain instrument");
+    toggle.setAttribute("aria-label", "Expand Second Brain instrument");
+    toggle.setAttribute("aria-expanded", "false");
     head.appendChild(toggle);
     box.appendChild(head);
 
@@ -132,6 +133,7 @@
     toggle.addEventListener("click", function () {
       var collapsed = box.dataset.collapsed === "true";
       box.dataset.collapsed = collapsed ? "false" : "true";
+      toggle.setAttribute("aria-expanded", String(collapsed));
       toggle.textContent = collapsed ? "–" : "+";
       toggle.setAttribute(
         "aria-label",

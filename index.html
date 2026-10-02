@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-szl-holo-space-v2="anatomy">
+<html lang="en" data-szl-holo-space-v2="anatomy" data-szl-holo-no-rail>
 <head>
 <meta charset="utf-8" />
 <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -1865,5 +1865,59 @@
   <!-- Thin YACHAY note: public Second Brain Space. Additive HUD, not a Three.js rewrite. -->
   <script src="./yachay-second-brain.js"></script>
   <script src="./szl-holo-v2.js" defer data-szl-holo-space-asset="script-v2"></script>
+  <!-- Anatomy owns navigation and instrument placement. Existing instrument
+       buttons keep their handlers; normal flow reserves each control's space. -->
+  <style>
+    #anatomy-instruments {
+      position: fixed;
+      z-index: 76;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(82px, calc(70px + env(safe-area-inset-bottom)));
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 8px;
+      width: min(390px, calc(100vw - 24px));
+      max-height: calc(100dvh - 200px);
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+    #anatomy-instruments #fa-launch,
+    #anatomy-instruments #nq7-launcher,
+    #anatomy-instruments #szl-v7-launcher,
+    #anatomy-instruments #yachay-sb {
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      transform: none;
+      width: auto;
+      min-width: 0;
+      margin: 0;
+    }
+    #anatomy-instruments #fa-launch,
+    #anatomy-instruments #nq7-launcher,
+    #anatomy-instruments #szl-v7-launcher { min-height: 48px; }
+    #anatomy-instruments #yachay-sb { grid-column: 1 / -1; }
+    #anatomy-instruments #yachay-sb .body { max-height: 40dvh; overflow: auto; }
+    body.fa-open #anatomy-instruments,
+    body:has(#szl-v7-hud:not([hidden])) #anatomy-instruments,
+    body:has(#nq7-panel[data-open="true"]) #anatomy-instruments,
+    body:has(#panel.open, #atlas.open, #forecast.open, #qbio.open,
+      #vf-static.show, .ux-sheet, #dissect.sheet-open, #ux-more-menu.open) #anatomy-instruments {
+      visibility: hidden;
+    }
+  </style>
+  <script>
+    window.addEventListener('load', function () {
+      var dock = document.createElement('aside');
+      dock.id = 'anatomy-instruments';
+      dock.setAttribute('aria-label', 'Anatomy evidence and brain instruments');
+      ['fa-launch', 'nq7-launcher', 'szl-v7-launcher', 'yachay-sb'].forEach(function (id) {
+        var instrument = document.getElementById(id);
+        if (instrument) dock.appendChild(instrument);
+      });
+      if (dock.children.length) document.body.appendChild(dock);
+    }, { once: true });
+  </script>
 </body>
 </html>
