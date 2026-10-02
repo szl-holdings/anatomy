@@ -44,7 +44,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Verify typed observation display behavior
-        run: node --test tests/test_dependency_observations.cjs tests/test_focus_restoration.cjs tests/test_instrument_dock.cjs
+        run: node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
 
       - name: Build pinned Space image
         run: docker build --tag anatomy-space-ci .
