@@ -115,6 +115,14 @@ training, promotion, execution, merge, and provider mutation remain `NONE`.
 Locked-proven remains exactly eight, the F-number mapping remains
 `UNKNOWN_NOT_INFERRED`, and Lambda remains Conjecture 1.
 
+Frontier source revisions are typed: repository sources use exact `git-sha1`
+commits; public research metadata uses `metadata-capture-sha256` receipts.
+The materializer and both read-only consumers validate the individual canonical
+capture, bounded provider provenance, and aggregate provider receipt. Public
+handles retain `revisionKind` and the declared metadata identity and licence;
+full-text licensing stays `NOT_INFERRED`. The enclosing Second Brain snapshot
+remains bound to its exact Git commit.
+
 Open the floating **Neural Quant v7** control or use
 `/api/anatomy/v1/brain/neural-quant-v7`. The desktop panel becomes a mobile
 bottom sheet with 44-pixel controls, safe-area support, reduced motion, high

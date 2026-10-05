@@ -27,6 +27,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from frontier_source_contract import (
+    FrontierSourceBindings,
+    metadata_handle_identity,
+    validate_source_revision,
+)
+
 SCHEMA_HEALTH = "szl.living-anatomy.second-brain.health/v2"
 SCHEMA_SEARCH = "szl.living-anatomy.second-brain.search/v1"
 SCHEMA_CONTEXT = "szl.living-anatomy.second-brain.context/v1"
@@ -378,7 +384,8 @@ class PublicSecondBrain:
                 raise ValueError(f"frontier source identity failed at index {index}")
             if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
                 raise ValueError(f"frontier source repository failed at index {index}")
-            if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+            validate_source_revision(entry)
+            if not HEX_64.fullmatch(digest):
                 raise ValueError(f"frontier source binding failed at index {index}")
             if (
                 not isinstance(parser, str)
@@ -396,6 +403,7 @@ class PublicSecondBrain:
             expected_source_counts[binding] = candidate_count
             observed_source_counts[binding] = 0
 
+        source_bindings = FrontierSourceBindings(sources)
         kind_counts = state.get("source_kind_counts")
         domain_counts = state.get("quant_domain_counts")
         if not isinstance(kind_counts, dict) or not isinstance(domain_counts, dict):
@@ -435,15 +443,11 @@ class PublicSecondBrain:
             ids.add(candidate_id)
             revision = str(row.get("source_revision") or "")
             digest = str(row.get("content_sha256") or "")
-            if not _valid_revision(revision) or not _valid_digest(digest):
+            if not _valid_digest(digest):
                 raise ValueError(
                     f"frontier source binding failed at line {line_number}"
                 )
-            binding = (
-                str(row.get("source_repository") or ""),
-                revision,
-                str(row.get("source_path") or ""),
-            )
+            binding = source_bindings.binding_for(row)
             if binding not in expected_source_counts:
                 raise ValueError(f"frontier source manifest binding failed at line {line_number}")
             observed_source_counts[binding] += 1
@@ -477,6 +481,8 @@ class PublicSecondBrain:
                 "sha256": digest,
                 "source_repository": str(row.get("source_repository") or ""),
                 "source_revision": revision,
+                "source_revision_kind": row.get("source_revision_kind", "git-sha1"),
+                "provenance": row.get("provenance"),
                 "source_path": str(row.get("source_path") or ""),
                 "source_kind": str(row.get("source_kind") or ""),
                 "quant_domain": (
@@ -506,6 +512,7 @@ class PublicSecondBrain:
             )
         if observed_source_counts != expected_source_counts:
             raise ValueError("frontier per-source candidate counts mismatch")
+        source_bindings.verify()
         measured_set = _sha256_bytes(b"".join(canonical_lines))
         if state.get("candidate_set_sha256") != measured_set:
             raise ValueError("frontier state candidate-set digest mismatch")
@@ -717,6 +724,7 @@ class PublicSecondBrain:
         }
         if row.get("quant_domain"):
             handle["quantDomain"] = row["quant_domain"]
+        handle.update(metadata_handle_identity(row))
         return handle
 
     @staticmethod

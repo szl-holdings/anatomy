@@ -26,7 +26,7 @@ RETIRED = (
 # materialized .runtime tree, which is generated at publish time.
 PATTERNS = (
     "README.md", "Dockerfile", "requirements.txt", "server.py", "organ_integrity.py",
-    "living_runtime.py", "frontier_runtime.py", "second_brain_runtime.py",
+    "living_runtime.py", "frontier_runtime.py", "frontier_source_contract.py", "second_brain_runtime.py",
     "scripts/materialize_second_brain.py", "*.html", "*.js", "*.css", "lib/**/*",
 )
 

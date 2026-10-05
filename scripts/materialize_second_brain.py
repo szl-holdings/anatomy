@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import tempfile
 import urllib.error
 import urllib.parse
@@ -23,6 +24,9 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from frontier_source_contract import FrontierSourceBindings, validate_source_revision
 
 DEFAULT_REPOSITORY = "szl-holdings/szl-second-brain"
 DEFAULT_REF = "main"
@@ -249,7 +253,8 @@ def validate_frontier_snapshot(
             r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository
         ):
             raise ValueError(f"frontier source repository failed at index {index}")
-        if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+        validate_source_revision(source)
+        if not HEX_64.fullmatch(digest):
             raise ValueError(f"frontier source binding failed at index {index}")
         if (
             not isinstance(source.get("parser"), str)
@@ -268,6 +273,7 @@ def validate_frontier_snapshot(
         source_ids.add(source_id)
         source_candidate_count += candidate_count
 
+    source_bindings = FrontierSourceBindings(sources)
     kind_counts = state.get("source_kind_counts")
     domain_counts = state.get("quant_domain_counts")
     if not isinstance(kind_counts, dict) or not isinstance(domain_counts, dict):
@@ -300,15 +306,10 @@ def validate_frontier_snapshot(
         if not FRONTIER_ID.fullmatch(candidate_id) or candidate_id in ids:
             raise ValueError(f"frontier candidate identity failed at line {line_number}")
         ids.add(candidate_id)
-        revision = str(row.get("source_revision") or "")
         digest = str(row.get("content_sha256") or "")
-        if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+        if not HEX_64.fullmatch(digest):
             raise ValueError(f"frontier source binding failed at line {line_number}")
-        binding = (
-            str(row.get("source_repository") or ""),
-            revision,
-            str(row.get("source_path") or ""),
-        )
+        binding = source_bindings.binding_for(row)
         if binding not in expected_source_counts:
             raise ValueError(f"frontier source manifest binding failed at line {line_number}")
         observed_source_counts[binding] += 1
@@ -337,6 +338,7 @@ def validate_frontier_snapshot(
         )
     if observed_source_counts != expected_source_counts:
         raise ValueError("frontier per-source candidate counts mismatch")
+    source_bindings.verify()
     measured_set = sha256_bytes(b"".join(canonical_lines))
     if state.get("candidate_set_sha256") != measured_set:
         raise ValueError("frontier candidate-set digest mismatch")
