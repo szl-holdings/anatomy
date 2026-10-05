@@ -56,11 +56,16 @@ jobs:
             living_runtime.py \
             frontier_runtime.py \
             second_brain_runtime.py \
+            lib/refinement_contract.py \
+            lib/refinement_living_runtime.py \
             scripts/materialize_second_brain.py \
-            scripts/sync_hf_creator_profile.py
+            scripts/materialize_refinement_memory.py \
+            scripts/sync_hf_creator_profile.py \
+            scripts/verify_refinement_observatory.py
           node --check neural-quant-v7.js
           node --check holographic-v7.js
           node --check frontier_anatomy.js
+          node --check refinement-lab.js
           node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
 
       - name: Fail closed if Hugging Face credential is absent
@@ -70,11 +75,16 @@ jobs:
           test -n "${HF_TOKEN:-}" || { echo "::error::HF_TOKEN absent"; exit 2; }
           echo "::add-mask::$HF_TOKEN"
 
-      - name: Materialize exact public Second Brain and frontier memory
-        run: python scripts/materialize_second_brain.py --output .runtime/second-brain
+      - name: Materialize exact public Second Brain and refinement memory
+        run: |
+          python scripts/materialize_second_brain.py --output .runtime/second-brain
+          python scripts/materialize_refinement_memory.py --allow-unavailable
 
-      - name: Re-prove the full local Neural Quant v7 contract
+      - name: Re-prove the full local Neural Quant and refinement contracts
         run: python -m unittest discover -s tests -v
 
       - name: Publish and verify betterwithage/anatomy
         run: python scripts/sync_hf_creator_profile.py
+
+      - name: Verify source-bound refinement observatory readback
+        run: python scripts/verify_refinement_observatory.py
