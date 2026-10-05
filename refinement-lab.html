@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Alloy Refinement Observatory — SZL Living Anatomy</title>
+  <link rel="stylesheet" href="/refinement-lab.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to observatory</a>
+  <main id="main" class="shell">
+    <header class="hero">
+      <div class="eyebrow">SZL LIVING ANATOMY · READ-ONLY INSTRUMENT</div>
+      <h1>Alloy Refinement Observatory</h1>
+      <p class="lede">Breadth discovers distinct solution paths. Audit localizes a public, verifiable error. Repair changes one bound step, re-audits descendants, and preserves unrelated step hashes. Consensus remains a proposal—not execution authority.</p>
+      <div class="status-line" role="status" aria-live="polite">
+        <span id="state-dot" class="dot"></span>
+        <span id="state">Loading source-bound state…</span>
+      </div>
+    </header>
+
+    <section class="pipeline" aria-label="Refinement pipeline">
+      <article><span>01</span><h2>Explore</h2><p>Bounded candidate breadth with exact model and revision identity.</p></article>
+      <article><span>02</span><h2>Cluster</h2><p>Stop blind retries when recent branches add no new semantic direction.</p></article>
+      <article><span>03</span><h2>Audit</h2><p>Check concise public steps; hidden chain-of-thought is neither requested nor stored.</p></article>
+      <article><span>04</span><h2>Repair</h2><p>Replace one failed step, keep dependency topology, and re-audit downstream steps.</p></article>
+      <article><span>05</span><h2>Vote</h2><p>Plurality consensus without pretending agreement is correctness proof.</p></article>
+      <article><span>06</span><h2>Receipt</h2><p>Hash-bound quality, recovery, regression, compute, privacy, and authority evidence.</p></article>
+    </section>
+
+    <section class="metrics" aria-label="Source-bound metrics">
+      <div><span>Source revision</span><strong id="revision">—</strong></div>
+      <div><span>Receipts</span><strong id="receipts">—</strong></div>
+      <div><span>Patterns</span><strong id="patterns">—</strong></div>
+      <div><span>State digest</span><strong id="digest">—</strong></div>
+    </section>
+
+    <section class="controls" aria-label="Pattern filters">
+      <label for="error-code">Error code</label>
+      <input id="error-code" maxlength="64" placeholder="ARITHMETIC_ERROR" autocomplete="off">
+      <button id="refresh" type="button">Inspect patterns</button>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Review-gated pattern handles</h2><span id="returned">0 returned</span></div>
+      <div id="cards" class="cards"></div>
+      <p id="empty" class="empty">No admitted aggregate patterns are available yet. The observatory remains fail-closed until Second Brain protected source is admitted and published.</p>
+    </section>
+
+    <footer>
+      <p>Content access: <strong>HANDLES_ONLY</strong> · Authority: <strong>READ_ONLY</strong> · Training, promotion, execution, and merge: <strong>NONE</strong>.</p>
+      <p>Research lineage is attributed in <code>szl-holdings/szl-frontier</code>. Model-pair gains require Forge qualification and independent receipt readback.</p>
+    </footer>
+  </main>
+  <script src="/refinement-lab.js" defer></script>
+</body>
+</html>

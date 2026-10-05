@@ -101,6 +101,7 @@ def runtime_files() -> list[str]:
         "frontier_source_contract.py",
         "second_brain_runtime.py",
         "scripts/materialize_second_brain.py",
+        "scripts/materialize_refinement_memory.py",
         ".runtime/**/*",
         "*.html",
         "*.js",
@@ -111,7 +112,7 @@ def runtime_files() -> list[str]:
     files: set[str] = set()
     for pattern in patterns:
         files.update(
-            path
+            os.path.normpath(path).replace(os.sep, "/")
             for path in glob.glob(pattern, recursive=True)
             if os.path.isfile(path)
         )
@@ -131,6 +132,14 @@ def runtime_files() -> list[str]:
         "neural-quant-v7.css",
         "holographic-v7.js",
         "holographic-v7.css",
+        "refinement-lab.html",
+        "refinement-lab.js",
+        "refinement-lab.css",
+        "lib/refinement_contract.py",
+        "lib/refinement_living_runtime.py",
+        "lib/refinement_patterns.public.json",
+        "lib/refinement_source.json",
+        "scripts/materialize_refinement_memory.py",
         ".runtime/second-brain/manifest.json",
         ".runtime/second-brain/brain-corpus.public.jsonl",
         ".runtime/second-brain/frontier-state.v1.json",

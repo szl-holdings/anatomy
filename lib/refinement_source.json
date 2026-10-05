@@ -1,0 +1,14 @@
+{
+  "available": false,
+  "content_access": "HANDLES_ONLY",
+  "execution_authority": "NONE",
+  "promotion_authority": "NONE",
+  "receipt_sha256": "7e40ee7697f2a907380c2fd561f93201956acb9ecdce88d22a08454b418b255e",
+  "schema": "szl.anatomy.refinement-source/v1",
+  "source_content_sha256": "d35d34936765536026616ee6fcc9a80d4f6a630104fa46bc3019a505516daa8d",
+  "source_path": "data/refinement-patterns.public.json",
+  "source_repository": "szl-holdings/szl-second-brain",
+  "source_revision": "9954209d99c20a960188c4938daefb6dcd87bd80",
+  "state_sha256": "b4513ebd5403357e642e9858c5d4cf456aa0285a19dbae1f6d18d6d906905a9c",
+  "training_authority": "NONE"
+}
