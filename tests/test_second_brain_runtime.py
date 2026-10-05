@@ -6,9 +6,11 @@ import sys
 import tempfile
 import unittest
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
+from urllib.parse import quote, urlencode
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -322,6 +324,7 @@ class PublicSecondBrainTest(unittest.TestCase):
         return state, rows
 
     def _assert_frontier_rejected(self, state: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        import frontier_runtime
         import scripts.materialize_second_brain as materializer
 
         self._rewrite_frontier(state, rows)
@@ -333,6 +336,228 @@ class PublicSecondBrainTest(unittest.TestCase):
         health = PublicSecondBrain(self.snapshot).health()
         self.assertFalse(health["ready"])
         self.assertIn("source", str(health["load_error"]))
+        with self.assertRaisesRegex(ValueError, "source"):
+            frontier_runtime.FrontierAtlas._validate(
+                state, rows, json.loads((self.snapshot / "source.json").read_bytes()),
+                (self.snapshot / "frontier-state.v1.json").read_bytes(),
+            )
+
+    @staticmethod
+    def _bind_metadata_receipts(state: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        research = [row for row in rows if row["source_kind"] == "research-metadata"]
+        for row in research:
+            digest = hashlib.sha256(canonical_bytes(row["provenance"]["metadata"])).hexdigest()
+            row["source_revision"] = row["provenance"]["capture_sha256"] = digest
+        for source in state["sources"]:
+            if source.get("revision_kind") != "metadata-capture-sha256":
+                continue
+            metadata = [row["provenance"]["metadata"] for row in research
+                        if row["source_repository"] == source["repository"]]
+            metadata.sort(key=lambda item: (item["provider"], item["identifier"],
+                                           hashlib.sha256(canonical_bytes(item)).hexdigest()))
+            digest = hashlib.sha256(canonical_bytes(metadata)).hexdigest()
+            source["revision"] = source["content_sha256"] = digest
+            source["candidate_count"] = len(metadata)
+
+    def _metadata_frontier_fixture(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        state, rows = self._frontier_fixture()
+        for provider, identifier in (("crossref", "10.1234/fixture-one"),
+                                     ("crossref", "10.1234/fixture-two"),
+                                     ("arxiv", "2501.01234v1")):
+            metadata = {
+                "provider": provider, "identifier": identifier,
+                "canonical_url": ("https://doi.org/" if provider == "crossref"
+                                  else "https://arxiv.org/abs/") + identifier,
+                "title": "Public research fixture " + identifier,
+                "authors": ["Fixture Author"], "categories": [], "licence_urls": [],
+                "published": "2025-01" if provider == "crossref" else "2025-01-03T00:00:00Z",
+                "updated": None if provider == "crossref" else "2025-01-04T00:00:00Z",
+                "metadata_licence": "NOT_DECLARED_BY_RESPONSE" if provider == "crossref" else "CC0-1.0",
+                "full_text_licence": "NOT_INFERRED",
+            }
+            row = frontier_row(identifier, title=metadata["title"], content="Public research metadata fixture.",
+                               kind="research-metadata", repository="public-metadata/" + provider,
+                               path=identifier)
+            row["source_revision_kind"] = "metadata-capture-sha256"
+            row["provenance"] = {
+                "provider": provider, "identifier": identifier, "metadata": metadata,
+                "request_url": ("https://api.crossref.org/works/" + quote(identifier, safe="")
+                                if provider == "crossref" else "https://export.arxiv.org/api/query?"
+                                + urlencode({"id_list": identifier, "max_results": 1})),
+                "response_sha256": "f" * 64, "response_bytes": 200,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                "source_authentication": "PUBLIC_HTTPS_METADATA_NOT_INDEPENDENT_ATTESTATION",
+            }
+            rows.append(row)
+        for provider in ("crossref", "arxiv"):
+            state["sources"].append({
+                "source_id": "public_research_" + provider,
+                "repository": "public-metadata/" + provider,
+                "revision_kind": "metadata-capture-sha256",
+                "path": "data/public-research-metadata.v1.json",
+                "parser": "public_research_metadata",
+            })
+        self._bind_metadata_receipts(state, rows)
+        state["source_count"] = len(state["sources"])
+        state["source_kind_counts"]["research-metadata"] = 3
+        rows.sort(key=lambda row: row["id"])
+        return state, rows
+
+    def test_metadata_capture_and_aggregate_receipts_materialize_and_serve(self) -> None:
+        import frontier_runtime
+        import scripts.materialize_second_brain as materializer
+        from fastapi.testclient import TestClient
+
+        state, rows = self._metadata_frontier_fixture()
+        self._rewrite_frontier(state, rows)
+        output = self.snapshot / "typed-materialized"
+        with patch.object(materializer, "resolve_revision", return_value="a" * 40), patch.object(
+            materializer, "request_bytes",
+            side_effect=lambda url, **kwargs: (self.snapshot / url.rsplit("/", 1)[1]).read_bytes(),
+        ):
+            materializer.materialize(output)
+        brain = PublicSecondBrain(output)
+        self.assertTrue(brain.ready, brain.health()["load_error"])
+        self.assertEqual(9, brain.health()["frontier"]["source_count"])
+        self.assertEqual(74, brain.health()["frontier"]["candidate_count"])
+        result = brain.frontier_search("public research fixture", k=24)
+        brain_handles = [handle for handle in result["handles"]
+                         if handle.get("sourceKind") == "research-metadata"]
+        self.assertEqual(3, len(brain_handles))
+        with patch.multiple(frontier_runtime,
+                            STATE_PATH=output / "frontier-state.v1.json",
+                            CANDIDATES_PATH=output / "frontier-candidates.public.jsonl",
+                            SOURCE_PATH=output / "source.json", ATLAS=frontier_runtime.FrontierAtlas()):
+            response = TestClient(frontier_runtime.app).get(
+                "/api/anatomy/v1/frontier/handles?q=public+research+fixture&k=24")
+            self.assertEqual(200, response.status_code)
+            atlas_handles = [handle for handle in response.json()["handles"]
+                             if handle["kind"] == "research-metadata"]
+            self.assertEqual(3, len(atlas_handles))
+        capture_revisions = {row["source_revision"] for row in rows if row["source_kind"] == "research-metadata"}
+        aggregate_revisions = {source["revision"] for source in state["sources"]
+                               if source.get("revision_kind") == "metadata-capture-sha256"}
+        self.assertTrue(capture_revisions.isdisjoint(aggregate_revisions))
+        for handle in brain_handles + atlas_handles:
+            self.assertEqual("metadata-capture-sha256", handle["revisionKind"])
+            self.assertIn(handle.get("revision", handle.get("sourceRevision")), capture_revisions)
+            self.assertEqual("NOT_INFERRED", handle["sourceIdentity"]["fullTextLicence"])
+            self.assertEqual("HANDLES_ONLY", handle["contentAccess"])
+            self.assertNotIn("provenance", handle)
+            self.assertNotIn("metadata", handle)
+            self.assertNotIn("content", handle)
+        self.assertEqual("NONE", result["training_authority"])
+        self.assertEqual("NONE", result["execution_authority"])
+
+    def test_metadata_provenance_is_verified_even_when_outer_digests_match(self) -> None:
+        state, rows = self._metadata_frontier_fixture()
+        index = next(i for i, row in enumerate(rows) if row.get("source_repository") == "public-metadata/crossref")
+        old = (datetime.now(timezone.utc) - timedelta(days=181)).isoformat()
+        future = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+        cases = (
+            ("provenance", "capture_sha256", "0" * 64),
+            ("provenance", "request_url", "https://untrusted.example/metadata"),
+            ("provenance", "response_sha256", "not-a-digest"),
+            ("provenance", "response_bytes", True),
+            ("provenance", "response_bytes", 256 * 1024 + 1),
+            ("provenance", "observed_at", old),
+            ("provenance", "observed_at", future),
+            ("provenance", "observed_at", "2025-01-01T00:00:00"),
+            ("provenance", "source_authentication", "INDEPENDENT_ATTESTATION"),
+            ("metadata", "full_text_licence", "INFERRED"),
+            ("metadata", "metadata_licence", "CC0-1.0"),
+            ("metadata", "published", "2025-02-30"),
+            ("metadata", "canonical_url", "https://untrusted.example/paper"),
+            ("metadata", "title", "<b>Unbounded markup</b>"),
+            ("metadata", "authors", ["Author"] * 33),
+            ("metadata", "unexpected_field", "unsupported"),
+        )
+        for target, field, value in cases:
+            with self.subTest(target=target, field=field, value=value):
+                changed_state, changed_rows = deepcopy(state), deepcopy(rows)
+                provenance = changed_rows[index]["provenance"]
+                (provenance["metadata"] if target == "metadata" else provenance)[field] = value
+                if target == "metadata":
+                    self._bind_metadata_receipts(changed_state, changed_rows)
+                self._assert_frontier_rejected(changed_state, changed_rows)
+
+    def test_metadata_source_identity_and_aggregate_cannot_be_substituted(self) -> None:
+        state, rows = self._metadata_frontier_fixture()
+        index = next(i for i, row in enumerate(rows) if row.get("source_repository") == "public-metadata/arxiv")
+        source_index = next(i for i, source in enumerate(state["sources"])
+                            if source["repository"] == "public-metadata/arxiv")
+        cases = (
+            ("row", "source_revision_kind", "git-sha1"),
+            ("row", "source_revision_kind", "unknown-digest"),
+            ("row", "source_revision", "0" * 64),
+            ("row", "source_path", "2501.01234v2"),
+            ("row", "source_repository", "public-metadata/crossref"),
+            ("row", "source_kind", "source-document"),
+            ("row", "admission", "EXECUTABLE_CONSTRAINT_REVIEW_REQUIRED"),
+            ("row", "provenance", None),
+            ("source", "revision_kind", "git-sha1"),
+            ("source", "revision", rows[index]["source_revision"]),
+            ("source", "content_sha256", "0" * 64),
+            ("source", "parser", "markdown"),
+            ("source", "path", "unbound.json"),
+        )
+        for target, field, value in cases:
+            with self.subTest(target=target, field=field):
+                changed_state, changed_rows = deepcopy(state), deepcopy(rows)
+                (changed_rows[index] if target == "row" else changed_state["sources"][source_index])[field] = value
+                self._assert_frontier_rejected(changed_state, changed_rows)
+
+    def test_arxiv_requires_version_identity_and_declared_metadata_licence(self) -> None:
+        state, rows = self._metadata_frontier_fixture()
+        index = next(i for i, row in enumerate(rows) if row.get("source_repository") == "public-metadata/arxiv")
+        for field, value in (("identifier", "2501.01234"), ("metadata_licence", "NOT_DECLARED_BY_RESPONSE"),
+                             ("updated", "2025-01-04T00:00:00")):
+            with self.subTest(field=field):
+                changed_state, changed_rows = deepcopy(state), deepcopy(rows)
+                row = changed_rows[index]
+                row["provenance"]["metadata"][field] = value
+                if field == "identifier":
+                    row["provenance"]["identifier"] = row["source_path"] = value
+                    row["provenance"]["metadata"]["canonical_url"] = "https://arxiv.org/abs/" + value
+                self._bind_metadata_receipts(changed_state, changed_rows)
+                self._assert_frontier_rejected(changed_state, changed_rows)
+
+    def test_metadata_does_not_relax_authority_or_content_boundaries(self) -> None:
+        import frontier_runtime
+        import scripts.materialize_second_brain as materializer
+
+        state, rows = self._metadata_frontier_fixture()
+        index = next(i for i, row in enumerate(rows) if row["source_kind"] == "research-metadata")
+        cases = [("state", field, "GRANTED") for field in
+                 ("training_authority", "promotion_authority", "execution_authority", "merge_authority")]
+        cases += [("state", "private_graph_nodes_loaded", 1),
+                  ("state", "raw_graph_nodes_admitted_to_gradients", 1),
+                  ("row", "candidate_state", "PROMOTED"), ("row", "content_access", "PUBLIC")]
+        for target, field, value in cases:
+            with self.subTest(target=target, field=field):
+                changed_state, changed_rows = deepcopy(state), deepcopy(rows)
+                (changed_state if target == "state" else changed_rows[index])[field] = value
+                self._rewrite_frontier(changed_state, changed_rows)
+                state_raw = (self.snapshot / "frontier-state.v1.json").read_bytes()
+                with self.assertRaises(ValueError):
+                    materializer.validate_frontier_snapshot(state_raw,
+                        (self.snapshot / "frontier-candidates.public.jsonl").read_bytes())
+                self.assertFalse(PublicSecondBrain(self.snapshot).ready)
+                with self.assertRaises(ValueError):
+                    frontier_runtime.FrontierAtlas._validate(changed_state, changed_rows,
+                        json.loads((self.snapshot / "source.json").read_bytes()), state_raw)
+
+    def test_metadata_provider_counts_and_duplicate_captures_fail_closed(self) -> None:
+        state, rows = self._metadata_frontier_fixture()
+        source = next(source for source in state["sources"] if source["repository"] == "public-metadata/crossref")
+        source["candidate_count"] += 1
+        self._assert_frontier_rejected(state, rows)
+        source["candidate_count"] -= 1
+        duplicate = deepcopy(next(row for row in rows if row["source_kind"] == "research-metadata"))
+        duplicate["id"] = "frontier:" + "0" * 32
+        rows.append(duplicate)
+        self._bind_metadata_receipts(state, rows)
+        self._assert_frontier_rejected(state, rows)
 
     def test_additive_eighth_source_materializes_and_serves(self) -> None:
         import scripts.materialize_second_brain as materializer

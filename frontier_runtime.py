@@ -22,6 +22,12 @@ from typing import Any
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 
+from frontier_source_contract import (
+    FrontierSourceBindings,
+    metadata_handle_identity,
+    validate_source_revision,
+)
+
 ROOT = Path(__file__).resolve().parent
 SNAPSHOT = ROOT / ".runtime" / "second-brain"
 STATE_PATH = SNAPSHOT / "frontier-state.v1.json"
@@ -208,7 +214,8 @@ class FrontierAtlas:
                 raise ValueError(f"frontier source identity failed at index {index}")
             if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
                 raise ValueError(f"frontier source repository failed at index {index}")
-            if not HEX_40.fullmatch(revision) or not HEX_64.fullmatch(digest):
+            validate_source_revision(entry)
+            if not HEX_64.fullmatch(digest):
                 raise ValueError(f"frontier source binding failed at index {index}")
             if (
                 not isinstance(parser, str)
@@ -226,6 +233,7 @@ class FrontierAtlas:
             expected_source_counts[binding] = candidate_count
             observed_source_counts[binding] = 0
 
+        source_bindings = FrontierSourceBindings(sources)
         seen: set[str] = set()
         canonical_lines: list[bytes] = []
         kind_counts: Counter[str] = Counter()
@@ -238,13 +246,7 @@ class FrontierAtlas:
             if not FRONTIER_ID.fullmatch(node_id) or node_id in seen:
                 raise ValueError("frontier candidate id is invalid or duplicated")
             seen.add(node_id)
-            if not HEX_40.fullmatch(str(row.get("source_revision") or "")):
-                raise ValueError("frontier candidate source revision is not exact")
-            binding = (
-                str(row.get("source_repository") or ""),
-                str(row.get("source_revision") or ""),
-                str(row.get("source_path") or ""),
-            )
+            binding = source_bindings.binding_for(row)
             if binding not in expected_source_counts:
                 raise ValueError("frontier candidate source manifest binding failed")
             observed_source_counts[binding] += 1
@@ -270,6 +272,7 @@ class FrontierAtlas:
             raise ValueError("source receipt candidate count mismatch")
         if observed_source_counts != expected_source_counts:
             raise ValueError("frontier per-source candidate counts mismatch")
+        source_bindings.verify()
         state_digest = _sha256(state_raw)
         if frontier_receipt.get("state_sha256") != state_digest:
             raise ValueError("source receipt frontier state digest mismatch")
@@ -361,6 +364,7 @@ class FrontierAtlas:
         }
         if row.get("quant_domain"):
             handle["quantDomain"] = row["quant_domain"]
+        handle.update(metadata_handle_identity(row))
         return handle
 
     def search(

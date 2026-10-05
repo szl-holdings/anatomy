@@ -46,6 +46,7 @@ BRAIN = PublicSecondBrain()
 _EXTRA_ARTIFACTS = (
     "living_runtime.py",
     "frontier_runtime.py",
+    "frontier_source_contract.py",
     "second_brain_runtime.py",
     "neural-quant-v7.js",
     "neural-quant-v7.css",
