@@ -12,6 +12,35 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def dockerfile_entrypoint() -> str:
+    """The single exec-form `CMD ["python", "<script>"]` target of the runtime image."""
+    commands = re.findall(r'^CMD \["python", "([^"]+)"\]\s*$', read("Dockerfile"), re.MULTILINE)
+    assert len(commands) == 1, commands
+    return commands[0]
+
+
+def serves_living_handler(script: str) -> bool:
+    """True when the script's make_server() handler is (a subclass of) the v7 LivingAnatomyHandler."""
+    import importlib
+    import sys
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import living_runtime
+
+    # Import by dotted module path so the entrypoint shares class identity with living_runtime.
+    module = importlib.import_module(Path(script).with_suffix("").as_posix().replace("/", "."))
+    make_server = getattr(module, "make_server", None)
+    if make_server is None:
+        return False
+    httpd = make_server("127.0.0.1", 0)
+    try:
+        handler = getattr(httpd.RequestHandlerClass, "func", httpd.RequestHandlerClass)
+        return isinstance(handler, type) and issubclass(handler, living_runtime.LivingAnatomyHandler)
+    finally:
+        httpd.server_close()
+
+
 def test_runtime_entrypoint_and_creator_publisher_include_v7() -> None:
     dockerfile = read("Dockerfile")
     living_runtime = read("living_runtime.py")
@@ -20,7 +49,12 @@ def test_runtime_entrypoint_and_creator_publisher_include_v7() -> None:
     assert '"*.js"' in publisher
     assert '"*.css"' in publisher
     assert dockerfile.count("CMD [") == 1
-    assert 'CMD ["python", "living_runtime.py"]' in dockerfile
+    entrypoint = dockerfile_entrypoint()
+    assert (ROOT / entrypoint).is_file(), entrypoint
+    # The image may wrap the living runtime (anatomy#88 added the refinement layer),
+    # but whatever it runs must still serve the v7 LivingAnatomyHandler routes below.
+    assert serves_living_handler(entrypoint), entrypoint
+    assert not serves_living_handler("server.py"), "negative control: bare server.py lacks the v7 handler"
     assert "from frontier_runtime import (" in living_runtime
     assert "FRONTIER_ATLAS" in living_runtime
     assert '"/api/anatomy/v1/holographic-v7"' in living_runtime
