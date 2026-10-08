@@ -1,4 +1,7 @@
 from pathlib import Path
+import ast
+import copy
+from typing import Any
 import unittest
 
 
@@ -48,6 +51,26 @@ class PublisherNoopContractTest(unittest.TestCase):
         )[1].split("def wait_running", 1)[0]
         self.assertNotIn('observed.get("workflow_run_id")', function)
         self.assertNotIn('desired.get("workflow_run_id")', function)
+
+    def test_new_admitted_pipeline_inputs_invalidate_publication_noop(self) -> None:
+        tree = ast.parse(self.source)
+        function = next(node for node in tree.body
+                        if isinstance(node, ast.FunctionDef) and node.name == "deployment_inputs_match")
+        namespace = {"Any": Any}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "<no-op predicate>", "exec"), namespace)
+        match = namespace["deployment_inputs_match"]
+        manifest = {"schema": "szl.hf-deploy-manifest/v1", "source_repository": "szl-holdings/anatomy",
+                    "source_revision": "a" * 40, "destination": {"repo_id": "betterwithage/anatomy"},
+                    "dependencies": {"second_brain": {"source_revision": "b" * 40,
+                        "pipeline_dependency": {"source_repository": "szl-holdings/a11oy",
+                            "source_revision": "c" * 40, "source_snapshot_sha256": "d" * 64}}}}
+        self.assertTrue(match(manifest, copy.deepcopy(manifest)))
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["pipeline_dependency"]["source_snapshot_sha256"] = "e" * 64
+        self.assertFalse(match(manifest, changed))
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["capture_time"] = "new observation time"
+        self.assertTrue(match(manifest, changed), "capture time alone must not force a rebuild")
 
 
 if __name__ == "__main__":

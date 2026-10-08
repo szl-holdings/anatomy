@@ -18,7 +18,8 @@ YACHAY memory planes:
    source manifest containing at least seven bound public source contracts.
 
 Neural Quant v7 projects those planes into the 3D Anatomy experience together
-with the attributed formula/quant atlas and bounded Ouroboros observations.
+with the attributed formula/quant atlas, modeled review DAG, and explicitly
+qualified Ouroboros observations.
 
 ## Public interfaces
 
@@ -32,7 +33,8 @@ with the attributed formula/quant atlas and bounded Ouroboros observations.
 | `GET/POST /api/anatomy/v1/brain/frontier` | Review-candidate handles filtered by query, kind, domain, or source |
 | `GET /api/anatomy/v1/brain/formulas` | Attributed and executable formula handles plus proof boundary |
 | `GET /api/anatomy/v1/brain/quant` | Nine-domain quant lattice and evidence handles |
-| `GET /api/anatomy/v1/brain/ouroboros` | Bounded-loop source and receipt-closure observation |
+| `GET /api/anatomy/v1/brain/ouroboros` | Exact loop-source handles and explicit runtime-evidence availability |
+| `GET /api/anatomy/v1/brain/pipeline` | Source-bound RAG, modeled DAG, and freshness-checked review observation |
 | `GET /api/anatomy/v1/brain/neural-quant-v7` | Combined source-bound payload for the v7 holographic instrument |
 
 All interfaces return handles, counts, source revisions, and SHA-256 digests.
@@ -85,7 +87,8 @@ bottom sheet with:
 - public-memory, frontier, formula, and domain counts;
 - formula authority and locked-eight readback;
 - source-linked formula and quant handles;
-- bounded Ouroboros and Codex-advisory observations;
+- a Pipeline tab linking RAG counts, modeled review stages, and recorded review evidence;
+- nullable Ouroboros measurements with consumer-clock expiry;
 - exact source, candidate-set, and view digests;
 - keyboard focus trapping, Escape close, 44-pixel controls, safe areas,
   reduced-motion, high-contrast, and forced-color behavior.
@@ -106,7 +109,8 @@ automatic truth promotion.
 Living Anatomy republishes from protected main and also performs scheduled
 reconciliation. The publisher verifies the exact creator-profile Space revision,
 Anatomy source revision, Second Brain source revision, frontier candidate-set
-digest, live formula/quant/Ouroboros routes, and runtime-file access block before
+digest, admitted A11oy snapshot identity, live formula/quant/Ouroboros/pipeline
+routes, and runtime-file access block before
 calling the deployment current.
 
 ## Non-negotiable boundary
@@ -145,6 +149,7 @@ Then inspect:
 http://127.0.0.1:7860/api/anatomy/v1/living-health
 http://127.0.0.1:7860/api/anatomy/v1/brain/health
 http://127.0.0.1:7860/api/anatomy/v1/brain/frontier?q=formula%20quant&k=12
+http://127.0.0.1:7860/api/anatomy/v1/brain/pipeline
 http://127.0.0.1:7860/api/anatomy/v1/brain/neural-quant-v7?k=12
 ```
 
@@ -164,9 +169,9 @@ and scheduled reconciliation. It:
 3. creates or maintains the public creator-profile Space
    `betterwithage/anatomy`;
 4. restarts paused, sleeping, stopped, or failed runtime states;
-5. avoids an unnecessary rebuild when the exact Anatomy, Brain, and frontier
-   revisions are already deployed;
-6. verifies the live Anatomy, Brain, formula, quant, Ouroboros, Neural Quant v7,
+5. avoids an unnecessary rebuild when the exact Anatomy, Brain, frontier, and
+   admitted A11oy snapshot dependencies are already deployed;
+6. verifies the live Anatomy, Brain, formula, quant, Ouroboros, pipeline, Neural Quant v7,
    version, evidence, source, and manifest contracts.
 
 ## Holographic v7 companion instrument
@@ -176,3 +181,75 @@ Holographic v7 is an additive, read-only surface served by `frontier_runtime.py`
 The canonical public surface is `betterwithage/anatomy`. Its source-bound snapshot remains 575 public chunks, 30 attributed formulas, 21 executable formulas, and nine quant domains. Identity is `HANDLES_ONLY`; lambda remains `Conjecture 1`; frontier candidates remain review-gated and cannot be promoted by this instrument.
 
 The container starts `frontier_runtime.py`, which imports the existing living runtime and adds the Holographic v7 routes. Publishing includes the runtime and both local assets. No CDN, browser persistence, telemetry, credential material, or cross-origin data authority is introduced.
+
+## Ouroboros source and runtime evidence
+
+The `szl.living-anatomy.ouroboros-observation/v2` response selects handles using
+the validated `ouroboros_runtime` source receipt. The maintained Python
+`szl-holdings/szl-ouroboros` package and archived TypeScript
+`szl-holdings/ouroboros` lineage remain separate source identities. A missing
+source receipt yields `UNAVAILABLE`; the reader never substitutes unrelated
+frontier handles.
+
+A public source snapshot proves which documents were indexed. It does not
+prove that a loop ran or terminated within budget. Those properties remain
+`null` in `loop_contract` until a fresh, source-bound producer report is
+available. `contract_requirements` records the required properties without
+presenting them as measured outcomes. A reported `receipt_closed` means the
+reviewer's recorded receipt accounting; it is not an acknowledgement from a
+durable external ledger. Signature verification and accepted-truth claims
+remain false. The v7 instrument shows `UNKNOWN` for absent or expired runtime
+measurements and keeps every execution, training, promotion, merge, and provider
+authority at `NONE`.
+
+## RAG, DAG, and review observation binding
+
+The materializer also resolves an exact `szl-holdings/a11oy` protected-main
+revision and captures `console/assets/brain-frontier-v7.json` from that commit.
+Its immutable bytes, file SHA-256, Git revision, path, and wrapper digest are
+stored in the internal `pipeline-source.json`. The existing Second Brain
+`source.json` binds that file. No browser request reaches GitHub or a remote
+executor; the reader uses the locally packaged snapshot.
+
+The admitted A11oy snapshot may carry two additional fields:
+
+| Field | Interpretation in Anatomy |
+|---|---|
+| `advisory_dag` | The governed graph analyzer's `MODELED`, `PLAN_ONLY` result, with zero effectors, provider calls, writes, or execution authority. Anatomy rechecks its contract hash and acyclic dependencies, then exposes only bounded stage labels and dependencies. |
+| `ouroboros_observation` | The source-bound review-attempt report produced from the maintained Ouroboros workflow artifact. Anatomy checks its hash, source identities, artifact/run identity, measurement domains, authority, and freshness. |
+
+An observation is bound to the exact maintained controller revision, the
+Second Brain revision, the **raw** state-file and candidate-file SHA-256 values,
+the canonical candidate-set digest, and its candidate count. The raw state-file
+digest is distinct from a digest of parsed canonical state. A source mismatch
+produces `STALE`; a bad digest or authority claim produces `REJECTED`. Missing
+data or a snapshot predating the bridge produces `UNAVAILABLE`. The reader
+never replaces those states with an older successful observation.
+
+Only a fresh `OBSERVED` report exposes measurement values. Its validity ends
+21,600 seconds after the recorded workflow update time. The API rechecks this
+on its own clock, and the UI rechecks cached responses on the browser clock.
+Expiry yields `STALE` and null current measurements while preserving the
+original recorded state and observation hash. Hashes identify a producer
+report; they do not verify a signature, accept a recommendation, establish
+production readiness, or load the private graph.
+
+The Pipeline tab connects the existing RAG source/counts to the modeled review
+stages and the qualified recorded review attempt. It provides no execution
+control. `READY_TO_ORCHESTRATE` in the analyzed graph describes its structure;
+it does not authorize or attest to stage execution.
+
+The A11oy refresh workflow proposes a review pull request for its snapshot.
+This reader consumes only the admitted main revision. Producer code, its
+reviewed snapshot, and this consumer therefore each need their existing source
+review and publication path. A current workflow artifact alone does not admit
+a new snapshot. An admitted observation can age past six hours while awaiting
+its next reviewed snapshot, in which case the honest display is `STALE`.
+
+The deployment manifest records Anatomy, Second Brain, and A11oy revisions as
+separate identities. It does not require Anatomy and A11oy to reference each
+other's future commit. The no-op predicate includes A11oy's revision and raw
+snapshot digest, so a newly admitted observation can trigger reconciliation
+even when the Brain revision is unchanged. Capture timestamps alone do not
+force a rebuild. Live readback verifies this same dependency before a
+deployment can be reported current.

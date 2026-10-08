@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -89,6 +91,7 @@ class NeuralQuantV7ContractTest(unittest.TestCase):
             "/api/anatomy/v1/brain/formulas",
             "/api/anatomy/v1/brain/quant",
             "/api/anatomy/v1/brain/ouroboros",
+            "/api/anatomy/v1/brain/pipeline",
             "/api/anatomy/v1/brain/neural-quant-v7",
         ):
             self.assertIn(route, self.living)
@@ -120,6 +123,15 @@ class NeuralQuantV7ContractTest(unittest.TestCase):
         self.assertTrue(
             re.search(r"window\.setTimeout\(\(\) => state\.abortController\.abort\(\), 12000\)", self.script)
         )
+
+    def test_pipeline_rendering_and_freshness_contract(self) -> None:
+        node = shutil.which("node")
+        self.assertIsNotNone(node, "Node is required by the existing frontend CI contract")
+        result = subprocess.run(
+            [node, "--test", str(ROOT / "tests" / "test_pipeline_ui.cjs")],
+            cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ from frontier_source_contract import (
     metadata_handle_identity,
     validate_source_revision,
 )
+from pipeline_observation import load_pipeline_snapshot
 
 SCHEMA_HEALTH = "szl.living-anatomy.second-brain.health/v2"
 SCHEMA_SEARCH = "szl.living-anatomy.second-brain.search/v1"
@@ -40,8 +41,9 @@ SCHEMA_MANIFEST = "szl.living-anatomy.second-brain.manifest/v2"
 SCHEMA_FRONTIER = "szl.living-anatomy.frontier-search/v1"
 SCHEMA_FORMULAS = "szl.living-anatomy.formula-atlas/v1"
 SCHEMA_QUANT = "szl.living-anatomy.quant-atlas/v1"
-SCHEMA_OUROBOROS = "szl.living-anatomy.ouroboros-observation/v1"
+SCHEMA_OUROBOROS = "szl.living-anatomy.ouroboros-observation/v2"
 SCHEMA_NEURAL_QUANT = "szl.living-anatomy.neural-quant-v7/v1"
+SCHEMA_PIPELINE = "szl.living-anatomy.rag-dag-pipeline/v1"
 SOURCE_REPOSITORY = "szl-holdings/szl-second-brain"
 CANONICAL_DATASET = "SZLHOLDINGS/szl-second-brain-inrepo"
 PUBLIC_CHUNK_COUNT = 575
@@ -683,6 +685,7 @@ class PublicSecondBrain:
                 "formulas": "/api/anatomy/v1/brain/formulas",
                 "quant": "/api/anatomy/v1/brain/quant",
                 "ouroboros": "/api/anatomy/v1/brain/ouroboros",
+                "pipeline": "/api/anatomy/v1/brain/pipeline",
                 "neural_quant_v7": "/api/anatomy/v1/brain/neural-quant-v7",
             },
             "authority_state": "READ_ONLY",
@@ -1012,34 +1015,109 @@ class PublicSecondBrain:
             "execution_authority": "NONE",
         }
 
-    def ouroboros_view(self, k: int = 16) -> dict[str, Any]:
-        search = self.frontier_search(
-            "ouroboros bounded loop convergence termination receipt closure codex",
-            k=k,
-            source_repository="szl-holdings/ouroboros",
+    def _pipeline_snapshot(self) -> dict[str, Any]:
+        controller = next((source for source in self._frontier_state.get("sources", [])
+                           if source.get("source_id") == "ouroboros_runtime"), {})
+        return load_pipeline_snapshot(
+            self.snapshot_root / "pipeline-source.json",
+            {
+                "controller_repository": "szl-holdings/szl-ouroboros",
+                "controller_revision": controller.get("revision"),
+                "workflow": ".github/workflows/codex-continuous-frontier.yml",
+                "second_brain_repository": SOURCE_REPOSITORY,
+                "second_brain_revision": self.source_revision,
+                "state_file_sha256": self._source.get("frontier_state_sha256"),
+                "candidate_file_sha256": self._source.get("frontier_candidates_sha256"),
+                "candidate_set_sha256": self.frontier_candidate_set_sha256,
+                "candidate_count": len(self._frontier_rows),
+            },
+            file_sha256=self._source.get("pipeline_source_sha256") if self.ready else None,
         )
+
+    def pipeline_view(self) -> dict[str, Any]:
+        snapshot = self._pipeline_snapshot()
+        core = {
+            "source_revision": self.source_revision,
+            "candidate_set_sha256": self.frontier_candidate_set_sha256,
+            "rag": {
+                "state": "SOURCE_BOUND_RETRIEVAL" if self.ready else "UNAVAILABLE",
+                "chunk_count": len(self._rows),
+                "candidate_count": len(self._frontier_rows),
+                "context_endpoint": "/api/anatomy/v1/brain/context",
+            },
+            "upstream": snapshot,
+            "content_access": "HANDLES_ONLY",
+            "authority": {
+                "training": "NONE", "promotion": "NONE", "execution": "NONE",
+                "merge": "NONE", "provider_mutation": "NONE",
+            },
+            "execution_authorized": False,
+        }
+        return {
+            "schema": SCHEMA_PIPELINE,
+            "ready": self.ready,
+            "state": "SOURCE_BOUND_INSPECTION" if snapshot["ready"] else "PARTIAL",
+            **core,
+            "view_sha256": _canonical_sha256(core),
+        }
+
+    def ouroboros_view(self, k: int = 16) -> dict[str, Any]:
         source_receipt = next(
             (
                 source
                 for source in self._frontier_state.get("sources", [])
                 if source.get("source_id") == "ouroboros_runtime"
+                and source.get("repository") in {
+                    "szl-holdings/szl-ouroboros",
+                    "szl-holdings/ouroboros",
+                }
             ),
             {},
         )
+        # The maintained Python kernel and archived TypeScript lineage are
+        # different identities. Select handles using the validated source
+        # receipt, never a fixed repository alias or an unfiltered fallback.
+        search = self.frontier_search(
+            "ouroboros bounded loop convergence termination receipt closure codex",
+            k=k,
+            source_repository=source_receipt.get("repository", ""),
+        )
+        ready = bool(search.get("ready") and source_receipt)
+        pipeline = self._pipeline_snapshot()
+        run_observation = pipeline.get("ouroboros_observation") or {}
+        measurements = run_observation.get("observation") or {}
+        observed = run_observation.get("state") == "OBSERVED"
         return {
             "schema": SCHEMA_OUROBOROS,
-            "ready": search.get("ready", False),
-            "state": search.get("state", "UNAVAILABLE"),
+            "ready": ready,
+            "state": "REVIEW_REQUIRED" if ready else "UNAVAILABLE",
+            "observation_state": ("RECORDED_REVIEW_ATTEMPT" if observed
+                                  else "SOURCE_METADATA_ONLY" if ready else "UNAVAILABLE"),
+            "source_revision": self.source_revision,
             "source": source_receipt,
             "candidate_set_sha256": self.frontier_candidate_set_sha256,
-            "handles": search.get("handles", []),
-            "scores": search.get("scores", []),
-            "loop_contract": {
+            "handles": search.get("handles", []) if ready else [],
+            "scores": search.get("scores", []) if ready else [],
+            "contract_requirements": {
                 "bounded": True,
                 "terminating": True,
                 "receipt_closed": True,
+            },
+            "loop_contract": {
+                "bounded": measurements.get("bounded") if observed else None,
+                "terminating": measurements.get("terminated") if observed else None,
+                "receipt_closed": measurements.get("receipt_closed") if observed else None,
                 "codex_role": "ADVISORY_REVIEW_ONLY",
                 "recommendations_executed": False,
+            },
+            "runtime_evidence": {
+                "state": run_observation.get("state", pipeline["state"]),
+                "run_id": (run_observation.get("run") or {}).get("id"),
+                "receipt_sha256": (run_observation.get("artifact") or {}).get("receipt_sha256"),
+                "reason": run_observation.get("reason", pipeline["reason"]),
+                "scope": "RECORDED_REVIEW_ATTEMPT",
+                "signature_verified": False,
+                "durable_external_acknowledgment_verified": False,
             },
             "content_access": "HANDLES_ONLY",
             "training_authority": "NONE",
@@ -1078,9 +1156,13 @@ class PublicSecondBrain:
             },
             "ouroboros": {
                 "source": ouroboros["source"],
+                "observation_state": ouroboros["observation_state"],
+                "contract_requirements": ouroboros["contract_requirements"],
                 "loop_contract": ouroboros["loop_contract"],
+                "runtime_evidence": ouroboros["runtime_evidence"],
                 "handles": ouroboros["handles"],
             },
+            "pipeline": self.pipeline_view(),
             "content_access": "HANDLES_ONLY",
             "authority": {
                 "training": "NONE",
