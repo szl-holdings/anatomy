@@ -1,6 +1,8 @@
 """Exercise the production HTTP handler, including its route-specific limits."""
 from __future__ import annotations
 
+import ast
+import copy
 import json
 import http.client
 import sys
@@ -9,6 +11,7 @@ import unittest
 import urllib.request
 from contextlib import ExitStack
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -90,6 +93,55 @@ class LivingFrontierContractTest(unittest.TestCase):
         self.assertEqual("UNAVAILABLE", payload["upstream"]["state"])
         self.assertFalse(payload["execution_authorized"])
         self.assertTrue(all(value == "NONE" for value in payload["authority"].values()))
+
+    def _publisher_pipeline_check(self, payload: dict, neural: dict) -> None:
+        """Run the publisher's actual verification block without importing its SDK."""
+        source = Path("scripts/sync_hf_creator_profile.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+        body = next(node.body for node in ast.walk(functions["verify_live"])
+                    if isinstance(node, ast.Try))
+        start = next(i for i, node in enumerate(body) if isinstance(node, ast.Assign)
+                     and any(isinstance(target, ast.Name) and target.id == "pipeline"
+                             for target in node.targets))
+        end = next(i for i in range(start, len(body))
+                   if any(isinstance(node, ast.Name) and node.id == "neural" for node in ast.walk(body[i]))
+                   and any(isinstance(node, ast.Constant) and node.value == "view_sha256"
+                           for node in ast.walk(body[i])))
+        helpers = [functions[name] for name in ("assert_handles_only", "assert_pipeline_metadata_only")
+                   if name in functions]
+        namespace = {
+            "Any": Any, "json": json, "LIVE_BASE": self.base,
+            "get_json": lambda _url: payload,
+            "brain_revision": living_runtime.BRAIN.source_revision,
+            "candidate_set_sha256": living_runtime.BRAIN.frontier_candidate_set_sha256,
+            "pipeline_dependency": {}, "neural": neural,
+        }
+        executable = ast.Module(body=helpers + body[start:end + 1], type_ignores=[])
+        exec(compile(executable, str(Path("scripts/sync_hf_creator_profile.py")), "exec"), namespace)
+
+    def test_publisher_accepts_the_real_metadata_pipeline_response(self) -> None:
+        payload = self._get("/api/anatomy/v1/brain/pipeline")
+        neural = self._get("/api/anatomy/v1/brain/neural-quant-v7?k=12")
+        self.assertNotIn("handles", payload, "The pipeline is a metadata envelope")
+        self.assertEqual("UNAVAILABLE", payload["upstream"]["state"])
+        self._publisher_pipeline_check(payload, neural)
+
+    def test_publisher_rejects_corpus_fields_in_pipeline_metadata(self) -> None:
+        payload = self._get("/api/anatomy/v1/brain/pipeline")
+        neural = self._get("/api/anatomy/v1/brain/neural-quant-v7?k=12")
+        for field in ("content", "text", "TEXT"):
+            with self.subTest(field=field):
+                changed = copy.deepcopy(payload)
+                changed["upstream"]["unexpected"] = [{field: "synthetic prohibited field"}]
+                with self.assertRaises(AssertionError):
+                    self._publisher_pipeline_check(changed, neural)
+        for access in (None, "FULL_CONTENT"):
+            with self.subTest(content_access=access):
+                changed = copy.deepcopy(payload)
+                changed["content_access"] = access
+                with self.assertRaises(AssertionError):
+                    self._publisher_pipeline_check(changed, neural)
 
 
 if __name__ == "__main__":
