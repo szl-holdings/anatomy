@@ -778,9 +778,10 @@ class PublicSecondBrainTest(unittest.TestCase):
         self.assertEqual(9, len(quant["domains"]))
 
         ouroboros = brain.ouroboros_view(k=12)
-        self.assertTrue(ouroboros["loop_contract"]["bounded"])
-        self.assertTrue(ouroboros["loop_contract"]["terminating"])
-        self.assertTrue(ouroboros["loop_contract"]["receipt_closed"])
+        self.assertEqual("SOURCE_METADATA_ONLY", ouroboros["observation_state"])
+        self.assertIsNone(ouroboros["loop_contract"]["bounded"])
+        self.assertIsNone(ouroboros["loop_contract"]["terminating"])
+        self.assertIsNone(ouroboros["loop_contract"]["receipt_closed"])
         self.assertFalse(
             ouroboros["loop_contract"]["recommendations_executed"]
         )

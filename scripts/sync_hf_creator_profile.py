@@ -100,6 +100,7 @@ def runtime_files() -> list[str]:
         "frontier_runtime.py",
         "frontier_source_contract.py",
         "second_brain_runtime.py",
+        "pipeline_observation.py",
         "scripts/materialize_second_brain.py",
         "scripts/materialize_refinement_memory.py",
         ".runtime/**/*",
@@ -128,6 +129,7 @@ def runtime_files() -> list[str]:
         "frontier_runtime.py",
         "frontier_source_contract.py",
         "second_brain_runtime.py",
+        "pipeline_observation.py",
         "neural-quant-v7.js",
         "neural-quant-v7.css",
         "holographic-v7.js",
@@ -145,6 +147,7 @@ def runtime_files() -> list[str]:
         ".runtime/second-brain/frontier-state.v1.json",
         ".runtime/second-brain/frontier-candidates.public.jsonl",
         ".runtime/second-brain/source.json",
+        ".runtime/second-brain/pipeline-source.json",
     }
     missing = sorted(required - files)
     if missing:
@@ -234,6 +237,7 @@ def deployment_inputs_match(
         "frontier_candidate_set_sha256",
         "frontier_state_sha256",
         "frontier_candidates_sha256",
+        "pipeline_dependency",
         "formula_counts",
         "quant_domain_count",
         "lambda_state",
@@ -371,6 +375,7 @@ def verify_live(
     candidate_set_sha256: str,
     frontier_candidate_count: int,
     frontier_source_count: int,
+    pipeline_dependency: dict[str, Any],
 ) -> None:
     last_error: Exception | None = None
     for attempt in range(24):
@@ -478,11 +483,39 @@ def verify_live(
             assert_handles_only(quant)
 
             assert ouroboros["ready"] is True
-            assert ouroboros["loop_contract"]["bounded"] is True
-            assert ouroboros["loop_contract"]["terminating"] is True
-            assert ouroboros["loop_contract"]["receipt_closed"] is True
+            assert ouroboros["observation_state"] in {"SOURCE_METADATA_ONLY", "RECORDED_REVIEW_ATTEMPT"}
+            assert ouroboros["source"]["repository"] == "szl-holdings/szl-ouroboros"
+            assert ouroboros["handles"]
+            assert ouroboros["runtime_evidence"]["signature_verified"] is False
+            if ouroboros["runtime_evidence"]["state"] == "OBSERVED":
+                assert type(ouroboros["loop_contract"]["bounded"]) is bool
+            else:
+                assert ouroboros["loop_contract"]["bounded"] is None
+            if ouroboros["runtime_evidence"]["state"] == "OBSERVED":
+                assert type(ouroboros["loop_contract"]["terminating"]) is bool
+            else:
+                assert ouroboros["loop_contract"]["terminating"] is None
+            if ouroboros["runtime_evidence"]["state"] == "OBSERVED":
+                assert type(ouroboros["loop_contract"]["receipt_closed"]) is bool
+            else:
+                assert ouroboros["loop_contract"]["receipt_closed"] is None
             assert ouroboros["loop_contract"]["recommendations_executed"] is False
             assert_handles_only(ouroboros)
+
+            pipeline = get_json(LIVE_BASE + "/api/anatomy/v1/brain/pipeline")
+            assert pipeline["schema"] == "szl.living-anatomy.rag-dag-pipeline/v1"
+            assert pipeline["ready"] is True
+            assert pipeline["source_revision"] == brain_revision
+            assert pipeline["candidate_set_sha256"] == candidate_set_sha256
+            assert pipeline["execution_authorized"] is False
+            if pipeline_dependency.get("source_snapshot_sha256") is not None:
+                observed_pipeline_source = pipeline["upstream"]["source"]
+                assert observed_pipeline_source["repository"] == pipeline_dependency["source_repository"]
+                assert observed_pipeline_source["revision"] == pipeline_dependency["source_revision"]
+                assert observed_pipeline_source["sha256"] == pipeline_dependency["source_snapshot_sha256"]
+            assert all(value == "NONE" for value in pipeline["authority"].values())
+            assert_handles_only(pipeline)
+            assert neural["pipeline"]["view_sha256"] == pipeline["view_sha256"]
 
             assert neural["ready"] is True
             assert neural["version"] == "7.0.0"
@@ -653,6 +686,10 @@ def main() -> None:
         if brain_source.get(key) != value:
             raise RuntimeError(f"Second Brain snapshot authority drift: {key}")
 
+    pipeline_dependency = brain_source.get("pipeline_dependency")
+    if not isinstance(pipeline_dependency, dict) or pipeline_dependency.get("source_repository") != "szl-holdings/a11oy":
+        raise RuntimeError("Pipeline snapshot lacks its immutable source dependency")
+
     api = HfApi(token=hf_token)
     identity = api.whoami(token=hf_token)
     identity_name = str(identity.get("name") or identity.get("fullname") or "")
@@ -688,6 +725,7 @@ def main() -> None:
                 "frontier_candidates_sha256": brain_source[
                     "frontier_candidates_sha256"
                 ],
+                "pipeline_dependency": brain_source.get("pipeline_dependency"),
                 "formula_counts": brain_source["formula_counts"],
                 "quant_domain_count": brain_source["quant_domain_count"],
                 "lambda_state": "CONJECTURE_1",
@@ -727,6 +765,7 @@ def main() -> None:
             candidate_set_sha256,
             frontier_candidate_count,
             frontier_source_count,
+            pipeline_dependency,
         )
         return
 
@@ -764,6 +803,7 @@ def main() -> None:
         candidate_set_sha256,
         frontier_candidate_count,
         frontier_source_count,
+        pipeline_dependency,
     )
 
 

@@ -11,6 +11,7 @@
   const PANEL_ID = "nq7-panel";
   const TABS = [
     ["overview", "Overview"],
+    ["pipeline", "Pipeline"],
     ["formulas", "Formulas"],
     ["quant", "Quant"],
     ["ouroboros", "Ouroboros"],
@@ -21,6 +22,7 @@
     activeTab: "overview",
     previousFocus: null,
     abortController: null,
+    expiryTimer: null,
   };
 
   const el = (tag, className, text) => {
@@ -517,19 +519,25 @@
     if (!section) return;
     section.replaceChildren();
     const contract = payload?.ouroboros?.loop_contract || {};
+    const expiry = Date.parse(payload?.pipeline?.upstream?.ouroboros_observation?.freshness?.expires_at);
+    const current = payload?.ouroboros?.runtime_evidence?.state === "OBSERVED"
+      && Number.isFinite(expiry) && Date.now() < expiry;
+    const observed = (value) => !current ? "UNKNOWN" : value === true ? "YES" : value === false ? "NO" : "UNKNOWN";
     section.append(
       el("h3", "nq7-section-title", "Bounded frontier loop"),
       el(
         "p",
         "nq7-copy",
-        "Ouroboros observes bounded iteration, terminal state, loop tax, and receipt closure. Codex is advisory review only; recommendations are not executed by this surface.",
+        current
+          ? "The admitted source snapshot reports a recorded reviewer attempt. Receipt closure describes its accounting invariant; signatures and durable external acknowledgment remain unverified. Codex is advisory review only."
+          : "The source contract requires a finite budget, terminal exit, and receipt closure. Current recorded-run evidence is unavailable, so those measurements remain unknown. Codex is advisory review only.",
       ),
     );
     const grid = el("div", "nq7-grid");
     grid.append(
-      makeMetricCard("Bounded", contract.bounded === true ? "YES" : "NO", "Finite step budget required"),
-      makeMetricCard("Terminating", contract.terminating === true ? "YES" : "NO", "Terminal exit required"),
-      makeMetricCard("Receipt closed", contract.receipt_closed === true ? "YES" : "NO", "One trace in · one trace out"),
+      makeMetricCard("Bounded", observed(contract.bounded), "Finite step budget required"),
+      makeMetricCard("Terminating", observed(contract.terminating), "Terminal exit required"),
+      makeMetricCard("Receipt closed", observed(contract.receipt_closed), "Recorded receipt accounting"),
       makeMetricCard("Codex role", contract.codex_role || "UNAVAILABLE", "Advisory · no execution"),
     );
     section.append(grid);
@@ -537,6 +545,48 @@
       el("h3", "nq7-section-title", "Ouroboros source handles"),
       makeHandleList(payload?.ouroboros?.handles, "No Ouroboros handles are available."),
     );
+  };
+
+  const renderPipeline = (payload) => {
+    const section = document.getElementById("nq7-section-pipeline");
+    if (!section) return;
+    const pipeline = payload?.pipeline || {};
+    const upstream = pipeline.upstream || {};
+    const dag = upstream.dag || {};
+    const review = upstream.ouroboros_observation || {};
+    const expiry = Date.parse(review.freshness?.expires_at);
+    const expired = Number.isFinite(expiry) && Date.now() >= expiry;
+    section.replaceChildren(
+      el("h3", "nq7-section-title", "RAG → DAG → Ouroboros"),
+      el("p", "nq7-copy", "Public retrieval supplies evidence handles. The DAG orders the bounded review plan. Ouroboros supplies a recorded review attempt when its exact source, input digests, and freshness match. This instrument inspects those records."),
+    );
+    const grid = el("div", "nq7-grid");
+    grid.append(
+      makeMetricCard("RAG memory", String(bounded(pipeline.rag?.chunk_count)), "Validated public chunks · handles only"),
+      makeMetricCard("DAG mode", dag.state === "MODELED_PLAN_ONLY" ? "PLAN ONLY" : "UNAVAILABLE", "Analysis grants no execution authority"),
+      makeMetricCard("Review record", expired ? "STALE" : review.state || upstream.state || "UNAVAILABLE", "Source-bound report · no truth promotion"),
+      makeMetricCard("Execution", "NONE", "Graph selection never runs a node"),
+    );
+    section.append(grid);
+    section.append(el("p", "nq7-copy", `Evidence state: ${expired ? "OBSERVATION_EXPIRED" : upstream.reason || "PIPELINE_NOT_MATERIALIZED"}.`));
+    if (Array.isArray(dag.nodes) && dag.nodes.length) {
+      section.append(el("h3", "nq7-section-title", "Analyzed review stages"));
+      const stages = el("ol", "nq7-list");
+      dag.nodes.slice(0, 64).forEach((node) => {
+        const item = el("li", "nq7-card");
+        item.append(el("strong", "nq7-item-title", node.label || node.id));
+        const dependencies = [...(node.depends_on || []), ...(node.control_after || [])];
+        item.append(el("p", "nq7-card-note", dependencies.length ? `Requires: ${dependencies.join(", ")}` : "Input stage"));
+        stages.append(item);
+      });
+      section.append(stages);
+    }
+    section.append(
+      el("p", "nq7-copy", `Second Brain ${shortDigest(pipeline.source_revision)} · A11oy ${shortDigest(upstream.source?.revision)} · plan ${shortDigest(dag.contract_digest)}`),
+    );
+    if (review.freshness?.expires_at) {
+      section.append(el("p", "nq7-copy", `Recorded review validity ends ${review.freshness.expires_at}. Refresh rechecks expiry; no previous success replaces a failed or stale record.`));
+    }
   };
 
   const renderStatus = (payload) => {
@@ -564,6 +614,15 @@
     renderFormulas(payload);
     renderQuant(payload);
     renderOuroboros(payload);
+    renderPipeline(payload);
+    window.clearTimeout(state.expiryTimer);
+    const expiry = Date.parse(payload?.pipeline?.upstream?.ouroboros_observation?.freshness?.expires_at);
+    if (Number.isFinite(expiry) && expiry > Date.now()) {
+      state.expiryTimer = window.setTimeout(() => {
+        renderOuroboros(state.payload);
+        renderPipeline(state.payload);
+      }, Math.min(expiry - Date.now() + 1, 2147483647));
+    }
     setNodeText(
       "nq7-receipt",
       `source ${shortDigest(payload?.source_revision)} · frontier ${shortDigest(payload?.candidate_set_sha256)} · view ${shortDigest(payload?.view_sha256)}`,
@@ -572,6 +631,7 @@
   };
 
   const renderError = (message) => {
+    window.clearTimeout(state.expiryTimer);
     const statusbar = document.getElementById("nq7-statusbar");
     if (statusbar) {
       statusbar.replaceChildren(

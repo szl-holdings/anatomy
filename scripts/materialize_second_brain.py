@@ -27,6 +27,9 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from frontier_source_contract import FrontierSourceBindings, validate_source_revision
+from pipeline_observation import (
+    MAX_SNAPSHOT_BYTES, SNAPSHOT_SCHEMA, UPSTREAM_PATH, UPSTREAM_REPOSITORY,
+)
 
 DEFAULT_REPOSITORY = "szl-holdings/szl-second-brain"
 DEFAULT_REF = "main"
@@ -384,6 +387,37 @@ def atomic_write(path: Path, payload: bytes) -> None:
     os.replace(temporary, path)
 
 
+def materialize_pipeline_source(*, token: str | None, api_url: str,
+                                raw_url: str) -> bytes:
+    """Retain the exact admitted Git source; unavailable input stays explicit."""
+    revision = None
+    snapshot_json = None
+    source_digest = None
+    try:
+        revision = resolve_revision(UPSTREAM_REPOSITORY, "main", token=token, api_url=api_url)
+        raw = request_bytes(
+            f"{raw_url.rstrip('/')}/{UPSTREAM_REPOSITORY}/{revision}/{UPSTREAM_PATH}",
+            limit=MAX_SNAPSHOT_BYTES,
+        )
+        snapshot_json = raw.decode("utf-8")
+        source_digest = sha256_bytes(raw)
+    except (SnapshotError, OSError, ValueError, UnicodeError):
+        # This optional observation dependency cannot turn the independent,
+        # valid public retrieval projection into an invented healthy loop.
+        snapshot_json = None
+    wrapper = {
+        "schema": SNAPSHOT_SCHEMA,
+        "source_repository": UPSTREAM_REPOSITORY,
+        "source_revision": revision,
+        "source_path": UPSTREAM_PATH,
+        "source_snapshot_sha256": source_digest,
+        "snapshot_json": snapshot_json,
+        "captured_at": utc_now(),
+    }
+    wrapper["receipt_sha256"] = sha256_bytes(canonical_bytes(wrapper))
+    return (json.dumps(wrapper, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
 def materialize(
     output: Path,
     *,
@@ -416,6 +450,8 @@ def materialize(
         frontier_state_raw,
         frontier_candidates_raw,
     )
+    pipeline_raw = materialize_pipeline_source(token=token, api_url=api_url, raw_url=raw_url)
+    pipeline_source = json.loads(pipeline_raw)
     receipt = {
         "schema": "szl.second-brain.snapshot/v1",
         "source_repository": repository,
@@ -427,6 +463,12 @@ def materialize(
         "corpus_path": "data/brain-corpus.public.jsonl",
         "frontier_state_path": "data/frontier-state.v1.json",
         "frontier_candidates_path": "data/frontier-candidates.public.jsonl",
+        "pipeline_source_path": ".runtime/second-brain/pipeline-source.json",
+        "pipeline_source_sha256": sha256_bytes(pipeline_raw),
+        "pipeline_dependency": {
+            key: pipeline_source[key]
+            for key in ("source_repository", "source_revision", "source_snapshot_sha256")
+        },
         "manifest_sha256": retrieval["manifest_sha256"],
         "corpus_sha256": retrieval["corpus_sha256"],
         "manifest_projection_sha256": retrieval[
@@ -450,6 +492,7 @@ def materialize(
     }
     receipt["receipt_sha256"] = sha256_bytes(canonical_bytes(receipt))
     atomic_write(output / "manifest.json", manifest_raw)
+    atomic_write(output / "pipeline-source.json", pipeline_raw)
     atomic_write(output / "brain-corpus.public.jsonl", corpus_raw)
     atomic_write(output / "frontier-state.v1.json", frontier_state_raw)
     atomic_write(

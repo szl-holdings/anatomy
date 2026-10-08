@@ -48,6 +48,7 @@ _EXTRA_ARTIFACTS = (
     "frontier_runtime.py",
     "frontier_source_contract.py",
     "second_brain_runtime.py",
+    "pipeline_observation.py",
     "neural-quant-v7.js",
     "neural-quant-v7.css",
     "holographic-v7.js",
@@ -57,6 +58,7 @@ _EXTRA_ARTIFACTS = (
     ".runtime/second-brain/frontier-state.v1.json",
     ".runtime/second-brain/frontier-candidates.public.jsonl",
     ".runtime/second-brain/source.json",
+    ".runtime/second-brain/pipeline-source.json",
 )
 anatomy_server.ARTIFACT_PATHS = tuple(
     dict.fromkeys((*anatomy_server.ARTIFACT_PATHS, *_EXTRA_ARTIFACTS))
@@ -89,6 +91,7 @@ def _living_manifest() -> dict[str, Any]:
             "brain_formulas": "/api/anatomy/v1/brain/formulas",
             "brain_quant": "/api/anatomy/v1/brain/quant",
             "brain_ouroboros": "/api/anatomy/v1/brain/ouroboros",
+            "brain_pipeline": "/api/anatomy/v1/brain/pipeline",
             "neural_quant_v7": "/api/anatomy/v1/brain/neural-quant-v7",
             "frontier_status": "/api/anatomy/v1/frontier/status",
             "frontier_handles": "/api/anatomy/v1/frontier/handles",
@@ -534,6 +537,9 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
         if path == "/api/anatomy/v1/brain/ouroboros":
             k = self._bounded_k((query.get("k") or [16])[0])
             self._send_brain_payload(BRAIN.ouroboros_view(k=k))
+            return
+        if path == "/api/anatomy/v1/brain/pipeline":
+            self._send_brain_payload(BRAIN.pipeline_view())
             return
         if path == "/api/anatomy/v1/brain/neural-quant-v7":
             k = self._bounded_k((query.get("k") or [24])[0])

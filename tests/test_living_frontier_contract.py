@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import http.client
 import sys
 import threading
 import unittest
@@ -74,6 +75,21 @@ class LivingFrontierContractTest(unittest.TestCase):
         brain = self._get("/api/anatomy/v1/brain/search?q=public%20knowledge&k=48")
         self.assertEqual(48, frontier["returned_count"])
         self.assertEqual(24, len(brain["handles"]))
+
+    def test_pipeline_get_is_local_and_preserves_unavailable_evidence(self) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", self.httpd.server_address[1], timeout=5)
+        self.addCleanup(connection.close)
+        with patch("urllib.request.urlopen", side_effect=AssertionError("GET must not fetch or execute")):
+            connection.request("GET", "/api/anatomy/v1/brain/pipeline?refresh=1")
+            response = connection.getresponse()
+            payload = json.loads(response.read())
+        self.assertEqual(200, response.status)
+        self.assertTrue(payload["ready"])
+        self.assertEqual("PARTIAL", payload["state"])
+        self.assertEqual(575, payload["rag"]["chunk_count"])
+        self.assertEqual("UNAVAILABLE", payload["upstream"]["state"])
+        self.assertFalse(payload["execution_authorized"])
+        self.assertTrue(all(value == "NONE" for value in payload["authority"].values()))
 
 
 if __name__ == "__main__":

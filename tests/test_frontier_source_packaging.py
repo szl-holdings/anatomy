@@ -26,6 +26,7 @@ class FrontierSourcePackagingTest(unittest.TestCase):
             "README.md", "Dockerfile", "requirements.txt", "server.py", "living_runtime.py",
             "organ_integrity.py", "style.css", "favicon.svg", "frontier_runtime.py",
             "frontier_source_contract.py", "second_brain_runtime.py", "neural-quant-v7.js",
+            "pipeline_observation.py",
             "neural-quant-v7.css", "holographic-v7.js", "holographic-v7.css",
             "refinement-lab.html", "refinement-lab.js", "refinement-lab.css",
             "lib/refinement_contract.py", "lib/refinement_living_runtime.py",
@@ -34,6 +35,7 @@ class FrontierSourcePackagingTest(unittest.TestCase):
             ".runtime/second-brain/manifest.json", ".runtime/second-brain/brain-corpus.public.jsonl",
             ".runtime/second-brain/frontier-state.v1.json",
             ".runtime/second-brain/frontier-candidates.public.jsonl", ".runtime/second-brain/source.json",
+            ".runtime/second-brain/pipeline-source.json",
         )
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             for name in required:

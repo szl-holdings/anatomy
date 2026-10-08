@@ -147,9 +147,9 @@ class HfSyncContractTest(unittest.TestCase):
             'formulas["f_number_mapping"] == "UNKNOWN_NOT_INFERRED"',
             'formulas["lambda_status"] == "CONJECTURE_1_OPEN_ADVISORY_ONLY"',
             'quant["quant_domain_count"] == EXPECTED_QUANT_DOMAINS',
-            'ouroboros["loop_contract"]["bounded"] is True',
-            'ouroboros["loop_contract"]["terminating"] is True',
-            'ouroboros["loop_contract"]["receipt_closed"] is True',
+            'ouroboros["loop_contract"]["bounded"] is None',
+            'ouroboros["loop_contract"]["terminating"] is None',
+            'ouroboros["loop_contract"]["receipt_closed"] is None',
             'ouroboros["loop_contract"]["recommendations_executed"] is False',
             'neural["version"] == "7.0.0"',
         ):
