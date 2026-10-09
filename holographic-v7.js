@@ -144,9 +144,7 @@
             <nav class="szl-v7__tabs" role="tablist" aria-label="Holographic v7 instruments">
               ${TABS.map((tab, index) => `<button class="szl-v7__tab" type="button" role="tab" id="szl-v7-tab-${tab.id}" aria-controls="szl-v7-panel-${tab.id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" data-tab="${tab.id}">${escapeHtml(tab.label)}</button>`).join("")}
             </nav>
-            <section id="szl-v7-panel" role="tabpanel" aria-labelledby="szl-v7-tab-brain" tabindex="0">
-              <div class="szl-v7__empty">Opening the exact source-bound instrument…</div>
-            </section>
+            ${TABS.map((tab, index) => `<section id="szl-v7-panel-${tab.id}" role="tabpanel" aria-labelledby="szl-v7-tab-${tab.id}" tabindex="${index === 0 ? 0 : -1}"${index === 0 ? "" : " hidden"}>${index === 0 ? '<div class="szl-v7__empty">Opening the exact source-bound instrument…</div>' : ""}</section>`).join("")}
           </div>
           <footer class="szl-v7__footer">
             <span><i class="szl-v7__live-dot" data-live-dot></i><span data-live-label>Loading exact receipt</span></span>
@@ -225,34 +223,41 @@
   }
 
   function renderPanel() {
-    const panel = document.getElementById("szl-v7-panel");
-    if (!panel) return;
     const selectedTab = TABS.find((tab) => tab.id === state.activeTab) || TABS[0];
-    panel.setAttribute("aria-labelledby", `szl-v7-tab-${selectedTab.id}`);
-
-    if (state.loading) {
-      panel.innerHTML = '<div class="szl-v7__empty">Resolving same-origin source handles and digest receipts…</div>';
-      return;
+    for (const tab of TABS) {
+      const panel = document.getElementById(`szl-v7-panel-${tab.id}`);
+      if (!panel) return;
+      const selected = tab.id === selectedTab.id;
+      panel.hidden = !selected;
+      if (selected) panel.removeAttribute("hidden");
+      else panel.setAttribute("hidden", "");
+      panel.tabIndex = selected ? 0 : -1;
+      if (!selected) continue;
+      panel.setAttribute("aria-labelledby", `szl-v7-tab-${tab.id}`);
+      if (state.loading) {
+        panel.innerHTML = '<div class="szl-v7__empty">Resolving same-origin source handles and digest receipts…</div>';
+        continue;
+      }
+      const handles = activeHandles();
+      if (!handles.length) {
+        panel.innerHTML = '<div class="szl-v7__empty">No verified handles are available for this instrument. The view remains unavailable rather than inventing data.</div>';
+        continue;
+      }
+      if (tab.id === "quant") {
+        panel.innerHTML = `<div class="szl-v7__cards">${quantGroups(handles)
+          .map(([domain, rows]) => `
+            <article class="szl-v7__card">
+              <div>
+                <h3 class="szl-v7__card-title">${escapeHtml(domain.replaceAll("_", " "))}</h3>
+                <div class="szl-v7__card-meta"><span>${rows.length} source handles</span><span>constraint input only</span><span>Λ Conjecture 1</span></div>
+              </div>
+              <span class="szl-v7__tag">Quant domain</span>
+            </article>`)
+          .join("")}</div>`;
+        continue;
+      }
+      panel.innerHTML = `<div class="szl-v7__cards">${handles.map(renderCard).join("")}</div>`;
     }
-    const handles = activeHandles();
-    if (!handles.length) {
-      panel.innerHTML = '<div class="szl-v7__empty">No verified handles are available for this instrument. The view remains unavailable rather than inventing data.</div>';
-      return;
-    }
-    if (state.activeTab === "quant") {
-      panel.innerHTML = `<div class="szl-v7__cards">${quantGroups(handles)
-        .map(([domain, rows]) => `
-          <article class="szl-v7__card">
-            <div>
-              <h3 class="szl-v7__card-title">${escapeHtml(domain.replaceAll("_", " "))}</h3>
-              <div class="szl-v7__card-meta"><span>${rows.length} source handles</span><span>constraint input only</span><span>Λ Conjecture 1</span></div>
-            </div>
-            <span class="szl-v7__tag">Quant domain</span>
-          </article>`)
-        .join("")}</div>`;
-      return;
-    }
-    panel.innerHTML = `<div class="szl-v7__cards">${handles.map(renderCard).join("")}</div>`;
   }
 
   function stringHash(value) {
