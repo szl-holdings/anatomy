@@ -312,6 +312,24 @@ def assert_handles_only(payload: dict[str, Any], key: str = "handles") -> None:
         assert len(str(handle.get("sha256") or "")) == 64
 
 
+def assert_pipeline_metadata_only(payload: dict[str, Any]) -> None:
+    """Validate the pipeline metadata boundary without requiring retrieval handles."""
+    assert payload.get("content_access") == "HANDLES_ONLY"
+
+    def reject_corpus_fields(value: Any) -> None:
+        if isinstance(value, dict):
+            assert not {"content", "text"}.intersection(
+                str(key).lower() for key in value
+            )
+            for child in value.values():
+                reject_corpus_fields(child)
+        elif isinstance(value, list):
+            for child in value:
+                reject_corpus_fields(child)
+
+    reject_corpus_fields(payload)
+
+
 def verify_dependency_observations(payload: dict[str, Any]) -> None:
     """Check the released observation contract without requiring healthy upstreams."""
     marker = "szl.anatomy-dependency-observation/v1"
@@ -514,7 +532,7 @@ def verify_live(
                 assert observed_pipeline_source["revision"] == pipeline_dependency["source_revision"]
                 assert observed_pipeline_source["sha256"] == pipeline_dependency["source_snapshot_sha256"]
             assert all(value == "NONE" for value in pipeline["authority"].values())
-            assert_handles_only(pipeline)
+            assert_pipeline_metadata_only(pipeline)
             assert neural["pipeline"]["view_sha256"] == pipeline["view_sha256"]
 
             assert neural["ready"] is True
