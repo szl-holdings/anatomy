@@ -252,6 +252,10 @@
   background: var(--v7-teal);
 }
 
+.szl-v7__stream [role="tabpanel"][hidden] {
+  display: none !important;
+}
+
 .szl-v7__tabs {
   display: flex;
   gap: 7px;
