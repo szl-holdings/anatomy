@@ -1,0 +1,20 @@
+{
+  "schema": "szl.surface-foundry/v3",
+  "surfaces": [
+    {
+      "slug": "anatomy",
+      "display_name": "SZL Living Anatomy",
+      "kind": "repo",
+      "one_liner": "Explore a shared 3D atlas of governed AI organs and source-bound observations.",
+      "decision_path": "See how the organ map connects source, observations and limits.",
+      "builder_path": "Inspect the atlas, shared integrity-kernel links and local runtime.",
+      "primary_url": "https://huggingface.co/spaces/betterwithage/anatomy",
+      "source_url": "https://github.com/szl-holdings/anatomy",
+      "evidence_url": "https://github.com/szl-holdings/anatomy/blob/9fcf4d08b3ec2cd8ec45b3b26af259af2ee0fe05/README.md",
+      "evidence_label": "REPORTED",
+      "operational_state": "UNKNOWN",
+      "limitations": "Source presentation; current runtime was not checked for this card. The atlas grants no action authority. Energy remains UNAVAILABLE and Λ remains Conjecture 1.",
+      "image_url": "./readme-surface-card.svg"
+    }
+  ]
+}
