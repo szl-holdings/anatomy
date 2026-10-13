@@ -43,6 +43,19 @@ jobs:
       - name: Run server and Second Brain contract tests
         run: python -m unittest discover -s tests -v
 
+      # unittest discover does not collect module-level test functions. These
+      # modules are pytest-style; tests/test_ci_collects_pytest_modules.py
+      # fails if one exists that is not listed here.
+      - name: Run pytest-style contract modules
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          "pytest==8.3.5"
+          && python -m pytest -q -p no:cacheprovider
+          tests/test_frontier_runtime.py
+          tests/test_holographic_v7_contract.py
+          tests/test_living_runtime_frontier_limit.py
+          tests/test_readme_runtime_truth.py
+
       - name: Verify typed observation display behavior
         run: node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
 

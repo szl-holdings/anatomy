@@ -83,6 +83,16 @@ jobs:
       - name: Re-prove the full local Neural Quant and refinement contracts
         run: python -m unittest discover -s tests -v
 
+      - name: Re-prove the pytest-style contract modules
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          "pytest==8.3.5"
+          && python -m pytest -q -p no:cacheprovider
+          tests/test_frontier_runtime.py
+          tests/test_holographic_v7_contract.py
+          tests/test_living_runtime_frontier_limit.py
+          tests/test_readme_runtime_truth.py
+
       - name: Publish and verify betterwithage/anatomy
         run: python scripts/sync_hf_creator_profile.py
 
