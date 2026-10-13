@@ -237,7 +237,6 @@ def deployment_inputs_match(
         "frontier_candidate_set_sha256",
         "frontier_state_sha256",
         "frontier_candidates_sha256",
-        "pipeline_dependency",
         "formula_counts",
         "quant_domain_count",
         "lambda_state",
@@ -249,6 +248,21 @@ def deployment_inputs_match(
         "execution_authority",
         "merge_authority",
     )
+    # The a11oy pipeline snapshot is bound by content, not by a11oy's moving
+    # head. a11oy main advances for reasons unrelated to the admitted file, and
+    # a revision-only change with byte-identical snapshot bytes is the same
+    # release input. A changed digest, repository or path is not. An
+    # unavailable snapshot (digest None) only matches another unavailable one.
+    observed_pipeline = observed_brain.get("pipeline_dependency")
+    desired_pipeline = desired_brain.get("pipeline_dependency")
+    if isinstance(observed_pipeline, dict) and isinstance(desired_pipeline, dict):
+        if any(
+            observed_pipeline.get(key) != desired_pipeline.get(key)
+            for key in ("source_repository", "source_path", "source_snapshot_sha256")
+        ):
+            return False
+    elif observed_pipeline != desired_pipeline:
+        return False
     return all(
         observed_brain.get(key) == desired_brain.get(key)
         for key in immutable_brain_fields
@@ -769,9 +783,18 @@ def main() -> None:
             raise RuntimeError("reusable creator-profile revision is invalid")
         if not observed_run_id.isdigit():
             raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
+        # The Space serves the pipeline snapshot it was built with, so the live
+        # readback must be checked against the deployed dependency. Its digest
+        # equals the new capture; only the a11oy revision label may differ.
+        deployed_pipeline_dependency = observed_manifest["dependencies"][
+            "second_brain"
+        ]["pipeline_dependency"]
         print(
-            "NOOP: exact Anatomy, Brain, frontier, formula, and quant inputs are "
-            f"already deployed at {current_sha}; verifying and preserving revision.",
+            "NOOP: exact Anatomy, Brain, frontier, formula, quant, and pipeline "
+            f"snapshot inputs are already deployed at {current_sha}; verifying and "
+            "preserving revision. Deployed a11oy pipeline revision "
+            f"{deployed_pipeline_dependency.get('source_revision')}, current a11oy "
+            f"head {pipeline_dependency.get('source_revision')}.",
             flush=True,
         )
         wait_running(api, current_sha)
@@ -783,7 +806,7 @@ def main() -> None:
             candidate_set_sha256,
             frontier_candidate_count,
             frontier_source_count,
-            pipeline_dependency,
+            deployed_pipeline_dependency,
         )
         return
 

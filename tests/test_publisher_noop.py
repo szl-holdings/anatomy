@@ -72,6 +72,60 @@ class PublisherNoopContractTest(unittest.TestCase):
         changed["dependencies"]["second_brain"]["capture_time"] = "new observation time"
         self.assertTrue(match(manifest, changed), "capture time alone must not force a rebuild")
 
+        # a11oy main moving with byte-identical snapshot content is not a new input.
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["pipeline_dependency"]["source_revision"] = "f" * 40
+        self.assertTrue(match(manifest, changed), "a11oy revision alone must not force a rebuild")
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["pipeline_dependency"]["source_repository"] = "szl-holdings/other"
+        self.assertFalse(match(manifest, changed))
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["pipeline_dependency"]["source_path"] = "moved/path.json"
+        self.assertFalse(match(manifest, changed))
+
+        # Unavailable snapshots only match each other; becoming available rebuilds.
+        unavailable = copy.deepcopy(manifest)
+        unavailable["dependencies"]["second_brain"]["pipeline_dependency"]["source_snapshot_sha256"] = None
+        still_unavailable = copy.deepcopy(unavailable)
+        still_unavailable["dependencies"]["second_brain"]["pipeline_dependency"]["source_revision"] = None
+        self.assertTrue(match(unavailable, still_unavailable))
+        self.assertFalse(match(unavailable, manifest))
+        self.assertFalse(match(manifest, unavailable))
+
+        # A deployment from before the pipeline dependency existed must rebuild.
+        legacy = copy.deepcopy(manifest)
+        del legacy["dependencies"]["second_brain"]["pipeline_dependency"]
+        self.assertFalse(match(legacy, manifest))
+
+        # The Second Brain revision is still bound exactly.
+        changed = copy.deepcopy(manifest)
+        changed["dependencies"]["second_brain"]["source_revision"] = "9" * 40
+        self.assertFalse(match(manifest, changed))
+
+    def test_noop_reverifies_against_the_deployed_pipeline_dependency(self) -> None:
+        tree = ast.parse(self.source)
+        main = next(node for node in tree.body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        noop = next(node for node in ast.walk(main)
+                    if isinstance(node, ast.If)
+                    and isinstance(node.test, ast.Call)
+                    and getattr(node.test.func, "id", None) == "deployment_inputs_match")
+        calls = [node for node in ast.walk(ast.Module(body=noop.body, type_ignores=[]))
+                 if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "verify_live"]
+        self.assertEqual(len(calls), 1)
+        last_arg = calls[0].args[-1]
+        self.assertIsInstance(last_arg, ast.Name)
+        self.assertEqual(last_arg.id, "deployed_pipeline_dependency",
+                         "the NOOP readback must use the dependency the Space was built with")
+        assignment = next(node for node in ast.walk(ast.Module(body=noop.body, type_ignores=[]))
+                          if isinstance(node, ast.Assign)
+                          and any(getattr(target, "id", None) == "deployed_pipeline_dependency"
+                                  for target in node.targets))
+        self.assertEqual(
+            ast.unparse(assignment.value),
+            "observed_manifest['dependencies']['second_brain']['pipeline_dependency']",
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
