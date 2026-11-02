@@ -36,7 +36,7 @@ tags:
 | --- | --- | --- |
 | **Understand** | See how the organ map connects source, observations and limits. | [Open the primary surface](https://huggingface.co/spaces/betterwithage/anatomy) |
 | **Build** | Inspect the atlas, shared integrity-kernel links and local runtime. | [Inspect source](https://github.com/szl-holdings/anatomy) |
-| **Verify** | `REPORTED` evidence · `UNKNOWN` runtime | [Inspect evidence](https://github.com/szl-holdings/anatomy/blob/9fcf4d08b3ec2cd8ec45b3b26af259af2ee0fe05/README.md) |
+| **Verify** | `REPORTED` evidence · `UNKNOWN` runtime | [Inspect evidence](https://github.com/szl-holdings/anatomy/blob/a03896dc4beea37656ec45c400b4c23912dd6714/README.md) |
 
 <sub>Source presentation; current runtime was not checked for this card. The atlas grants no action authority. Energy remains UNAVAILABLE and Λ remains Conjecture 1. A signature proves scoped integrity and origin; it does not prove accuracy, safety, performance, compliance, or authorization.</sub>
 <!-- SZL-SURFACE-CARD:v3:END -->
