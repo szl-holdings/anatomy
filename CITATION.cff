@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: "anatomy — SZL Living Anatomy (3D governed-AI organ atlas)"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - name: "SZL Holdings"
+repository-code: "https://github.com/szl-holdings/anatomy"
+url: "https://a-11-oy.com"
+license: Apache-2.0
