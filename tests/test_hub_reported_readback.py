@@ -28,7 +28,7 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 import unittest
-from unittest import mock
+import unittest.mock as mock
 import urllib.error
 
 ROOT = Path(__file__).resolve().parents[1]
