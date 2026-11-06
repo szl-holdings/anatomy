@@ -28,8 +28,10 @@ const VIEWPORTS = [
 async function runViewport(browser, url, vp){
   const page = await browser.newPage({ viewport:{ width:vp.width, height:vp.height } });
   const errors=[];
-  page.on('console', m=>{ if(m.type()==='error') errors.push(m.text()); });
-  page.on('pageerror', e=>errors.push('PAGEERROR: '+e.message));
+  // Keep the resource URL Chromium attaches to network console errors so the
+  // summary can tell an offline live lens from a broken local asset.
+  page.on('console', m=>{ if(m.type()==='error') errors.push({ text:m.text(), url:(m.location()||{}).url||'' }); });
+  page.on('pageerror', e=>errors.push({ text:'PAGEERROR: '+e.message, url:'' }));
   await page.goto(url, { waitUntil:'networkidle' });
   await page.waitForTimeout(2200);
 
@@ -98,6 +100,43 @@ async function runViewport(browser, url, vp){
   return { vp:vp.name, errors, r, fab, overflow };
 }
 
+// The live lenses poll other SZL origins read-only and degrade to a labeled
+// offline state, so an unreachable lens is expected, not an outage (README
+// "Health"). This harness serves files only (atlas-shell-only mode), so a
+// same-origin API route answering 404 is expected too. Everything else fails:
+// page errors, script console errors, and any missing local asset.
+const SHELL_ONLY_API = /^\/(api\/|version$|evidence$|healthz$|\.well-known\/)/;
+function classifyError(err, origin){
+  let target = null;
+  if(/^Failed to load resource:/.test(err.text)) target = err.url;
+  const cors = /^Access to fetch at '([^']+)'/.exec(err.text);
+  if(cors) target = cors[1];
+  if(!target) return 'error';
+  let parsed;
+  try { parsed = new URL(target); } catch(_) { return 'error'; }
+  if(parsed.origin !== origin) return 'offline-lens';
+  return SHELL_ONLY_API.test(parsed.pathname) ? 'shell-only-api' : 'error';
+}
+
+function invariants(res){
+  const r = res.r || {}, hud = r.hud || {};
+  return [
+    ['atlas mounted (window.__anatomy)', r.hasA === true],
+    ['v4 dissection dock present', r.hasV4 === true],
+    ['v6 yarqa layer present', r.hasV6 === true],
+    ['yarqa layer off by default', r.v6OffInitially === true],
+    ['yarqa NEVER counted in the locked-8', r.v6yarqaInLocked === false],
+    ['locked-8 never routed through yarqa', r.v6routes8 === false],
+    ['yarqa receipt reproduces (same inputs => same digest)', r.v6reproduces === true],
+    ['yarqa layer toggles off', r.v6OffAfter === true],
+    ['yarqa dock row rendered', r.dockRow === true],
+    ['HUD locked-proven = 8 (read from data.js)', hud.locked === 8],
+    ['organ panel opens', r.openOrgan === true && r.panelOpen === true],
+    ['GPD lens opens', r.gpd === true],
+    ['no horizontal overflow', res.overflow.sw <= res.overflow.iw + 1],
+  ];
+}
+
 (async()=>{
   await new Promise(rr=>server.listen(0,rr));
   const port = server.address().port;
@@ -107,18 +146,29 @@ async function runViewport(browser, url, vp){
     args:['--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']
   });
 
-  let totalErrors = 0;
+  const origin = new URL(url).origin;
+  let totalErrors = 0, totalExpected = 0, totalFailedChecks = 0;
   for(const vp of VIEWPORTS){
     const res = await runViewport(browser, url, vp);
     console.log('\n===================== '+res.vp+' =====================');
     console.log(JSON.stringify(res.r, null, 2));
     console.log('FAB:', JSON.stringify(res.fab), 'overflow:', JSON.stringify(res.overflow),
                 'overflow_ok:', res.overflow.sw <= res.overflow.iw+1);
-    console.log('CONSOLE ERRORS ('+res.errors.length+'):', res.errors.length?res.errors.join('\n'):'(none)');
-    totalErrors += res.errors.length;
+    const expected = [], real = [];
+    for(const err of res.errors){
+      const kind = classifyError(err, origin);
+      (kind === 'error' ? real : expected).push(kind === 'error' ? err.text : kind+': '+err.text+' <'+err.url+'>');
+    }
+    console.log('EXPECTED OFFLINE / SHELL-ONLY ('+expected.length+'):', expected.length?'\n  '+expected.join('\n  '):'(none)');
+    console.log('CONSOLE ERRORS ('+real.length+'):', real.length?real.join('\n'):'(none)');
+    const failed = invariants(res).filter(([, ok])=>!ok).map(([name])=>name);
+    console.log('FAILED CHECKS ('+failed.length+'):', failed.length?failed.join('; '):'(none)');
+    totalErrors += real.length; totalExpected += expected.length; totalFailedChecks += failed.length;
   }
   await browser.close();
   server.close();
   console.log('\n=== TOTAL CONSOLE ERRORS ACROSS VIEWPORTS:', totalErrors, '===');
-  process.exit(0);
+  console.log('=== EXPECTED OFFLINE / SHELL-ONLY LOAD FAILURES (not counted):', totalExpected, '===');
+  console.log('=== FAILED CHECKS ACROSS VIEWPORTS:', totalFailedChecks, '===');
+  process.exit(totalErrors === 0 && totalFailedChecks === 0 ? 0 : 1);
 })().catch(e=>{ console.error('QA FAIL', e); process.exit(1); });
