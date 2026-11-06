@@ -1,5 +1,11 @@
 # SCREENSHOT_NOTES — live body view (`live-body.html`)
 
+> **Historical record.** These notes describe the original six-organ live body
+> view (2026-06-13, #7). Body v1 replaced that layout on 2026-06-30 (#14) with
+> four console organs (REASONING, POLICY, OPERATOR, RECEIPTS) read from the a11oy
+> host, plus ROADMAP verticals. The README section "Live body view" describes
+> the current page; the notes below are kept unchanged as review history.
+
 No headless browser is available in this lane, so the page was verified by
 **static parse + a Node functional test of the engine logic** (see "How it was
 verified" below) rather than a rendered screenshot. These notes describe the

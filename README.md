@@ -94,8 +94,11 @@ kernel that actually runs the five organs lives in
 and on the KHIPU Space **Anatomy** tab:
 [SZLHOLDINGS/szl-khipu](https://huggingface.co/spaces/SZLHOLDINGS/szl-khipu).
 The command body exposes the same fail-closed contract at
-[`GET/POST /api/a11oy/v1/organs/integrity`](https://a-11-oy.com/api/a11oy/v1/organs/integrity)
-and the Evidence Bay at [szl-holdings/szl-organ-integrity](https://github.com/szl-holdings/szl-organ-integrity).
+[`GET/POST /api/a11oy/v1/organs/integrity`](https://a-11-oy.com/api/a11oy/v1/organs/integrity),
+and this Space serves its own copy of the kernel (`organ_integrity.py`) at
+`GET/POST /api/anatomy/v1/organs/integrity`. The former standalone repository,
+[szl-holdings/szl-organ-integrity](https://github.com/szl-holdings/szl-organ-integrity),
+is archived (read-only history); the Evidence Bay now ships inside this atlas (below).
 
 HEART/YUYAY · YAWAR · YACHAY · OTel · Khipu skeleton. Any DOWN organ or a WILLAY veto
 blocks the body. Λ = Conjecture 1 OPEN. Energy UNAVAILABLE. Locked-proven stays 8.
@@ -188,12 +191,20 @@ against the pinned, committed org key
 ([`hatun-mcp/PUBKEY_szlholdings-ec-p256.pem`](https://github.com/szl-holdings/hatun-mcp/blob/main/PUBKEY_szlholdings-ec-p256.pem)),
 and only then displays the run — verdict, live assertion counts, per-layer
 results, and the formula-gate pass rate, all **derived from the signed
-evidence**, never hand-typed. Runs are signed by the live Hatun MCP gateway
-(`dsse_sign`, keyid `szlholdings-ec-p256`) and published by a fail-closed
+evidence**, never hand-typed. Runs were signed by the Hatun MCP gateway
+(`dsse_sign`, keyid `szlholdings-ec-p256`; its standalone Space is now retired,
+so the panel implies no live gateway) and published by a fail-closed
 publisher that verifies before and after upload. If the sink is unreachable or
 a signature fails, the panel says so — no fabricated green light. A signed
-GREEN run proves liveness, not doctrine upgrades: locked-proven stays exactly
-8 and Λ remains Conjecture 1.
+GREEN run proves liveness at the time it ran, not doctrine upgrades:
+locked-proven stays exactly 8 and Λ remains Conjecture 1.
+
+**Current state (checked 2026-11-06):** the page's own Content-Security-Policy
+`connect-src` (the `server.py` header and the `index.html` meta policy) lists
+neither `huggingface.co` nor `raw.githubusercontent.com`, so the browser refuses
+both fetches and the panel reports `UNREACHABLE`. That is the fail-closed path,
+never a fabricated result. The newest signed runs in the sink finished on
+2026-07-21.
 
 Machine-readable routes:
 
@@ -265,8 +276,10 @@ bench-grade dissection controls so the body is *easier to dissect*:
 - **Explode view** — an eased 0→1 slider separates the organ groups radially for inspection.
 - **Search / jump** — filter organs + formulas by name/id; selecting one flies the camera and opens its panel.
 - **Always-on visibility HUD** — a compact overlay reading **honest** counts straight from
-  `data.js` (`D.KERNEL`): locked-proven = 8, experimental tier, axioms 14, sorries 163,
-  kernel `c7c0ba17`, Λ = Conjecture 1, Khipu BFT = Conjecture 2. Never hardcoded.
+  `data.js`: locked-proven = 8, axioms 14, sorries 163 and kernel `c7c0ba17` from
+  `KERNEL`, and the experimental count from the EXPERIMENTAL records in `FORMULAS`
+  (49 today), beside the fixed doctrine labels Λ = Conjecture 1 and Khipu BFT =
+  Conjecture 2. Counts are never hardcoded.
 - **Focus mode** — fade the other organs when one is selected, to isolate it.
 - **yarqa flow compartments (CFD) — additive, off by default** — an *engineering-method*
   layer in the dissection dock that runs a clean-room plug-flow compartmentalization
@@ -301,11 +314,13 @@ F22 Khipu emit append-only monotonicity) ·
 Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE); conditional Λ axiom-free PROVEN ·
 Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
-~185 experimental CI-green · trust never 100% · no AGI.
+≈119 experimental CI-green instilled cards (`data.js` `KERNEL.experimental_count_approx`;
+49 of them carry EXPERIMENTAL formula records in the atlas) · trust never 100% · no AGI.
 
-**Supply-chain posture:** this Space runs a hardened Python/FastAPI runtime that serves
+**Supply-chain posture:** this Space runs a hardened Python application runtime that serves
 the sovereign static atlas and its read-only evidence, integrity, and v7 API routes
-inside the Docker image (`sdk: docker`). The atlas shell (`index.html`, `app.js`,
+inside the Docker image (`sdk: docker`; entrypoint and transport under
+[Run, test, rollback](#run-test-rollback-operability)). The atlas shell (`index.html`, `app.js`,
 `data.js`, and vendored `lib/three.min.js`) remains a zero-CDN, no-build,
 static and offline-capable bundle. The runtime image is presented as SLSA L1 honest;
 that posture does not prove runtime correctness, safety, or model quality.
@@ -321,77 +336,102 @@ see the active canonical successors [a11oy](https://github.com/szl-holdings/a11o
 
 ## Live body view — `live-body.html`
 
-A new, **additive** page (`live-body.html` + `live-body.js`, linked from the
-title bar of the 3D atlas) turns the anatomy into the **LIVE BODY VIEW of the
-agentic GPU mind**. It is a standalone static page — same vendored-free,
-no-build, no-CDN posture as `index.html` — reachable directly at
-`…static.hf.space/live-body.html`. It does **not** modify the 3D engine (`app.js`,
-`data.js`), so there are no breaking changes.
+An **additive** page (`live-body.html` + `live-body.js`, linked from the
+title bar of the 3D atlas) renders the governed organism as one living body
+(**Body v1**). It is a standalone static page — same vendored-free, no-build,
+no-CDN posture as `index.html` — served by this Space at `/live-body.html`.
+It does **not** modify the 3D engine (`app.js`, `data.js`).
 
-Each of the six organs reads its **real endpoint** and lights up with its honest
-live status; press **Run proactive cycle** to watch the GPU mind act
-(IMMUNE → BRAIN → run → HEART/BLOOD → NERVOUS), pulsing each organ in turn:
+Every probe is a read-only GET to the a11oy host
+(`https://szlholdings-a11oy.hf.space`), and an organ glows LIVE only on a real
+2xx + JSON answer:
 
-| Organ | Proven formula (round9) | Live endpoint read |
+| Organ | Role | Live endpoint read |
 |---|---|---|
-| BRAIN | BrainBeliefUpdate (PAC-Bayes McAllester) | amaru `/api/amaru/v1/formulas` |
-| HEART | HeartReceiptSigma (σ-algebra receipt bus) | amaru `/api/amaru/receipts` |
-| BLOOD | BloodDSSEMerkle (Cardano-anchored DSSE) | sentra `/api/sentra/khipu/ledger` |
-| IMMUNE | ImmuneNeymanPearson (deny-by-default gates) | sentra `/api/sentra/v1/gates` |
-| SKELETON | SkeletonLambdaSpine (Lean kernel; Λ=Conj 1) | amaru `/api/amaru/v1/math/lean/theorems` |
-| NERVOUS | NervousShannonAlarm (Λ-signed OTEL drift) | amaru `/api/amaru/overwatch/snapshot` |
+| REASONING | scores Λ (13-axis) and recommends the decision | `/api/a11oy/v1/lambda` |
+| POLICY | the deny-by-default gate (F12) | `/api/a11oy/v1/honest` |
+| OPERATOR | approves and executes admitted work | `/api/a11oy/readyz` |
+| RECEIPTS | signs and replays a receipt for every action | `/api/a11oy/v1/ledger` |
 
-The **GPU-mind posture** card reads a11oy `/api/a11oy/code/healthz`
+The **GPU-mind posture** card reads `/api/a11oy/code/healthz`
 (`sovereign` / `backend` / `mode`); the honesty strip reads the doctrine lock
-live from a11oy `/api/a11oy/v1/honest`.
+from `/api/a11oy/v1/honest`; the immune intensity is the real fraction of mesh
+engines down from `/api/a11oy/v1/govern/health`; and the organ-integrity strip
+reads `/api/anatomy/v1/organs/integrity` on this Space, falling back to the a11oy
+command body. **Run proactive cycle** replays the real receipts on the ledger as
+pulses that travel from the organ that emitted each action to RECEIPTS. The four
+verticals (insurance, defense, finance, real estate) have no live endpoint here,
+so they render in an explicit ROADMAP state and pulse only when a real receipt
+names them.
 
 **Honest by design (doctrine v11/v12):**
 - `sovereign:true` is shown **only** when `/code/healthz` reports the literal
   `true` — never synthesized from a truthy value. If the mind is unreachable the
   card shows `sovereign: false`. The half-state (banner sovereign while a router
   serves) is the one outcome the view will never render.
-- Energy / joules are labeled **SAMPLE** until a real meter is wired.
-- **Λ is shown as Conjecture 1** (the skeleton's killer formula is intentionally
-  a conjecture), pulled live, never hardcoded as proven.
-- An unreachable endpoint degrades to an honest `unreachable — … · honest
-  empty-state`; no green light is ever fabricated for an organ that did not
-  answer. (Today amaru/sentra spaces may be unrouted → those organs honestly
-  read unreachable; a11oy + the mind posture read live.)
+- Energy is shown as **UNAVAILABLE**; no meter is wired.
+- **Λ is shown as Conjecture 1**, pulled live, never hardcoded as proven.
+- An unreachable endpoint degrades to an honest UNREACHABLE dim; no green light
+  is ever fabricated for an organ that did not answer.
 - Read-only, sends no key, open-weight only.
 
-See `SCREENSHOT_NOTES.md` for the body layout and what a reviewer should see in a
-deploy preview.
+`SCREENSHOT_NOTES.md` keeps the review notes for the original six-organ layout
+(2026-06-13) that Body v1 replaced on 2026-06-30.
 
 ## Run, test, rollback (operability)
 
-This Space is a hardened Python/FastAPI runtime in a Docker Space (`sdk: docker`).
+This Space is a hardened Python application runtime in a Docker Space (`sdk: docker`).
+The image entrypoint (`CMD`) is `lib/refinement_living_runtime.py` on port 7860: it
+extends the `living_runtime.py` handler (Second Brain, Neural Quant v7 and
+Holographic v7 routes) with the read-only refinement observatory and serves
+everything from the standard-library `ThreadingHTTPServer`. FastAPI is a declared
+dependency because `frontier_runtime.py` also defines its frontier routes as a
+FastAPI app (`python3 frontier_runtime.py` runs that app alone under uvicorn); the
+image itself does not use uvicorn.
 It serves the sovereign static atlas plus the read-only `/api/anatomy/v1/*`,
 `/version`, `/evidence`, and `/.well-known/szl-source.json` contracts. The atlas
 shell itself remains static and offline-capable; the API service is required for
 runtime evidence and the v7 instruments. To run and test locally:
 
 ```bash
-# run: launch the same application runtime used by the Docker image
+# run: the same entrypoint as the Docker image
 python3 -m pip install -r requirements.txt
-python3 living_runtime.py            # then open http://localhost:7860/
+# public Second Brain snapshot for the v7 routes (reads GitHub; a GITHUB_TOKEN
+# is optional and only raises the API rate limit)
+python3 scripts/materialize_second_brain.py --output .runtime/second-brain
+python3 lib/refinement_living_runtime.py   # then open http://localhost:7860/
 
 # atlas-shell-only mode (API/evidence routes are intentionally unavailable)
 python3 -m http.server 8000          # then open http://localhost:8000/index.html
 
-# test: the headless QA harness (Playwright/Chromium) renders all three
-# viewports, asserts 0 console errors, exercises the v4 dissection dock + the
-# v6 yarqa CFD layer, and confirms yarqa is NEVER counted in the locked-8.
+# test: the Python contract suite and the Node checks CI runs
+python3 -m pip install -e '.[test]'
+python3 -m pytest -q
+node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
+node qa_cockpit.mjs
+
+# QA: the headless browser harness (Playwright/Chromium) renders all three
+# viewports, exercises the v4 dissection dock + the v6 yarqa CFD layer, and
+# exits 1 on any script or console error, missing local asset, or failed
+# invariant, including yarqa ever counting toward the locked-8. Offline live
+# lenses, and the API routes this file-only server lacks, are reported separately.
 npm i -D playwright && npx playwright install chromium
 node qa_yarqa.js
 ```
 
+Without `.runtime/second-brain` the brain routes answer `503` with `ready: false`
+rather than inventing a snapshot. A local checkout also reports `/version`,
+`/evidence` and `/api/anatomy/v1/receipt` as `UNAVAILABLE` (`503`), and the receipt
+replay as `FAIL`, because `hf-deploy-manifest.json` is written only by the
+publisher on a deployed Space. That is the honest result for an undeployed tree.
+
 **Health:** the page is "healthy" when `index.html` renders the 3D atlas with zero
-console errors at all three viewports (the QA assertion). The live-lens panels poll
+script or console errors at all three viewports (the `qa_yarqa.js` assertion). The live-lens panels poll
 a11oy read-only and **degrade to a labeled `offline · static snapshot`** when an
 endpoint is unreachable — an offline endpoint is an expected state, not an outage.
 
 **Rollback (one step):** every deploy is a git commit; to revert the live Space to a
-known-good state, redeploy the previous tag/commit — `git revert <bad-sha>` (or reset
+known-good state, redeploy the previous commit — `git revert <bad-sha>` (or reset
 the HF Space mirror to the prior commit). Because the atlas shell is self-contained (vendored `lib/three.min.js`, no
 runtime CDN) and the application service is read-only and stateless, rollback
 means redeploying the older source-bound image; there is no data migration to unwind.
@@ -401,45 +441,50 @@ means redeploying the older source-bound image; there is no data migration to un
 ## Security headers (SAFE-NOW hardening, R2)
 
 This Space serves the atlas and read-only API contracts through the repository's
-Python/FastAPI runtime (`sdk: docker`; `living_runtime.py` on port 7860). Under
+Python application runtime (`sdk: docker`; `lib/refinement_living_runtime.py` on port 7860,
+on the standard-library `ThreadingHTTPServer`). Under
 `sdk: docker` Hugging Face does **not** apply a README `custom_headers` block
-(that lever is static-SDK only), so the cross-origin headers are emitted by the
-application server. Hardening is
-split across the two levers that actually take effect, and nothing is set that the
-browser would silently ignore (doctrine v11: never fabricate):
+(that lever is static-SDK only), so the security headers are emitted by the
+application server itself, on every response (`server.py`, `end_headers`):
 
-- **Response headers emitted by the Space's static server** (set on every response):
-  - `cross-origin-opener-policy: same-origin-allow-popups`
-  - `cross-origin-resource-policy: cross-origin` (keeps the page loadable inside
-    the legitimate `huggingface.co` / `*.hf.space` embed iframe).
-  - COEP `require-corp` is **intentionally not set** — it would block the page's
-    read-only cross-origin fetches to a11oy/amaru/sentra and buys nothing here
-    (no `SharedArrayBuffer`/wasm).
-- **`<meta http-equiv>` in `index.html` + `live-body.html`** (what the browser
-  honors from markup):
-  - **Content-Security-Policy** (enforced, non-breaking): `default-src 'self'`;
-    `object-src 'none'`; `base-uri 'self'`; an explicit `connect-src` allow-list
-    (self + the four SZL `*.hf.space` origins it reads); `img-src 'self' data:
-    blob:`. `script-src`/`style-src` keep `'unsafe-inline'` **on purpose** — the
-    3D atlas ships heavy inline JS, inline styles, and a WebGL canvas, so a strict
-    nonce/hash CSP would white-screen it. The win is origin-locking: no rogue
-    external script, CDN, or pixel can load.
-  - **X-Content-Type-Options: nosniff** and **Referrer-Policy:
-    strict-origin-when-cross-origin**.
+- `Content-Security-Policy` (`server.py` `CONTENT_SECURITY_POLICY`):
+  `default-src 'self'`; `object-src 'none'`; `base-uri 'self'`;
+  `form-action 'self'`; `img-src 'self' data: blob:`; `font-src 'self'`; a
+  `connect-src` allow-list of `'self'` plus the read-only SZL origins the lenses
+  read (`szlholdings-a11oy`, `-killinchu`, `-amaru` and `-sentra` on `hf.space`,
+  and `a-11-oy.com`); and `frame-ancestors` limited to `'self'`, `huggingface.co`,
+  `*.hf.space`, `*.huggingface.co`, `a-11-oy.com`, `a11oy.net` and their
+  subdomains. `script-src`/`style-src` keep `'unsafe-inline'` **on purpose** — the
+  3D atlas ships heavy inline JS, inline styles, and a WebGL canvas, so a strict
+  nonce/hash CSP would white-screen it. The win is origin-locking: no rogue
+  external script, CDN, or pixel can load.
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+- `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: strict-origin-when-cross-origin`.
+- `Cross-Origin-Opener-Policy: same-origin-allow-popups` and
+  `Cross-Origin-Resource-Policy: cross-origin` (keeps the page loadable inside
+  the legitimate `huggingface.co` / `*.hf.space` embed iframe).
+- COEP `require-corp` is **intentionally not set** — it would block the page's
+  read-only cross-origin fetches and buys nothing here (no
+  `SharedArrayBuffer`/wasm).
 
-**Why no HSTS / `frame-ancestors` / Report-Only here:** browsers ignore HSTS,
-CSP `frame-ancestors`, and `Content-Security-Policy-Report-Only` when delivered
-via `<meta>`, and the static server does not emit them as real headers — so setting
-them in-repo would be security theater. HF already terminates TLS and redirects to
-HTTPS at the edge. **Embedding is deliberately left enabled** (no
-`X-Frame-Options: DENY`, no `disable_embedding`) so the Space keeps working inside
-the `huggingface.co` / `*.hf.space` iframe.
+`index.html` and `live-body.html` also carry a `<meta http-equiv>` CSP with a
+narrower `connect-src` (`live-body.html` allows only the a11oy origins it reads).
+Browsers enforce every policy they receive, so the effective policy is the
+intersection of the header and the page's meta policy. Embedding is allowed
+only from the `frame-ancestors` list above (no `X-Frame-Options: DENY`, no
+`disable_embedding`), so the Space keeps working inside the `huggingface.co` /
+`*.hf.space` iframe. No `Content-Security-Policy-Report-Only` is set.
 
 **CORS:** the evidence endpoints are public, read-only inspection contracts and
 return `Access-Control-Allow-Origin: *` so A11OY and the wider estate can ingest
-them. The only POST is a pure receipt recomputation; it cannot sign, store, fetch
-user-controlled URLs, or mutate state. Outbound dependency probes use a fixed
-allowlist in `server.py`; no key, cookie, or credential is sent.
+them. Every POST is a pure computation over the submitted body or the public
+snapshot: receipt recomputation (`/api/anatomy/v1/verify/receipt`), an
+organ-integrity evaluation (`/api/anatomy/v1/organs/integrity`), and handles-only
+Second Brain queries (`/api/anatomy/v1/brain/{search,query,context,frontier}`).
+None can sign, store, fetch user-controlled URLs, or mutate state. Outbound
+dependency probes use a fixed allowlist in `server.py`; no key, cookie, or
+credential is sent.
 
 ## Verify it yourself
 
