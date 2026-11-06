@@ -10,12 +10,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-BASE = "https://betterwithage-anatomy.hf.space"
+from hf_space_origin import hub_reported_origin
+
+SPACE_ID = "betterwithage/anatomy"
+# Declared creator-profile origin. main() reads back on the exact hf.space host
+# the Hub reports for SPACE_ID instead, and prints both.
+DECLARED_BASE = "https://betterwithage-anatomy.hf.space"
 
 
-def get_json(path: str) -> dict[str, Any]:
+def get_json(base: str, path: str) -> dict[str, Any]:
     request = urllib.request.Request(
-        BASE + path,
+        base + path,
         headers={"Accept": "application/json", "User-Agent": "szl-refinement-readback/1.0"},
     )
     with urllib.request.urlopen(request, timeout=20) as response:
@@ -26,15 +31,24 @@ def get_json(path: str) -> dict[str, Any]:
 
 
 def main() -> int:
+    # Fails closed (raises) before any readback unless the Hub reports an exact
+    # https://<label>.hf.space origin for the declared Space id.
+    base = hub_reported_origin(SPACE_ID)
+    if base != DECLARED_BASE:
+        print(
+            f"NOTE: Hub reports {SPACE_ID} on {base}; declared origin is "
+            f"{DECLARED_BASE}. Reading back on the Hub-reported host.",
+            flush=True,
+        )
     local_source = json.loads(
         Path("lib/refinement_source.json").read_text(encoding="utf-8")
     )
     last: Exception | None = None
     for _ in range(30):
         try:
-            status = get_json("/api/anatomy/v1/refinement/status")
-            patterns = get_json("/api/anatomy/v1/refinement/patterns?limit=20")
-            with urllib.request.urlopen(BASE + "/refinement-lab", timeout=20) as response:
+            status = get_json(base, "/api/anatomy/v1/refinement/status")
+            patterns = get_json(base, "/api/anatomy/v1/refinement/patterns?limit=20")
+            with urllib.request.urlopen(base + "/refinement-lab", timeout=20) as response:
                 html = response.read(2 * 1024 * 1024).decode("utf-8")
             assert status["content_access"] == "HANDLES_ONLY"
             assert status["authority"] == "READ_ONLY"
@@ -49,6 +63,8 @@ def main() -> int:
                 json.dumps(
                     {
                         "live": True,
+                        "origin": base,
+                        "declared_origin": DECLARED_BASE,
                         "source_revision": status["source_revision"],
                         "state_sha256": status["state_sha256"],
                         "pattern_count": status["pattern_count"],

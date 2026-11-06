@@ -19,10 +19,15 @@ from typing import Any
 
 from huggingface_hub import CommitOperationAdd, HfApi
 
+from hf_space_origin import exact_space_host
+
 SPACE_ID = "betterwithage/anatomy"
 EXPECTED_IDENTITY = "betterwithage"
 EXPECTED_REPOSITORY = "szl-holdings/anatomy"
 LIVE_BASE = "https://betterwithage-anatomy.hf.space"
+# Declared creator-profile origin. resolve_live_base() re-binds LIVE_BASE to
+# the exact hf.space host the Hub reports for SPACE_ID before any readback.
+DECLARED_LIVE_BASE = LIVE_BASE
 EXPECTED_PUBLIC_CHUNKS = 575
 MIN_FRONTIER_CANDIDATES = 70
 MIN_FRONTIER_SOURCES = 7
@@ -86,6 +91,28 @@ def current_protected_main(repository: str, token: str) -> str:
     )
     with urllib.request.urlopen(request, timeout=20) as response:
         return str(json.load(response).get("sha") or "").lower()
+
+
+def resolve_live_base(api: HfApi) -> str:
+    """Bind LIVE_BASE to the exact hf.space host the Hub reports for SPACE_ID.
+
+    The declared creator-profile alias can answer 404 while the Hub serves the
+    same Space id from another hf.space label (the Hub API 307-redirects a
+    transferred id). Readback follows the Hub-reported host and fails closed on
+    anything that is not an exact https://<label>.hf.space origin, before the
+    publication commit and before any live readback.
+    """
+    global LIVE_BASE
+    info = api.space_info(repo_id=SPACE_ID)
+    resolved = exact_space_host(getattr(info, "host", None))
+    if resolved != DECLARED_LIVE_BASE:
+        print(
+            f"NOTE: Hub reports {SPACE_ID} on {resolved}; declared origin is "
+            f"{DECLARED_LIVE_BASE}. Reading back on the Hub-reported host.",
+            flush=True,
+        )
+    LIVE_BASE = resolved
+    return resolved
 
 
 def runtime_files() -> list[str]:
@@ -731,6 +758,7 @@ def main() -> None:
             f"got {identity_name!r}"
         )
     ensure_destination(api)
+    resolve_live_base(api)
 
     deploy_manifest = {
         "schema": "szl.hf-deploy-manifest/v1",
