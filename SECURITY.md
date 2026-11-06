@@ -2,10 +2,14 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x     | :white_check_mark: |
-| < 1.0   | :x:                |
+This repository has no versioned releases yet (no GitHub Releases or tags). The
+supported line is the default branch `main`, which is what the Hugging Face
+Space deploys; security fixes land there.
+
+| Version                  | Supported          |
+| ------------------------ | ------------------ |
+| `main` (deployed Space)  | :white_check_mark: |
+| older commits            | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -31,9 +35,29 @@ We follow a **90-day responsible disclosure** policy. After 90 days from initial
 
 ## Supply-Chain Security
 
-- **SLSA Build Level 1** — build provenance generated per release (honest; not L2/L3)
-- **Cosign keyless signing** — containers signed via Sigstore OIDC keyless mode; verify with `cosign verify ghcr.io/szl-holdings/anatomy:<tag>`
-- **SBOM** — CycloneDX SBOM attached to each GitHub Release
+What this repository does today:
+
+- **Space image** — Hugging Face builds the Space from this repository's
+  `Dockerfile` (base image pinned by digest; Python dependencies pinned in
+  `requirements.txt`). This repository does **not** publish or sign a container
+  image of its own: there is no GHCR image, no cosign signature and no
+  build-provenance attestation.
+- **SLSA** — presented as **L1 honest (static viz)**; no provenance attestation
+  is generated for this repository.
+- **SBOM** — the `SBOM` workflow generates CycloneDX and SPDX SBOMs on every
+  push to `main` (kept as workflow artifacts) and is also wired to run when a
+  release is published.
+- **Scanning and pinning** — CodeQL (JavaScript/TypeScript and Python), Trivy and
+  OpenSSF Scorecard run through SHA-pinned org reusable workflows; GitHub Actions
+  are pinned by SHA and checked by `Pin Check`; Dependabot proposes Actions and
+  Python dependency updates.
+- **Deployment binding** — each publish writes `hf-deploy-manifest.json`, binding
+  the served runtime whitelist to the exact protected-main commit, and the live
+  `/.well-known/szl-source.json` reports it. That is a source-binding claim, not
+  a signature.
+
+The product images this atlas depicts (a11oy, killinchu) carry their own
+provenance; see those repositories.
 
 ## Section 889 Attestation
 

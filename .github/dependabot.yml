@@ -29,3 +29,27 @@ updates:
         - openai
     cooldown:
       default-days: 3
+
+  # Python runtime dependencies (requirements.txt is what the Space image
+  # installs; pyproject.toml mirrors it). container-contract.yml rebuilds and
+  # exercises the image on every update PR.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "security"
+    open-pull-requests-limit: 5
+    groups:
+      python:
+        patterns:
+        - '*'
+        update-types:
+        - minor
+        - patch
+    cooldown:
+      default-days: 3

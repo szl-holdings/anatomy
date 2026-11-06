@@ -55,6 +55,11 @@ jobs:
       - name: Verify typed observation display behavior
         run: node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
 
+      # Headless (no browser): real covenant-cockpit.js logic against the
+      # bundled receipts.sample.json; exits 1 on any failed invariant.
+      - name: Verify Covenant Cockpit receipt invariants
+        run: node qa_cockpit.mjs
+
       - name: Build pinned Space image
         run: docker build --tag anatomy-space-ci .
 
