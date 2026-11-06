@@ -545,7 +545,7 @@ PYTEST_LINE = "          && python -m pytest -q -p no:cacheprovider\n"
 FILTER_LINE = f"          -W {COROUTINE_FILTER} tests\n"
 FULL_COMMAND = f"python -m pytest -q -p no:cacheprovider -W {COROUTINE_FILTER} tests"
 PUBLISH_STEP = (
-    "      - name: Publish and verify betterwithage/anatomy\n"
+    "      - name: Publish and verify SZLHOLDINGS/anatomy\n"
     "        run: python scripts/sync_hf_creator_profile.py\n"
 )
 

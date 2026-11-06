@@ -47,17 +47,17 @@ class HfSyncContractTest(unittest.TestCase):
         self.assertIn("python scripts/sync_hf_creator_profile.py", self.workflow)
 
     def test_creator_profile_is_the_only_public_destination(self) -> None:
-        self.assertIn('SPACE_ID = "betterwithage/anatomy"', self.publisher)
+        self.assertIn('SPACE_ID = "SZLHOLDINGS/anatomy"', self.publisher)
         self.assertIn('EXPECTED_IDENTITY = "betterwithage"', self.publisher)
         self.assertIn(
-            'LIVE_BASE = "https://betterwithage-anatomy.hf.space"',
+            'LIVE_BASE = "https://szlholdings-anatomy.hf.space"',
             self.publisher,
         )
         self.assertIn(
-            "Publish and verify betterwithage/anatomy",
+            "Publish and verify SZLHOLDINGS/anatomy",
             self.workflow,
         )
-        self.assertNotIn('SPACE_ID = "SZLHOLDINGS/anatomy"', self.publisher)
+        self.assertNotIn('SPACE_ID = "betterwithage/anatomy"', self.publisher)
 
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)

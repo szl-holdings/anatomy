@@ -19,7 +19,10 @@ RETIRED = (
     "szlholdings-holographic.hf.space",
     "SZLHOLDINGS/cosmos",
     "SZLHOLDINGS/sda)",
-    "szlholdings-anatomy.hf.space",
+    # "szlholdings-anatomy.hf.space" removed 2026-11-06: the creator-profile Space
+    # betterwithage/anatomy was transferred to SZLHOLDINGS/anatomy on the Hub
+    # (the API redirects betterwithage/anatomy -> SZLHOLDINGS/anatomy and the old
+    # betterwithage-anatomy.hf.space host now answers 404), so this host is live again.
 )
 
 # Same selection as scripts/sync_hf_creator_profile.py runtime_files(), minus the

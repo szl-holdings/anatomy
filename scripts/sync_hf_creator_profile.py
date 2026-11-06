@@ -19,10 +19,10 @@ from typing import Any
 
 from huggingface_hub import CommitOperationAdd, HfApi
 
-SPACE_ID = "betterwithage/anatomy"
+SPACE_ID = "SZLHOLDINGS/anatomy"
 EXPECTED_IDENTITY = "betterwithage"
 EXPECTED_REPOSITORY = "szl-holdings/anatomy"
-LIVE_BASE = "https://betterwithage-anatomy.hf.space"
+LIVE_BASE = "https://szlholdings-anatomy.hf.space"
 EXPECTED_PUBLIC_CHUNKS = 575
 MIN_FRONTIER_CANDIDATES = 70
 MIN_FRONTIER_SOURCES = 7

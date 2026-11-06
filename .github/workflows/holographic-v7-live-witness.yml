@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LIVE_ORIGIN: https://betterwithage-anatomy.hf.space
+  LIVE_ORIGIN: https://szlholdings-anatomy.hf.space
   RECEIPT: reports/holographic-v7-live-witness.json
 
 jobs:

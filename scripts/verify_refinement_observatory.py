@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-BASE = "https://betterwithage-anatomy.hf.space"
+BASE = "https://szlholdings-anatomy.hf.space"
 
 
 def get_json(path: str) -> dict[str, Any]:

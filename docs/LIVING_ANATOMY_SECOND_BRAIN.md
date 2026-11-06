@@ -3,7 +3,7 @@
 ## Production contract
 
 The public Living Anatomy surface is the creator-profile Hugging Face Space
-`betterwithage/anatomy`, served at `https://betterwithage-anatomy.hf.space`.
+`SZLHOLDINGS/anatomy`, served at `https://szlholdings-anatomy.hf.space`.
 GitHub `szl-holdings/anatomy` is the runtime source of truth. The Space is a
 source-bound deployment mirror, not an independent source tree and not a second
 command plane.
@@ -167,7 +167,7 @@ and scheduled reconciliation. It:
 1. validates the exact Second Brain retrieval and frontier snapshots;
 2. refuses a stale GitHub source revision;
 3. creates or maintains the public creator-profile Space
-   `betterwithage/anatomy`;
+   `SZLHOLDINGS/anatomy`;
 4. restarts paused, sleeping, stopped, or failed runtime states;
 5. avoids an unnecessary rebuild when the exact Anatomy, Brain, frontier, and
    admitted A11oy snapshot dependencies are already deployed;
@@ -178,7 +178,7 @@ and scheduled reconciliation. It:
 
 Holographic v7 is an additive, read-only surface served by `frontier_runtime.py` at the same origin as the existing Neural Quant v7 experience. The runtime accepts the protected flat receipt emitted by current `main` while retaining read compatibility with the earlier nested frontier receipt shape. It does not create a second authority plane.
 
-The canonical public surface is `betterwithage/anatomy`. Its source-bound snapshot remains 575 public chunks, 30 attributed formulas, 21 executable formulas, and nine quant domains. Identity is `HANDLES_ONLY`; lambda remains `Conjecture 1`; frontier candidates remain review-gated and cannot be promoted by this instrument.
+The canonical public surface is `SZLHOLDINGS/anatomy`. Its source-bound snapshot remains 575 public chunks, 30 attributed formulas, 21 executable formulas, and nine quant domains. Identity is `HANDLES_ONLY`; lambda remains `Conjecture 1`; frontier candidates remain review-gated and cannot be promoted by this instrument.
 
 The container starts `frontier_runtime.py`, which imports the existing living runtime and adds the Holographic v7 routes. Publishing includes the runtime and both local assets. No CDN, browser persistence, telemetry, credential material, or cross-origin data authority is introduced.
 

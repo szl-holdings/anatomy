@@ -62,7 +62,7 @@ PORT = int(os.environ.get("PORT", "7860"))
 # image places server.py in /app already; local verification must never
 # accidentally serve an unrelated host-level /app directory.
 DIRECTORY = Path(os.environ.get("ANATOMY_ROOT", str(Path(__file__).resolve().parent))).resolve()
-SPACE_ID = "betterwithage/anatomy"
+SPACE_ID = "SZLHOLDINGS/anatomy"
 SOURCE_REPOSITORY = "szl-holdings/anatomy"
 SOURCE_BASE_COMMIT = "9847b3031c1aacdcee9aa8e37ae33d573737a5c4"
 DEPLOY_MANIFEST_PATH = DIRECTORY / "hf-deploy-manifest.json"
@@ -701,7 +701,7 @@ def _hf_revision(force: bool = False) -> str | None:
         if not force and cached and now - float(_revision_cache["at"]) < 60:
             return str(cached)
     req = urllib.request.Request(
-        "https://huggingface.co/api/spaces/betterwithage/anatomy?expand[]=sha",
+        "https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy?expand[]=sha",
         headers={"User-Agent": "szl-anatomy-source-attestation/1.0", "Accept": "application/json"},
     )
     revision: str | None = None
@@ -745,15 +745,15 @@ def _hf_commit_matches_source(
 
     expected_title = f"hf-sync: source {source_revision} run {workflow_run_id}"
     commits_request = urllib.request.Request(
-        "https://huggingface.co/api/spaces/betterwithage/anatomy/commits/main?limit=1",
+        "https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1",
         headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "application/json"},
     )
     diff_request = urllib.request.Request(
-        f"https://huggingface.co/spaces/betterwithage/anatomy/commit/{revision}.diff",
+        f"https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/{revision}.diff",
         headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "text/plain"},
     )
     manifest_request = urllib.request.Request(
-        "https://huggingface.co/spaces/betterwithage/anatomy/resolve/"
+        "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/"
         f"{revision}/hf-deploy-manifest.json",
         headers={"User-Agent": "szl-anatomy-source-attestation/1.1", "Accept": "application/json"},
     )

@@ -1,7 +1,7 @@
 ---
 title: SZL Living Anatomy
 emoji: 🫀
-thumbnail: "https://huggingface.co/spaces/betterwithage/anatomy/resolve/main/og-card.png"
+thumbnail: "https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/main/og-card.png"
 colorFrom: blue
 colorTo: gray
 sdk: docker
@@ -38,7 +38,7 @@ tags:
 
 <!-- SZL-SURFACE-CARD:v3:START -->
 <p align="center">
-  <a href="https://huggingface.co/spaces/betterwithage/anatomy">
+  <a href="https://huggingface.co/spaces/SZLHOLDINGS/anatomy">
     <img src="./readme-surface-card.svg" alt="SZL Living Anatomy — Explore a shared 3D atlas of governed AI organs and source-bound observations." width="100%" />
   </a>
 </p>
@@ -47,7 +47,7 @@ tags:
 
 | Path | What a non-technical reader gets | Where a builder starts |
 | --- | --- | --- |
-| **Understand** | See how the organ map connects source, observations and limits. | [Open the primary surface](https://huggingface.co/spaces/betterwithage/anatomy) |
+| **Understand** | See how the organ map connects source, observations and limits. | [Open the primary surface](https://huggingface.co/spaces/SZLHOLDINGS/anatomy) |
 | **Build** | Inspect the atlas, shared integrity-kernel links and local runtime. | [Inspect source](https://github.com/szl-holdings/anatomy) |
 | **Verify** | `REPORTED` evidence · `UNKNOWN` runtime | [Inspect evidence](https://github.com/szl-holdings/anatomy/blob/a03896dc4beea37656ec45c400b4c23912dd6714/README.md) |
 
@@ -167,7 +167,7 @@ bottom sheet with 44-pixel controls, safe-area support, reduced motion, high
 contrast, forced colors, keyboard focus trapping, and Escape close.
 
 Public creator-profile Space:
-[`betterwithage/anatomy`](https://huggingface.co/spaces/betterwithage/anatomy).
+[`SZLHOLDINGS/anatomy`](https://huggingface.co/spaces/SZLHOLDINGS/anatomy).
 
 ## Holographic v7 companion instrument
 
@@ -450,9 +450,9 @@ live products it depicts:
 # Confirm the live doctrine posture the heart reports
 curl -s https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest | jq .kernel_commit   # => "c7c0ba17"
 # Inspect and replay the Anatomy bundle receipt (result is STRUCTURAL-ONLY, not signed)
-curl -s https://betterwithage-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
+curl -s https://szlholdings-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
 curl -s -X POST -H "Content-Type: application/json" --data-binary @anatomy-receipt.json \
-  https://betterwithage-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
+  https://szlholdings-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
 # Verify signed governed receipts offline with the independent spec verifier
 git clone https://github.com/szl-holdings/governed-receipt-spec
 python governed-receipt-spec/verify.py <receipts.json>
@@ -463,7 +463,7 @@ run the kernel → [lutar-lean](https://github.com/szl-holdings/lutar-lean).
 
 ---
 
-Declared source base: `szl-holdings/anatomy` (GitHub) → `betterwithage/anatomy` (creator-profile HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
+Declared source base: `szl-holdings/anatomy` (GitHub) → `SZLHOLDINGS/anatomy` (creator-profile HF Space). The live source attestation reports the exact deployment revision and whether the HF overlay still needs GitHub synchronization. · **[a-11-oy.com](https://a-11-oy.com)**
 
 <sub>v5 (evolves v4) — WILLAY conscience · sovereign mesh · buyer-verifiable receipts · 8-proof→organ map · AI-assurance · yarqa+PINN (MODELED) · GPU-sovereign stack (SUBSTRATE) · Doctrine v11 LOCKED · 749/14/163 · kernel `c7c0ba17` · 8 locked-proven + experimental CI-green tier · Λ = Conjecture 1 · Khipu Conjecture 2 open · SLSA L1 honest (static viz) · Apache-2.0</sub>
 
@@ -476,7 +476,7 @@ One sovereign substrate, many organs — every decision carries a hash-chained, 
 [🛡️ a11oy](https://huggingface.co/spaces/SZLHOLDINGS/a11oy) ·
 [🧬 IMMUNE](https://huggingface.co/spaces/SZLHOLDINGS/immune) ·
 [🦅 killinchu](https://huggingface.co/spaces/SZLHOLDINGS/killinchu) ·
-[🫀 anatomy](https://huggingface.co/spaces/betterwithage/anatomy) ·
+[🫀 anatomy](https://huggingface.co/spaces/SZLHOLDINGS/anatomy) ·
 [🌊 yarqa](https://huggingface.co/spaces/SZLHOLDINGS/yarqa) ·
 [🤗 all Spaces](https://huggingface.co/SZLHOLDINGS)
 
