@@ -60,7 +60,7 @@ class PublisherNoopContractTest(unittest.TestCase):
         exec(compile(ast.Module(body=[function], type_ignores=[]), "<no-op predicate>", "exec"), namespace)
         match = namespace["deployment_inputs_match"]
         manifest = {"schema": "szl.hf-deploy-manifest/v1", "source_repository": "szl-holdings/anatomy",
-                    "source_revision": "a" * 40, "destination": {"repo_id": "betterwithage/anatomy"},
+                    "source_revision": "a" * 40, "destination": {"repo_id": "SZLHOLDINGS/anatomy"},
                     "dependencies": {"second_brain": {"source_revision": "b" * 40,
                         "pipeline_dependency": {"source_repository": "szl-holdings/a11oy",
                             "source_revision": "c" * 40, "source_snapshot_sha256": "d" * 64}}}}

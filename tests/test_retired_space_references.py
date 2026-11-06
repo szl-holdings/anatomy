@@ -19,7 +19,7 @@ RETIRED = (
     "szlholdings-holographic.hf.space",
     "SZLHOLDINGS/cosmos",
     "SZLHOLDINGS/sda)",
-    "szlholdings-anatomy.hf.space",
+    "betterwithage-anatomy.hf.space",
 )
 
 # Same selection as scripts/sync_hf_creator_profile.py runtime_files(), minus the
