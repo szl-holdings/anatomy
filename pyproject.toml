@@ -29,7 +29,7 @@ classifiers = [
 
 [project.optional-dependencies]
 # Same tools the CI contract jobs install (httpx backs fastapi.testclient).
-test = ["pytest==8.3.5", "httpx==0.28.1"]
+test = ["pytest==9.2.0", "httpx==0.28.1"]
 
 [project.urls]
 Homepage = "https://a-11-oy.com"
