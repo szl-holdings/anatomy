@@ -12,6 +12,7 @@ import glob
 import json
 import os
 import time
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -23,6 +24,7 @@ SPACE_ID = "betterwithage/anatomy"
 EXPECTED_IDENTITY = "betterwithage"
 EXPECTED_REPOSITORY = "szl-holdings/anatomy"
 LIVE_BASE = "https://betterwithage-anatomy.hf.space"
+DECLARED_LIVE_BASE = LIVE_BASE
 EXPECTED_PUBLIC_CHUNKS = 575
 MIN_FRONTIER_CANDIDATES = 70
 MIN_FRONTIER_SOURCES = 7
@@ -86,6 +88,47 @@ def current_protected_main(repository: str, token: str) -> str:
     )
     with urllib.request.urlopen(request, timeout=20) as response:
         return str(json.load(response).get("sha") or "").lower()
+
+
+def exact_space_host(value: object) -> str:
+    """Return the Hub-reported Space host as an exact ``https://<label>.hf.space``.
+
+    The Hub may serve the declared creator-profile Space from a different
+    ``hf.space`` label (for example after a namespace transfer that the API
+    redirects). Readback must follow the host the Hub reports for SPACE_ID and
+    refuse anything that is not an exact hf.space origin.
+    """
+    host = str(value or "").strip().rstrip("/")
+    if (
+        not host.startswith("https://")
+        or "@" in host
+        or "\\" in host
+        or "/" in host[8:]
+        or "?" in host
+        or "#" in host
+    ):
+        raise RuntimeError("Space host is not an exact https hf.space origin")
+    label = host.removeprefix("https://")
+    if not label.endswith(".hf.space") or not re.fullmatch(
+        r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label.removesuffix(".hf.space")
+    ):
+        raise RuntimeError("Space host is not an exact https hf.space origin")
+    return host
+
+
+def resolve_live_base(api: HfApi) -> str:
+    """Bind LIVE_BASE to the host the Hub reports for the declared Space."""
+    global LIVE_BASE
+    info = api.space_info(repo_id=SPACE_ID)
+    resolved = exact_space_host(getattr(info, "host", None))
+    if resolved != DECLARED_LIVE_BASE:
+        print(
+            f"NOTE: Hub reports {SPACE_ID} on {resolved}; declared origin is "
+            f"{DECLARED_LIVE_BASE}. Reading back on the Hub-reported host.",
+            flush=True,
+        )
+    LIVE_BASE = resolved
+    return resolved
 
 
 def runtime_files() -> list[str]:
@@ -731,6 +774,7 @@ def main() -> None:
             f"got {identity_name!r}"
         )
     ensure_destination(api)
+    resolve_live_base(api)
 
     deploy_manifest = {
         "schema": "szl.hf-deploy-manifest/v1",
