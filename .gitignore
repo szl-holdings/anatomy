@@ -1,5 +1,6 @@
-# SZL Living Anatomy — static SDK Space (no build step). Keep the tree clean:
-# the only things that should ever land here are the vendored bundle + sources.
+# SZL Living Anatomy — Docker Space: a Python runtime serving a vendored,
+# no-build static atlas. Keep the tree clean: only the vendored bundle and
+# sources should ever land here.
 
 # local QA harness (qa_yarqa.js runs under Playwright/Chromium, installed locally)
 node_modules/
@@ -7,10 +8,19 @@ package-lock.json
 qa_*_results.json
 qa_*.png
 
-# python tooling cruft (if a contributor runs scans/linters locally)
+# generated at test/publish time (scripts/materialize_second_brain.py writes
+# .runtime/; the live-witness workflow writes reports/) — never commit
+.runtime/
+reports/
+
+# python tooling cruft (venvs, editable-install metadata, scans/linters)
 __pycache__/
 *.pyc
 .pytest_cache/
+.venv/
+*.egg-info/
+build/
+dist/
 
 # environment / secrets — never commit
 .env
