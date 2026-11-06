@@ -314,8 +314,10 @@ F22 Khipu emit append-only monotonicity) ·
 Λ unconditional uniqueness = Conjecture 1 (machine-checked FALSE); conditional Λ axiom-free PROVEN ·
 Khipu BFT safety = Conjecture 2, with the Wave23 conditional agreement theorem
 (`khipu_quorum_safety_conditional`, n≥3f+1 + honest non-equivocation, axiom-clean) ·
-≈119 experimental CI-green instilled cards (`data.js` `KERNEL.experimental_count_approx`;
-49 of them carry EXPERIMENTAL formula records in the atlas) · trust never 100% · no AGI.
+≈119 experimental CI-green instilled cards (`data.js` `KERNEL.experimental_count_approx`) ·
+the atlas itself carries 49 EXPERIMENTAL formula records, 8 of which `data.js` labels
+"not a Lean theorem" (quantum-bio models, a physics postulate, engineering constraints) ·
+trust never 100% · no AGI.
 
 **Supply-chain posture:** this Space runs a hardened Python application runtime that serves
 the sovereign static atlas and its read-only evidence, integrity, and v7 API routes
@@ -342,7 +344,7 @@ title bar of the 3D atlas) renders the governed organism as one living body
 no-CDN posture as `index.html` — served by this Space at `/live-body.html`.
 It does **not** modify the 3D engine (`app.js`, `data.js`).
 
-Every probe is a read-only GET to the a11oy host
+Every organ probe is a read-only GET to the a11oy host
 (`https://szlholdings-a11oy.hf.space`), and an organ glows LIVE only on a real
 2xx + JSON answer:
 
