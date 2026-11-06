@@ -232,7 +232,7 @@ CAPABILITIES = [
         "authority_state": "READ_ONLY",
         "formula_refs": ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"],
         "provenance": [
-            "https://github.com/szl-holdings/szl-organ-integrity",
+            "https://github.com/szl-holdings/anatomy/blob/main/organ_integrity.py",
             "https://a-11-oy.com/organs/integrity",
             "https://huggingface.co/spaces/SZLHOLDINGS/szl-khipu",
         ],
