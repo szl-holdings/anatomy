@@ -5,16 +5,36 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "anatomy"
 version = "0.1.0"
-description = "SZL Living Anatomy — 3D navigable governed-AI organ substrate. Visualizes the 5 organs (reasoning cortex, trust gate, receipt bus, consensus, egress) powering a11oy + killinchu. Doctrine v11 LOCKED ·"
+description = "SZL Living Anatomy — 3D navigable atlas of the governed-AI organ substrate (reasoning cortex, trust gate, receipt bus, consensus, egress) behind a11oy and killinchu, with its read-only Python evidence runtime. Doctrine v11 LOCKED · 8 locked-proven formulas · Λ = Conjecture 1."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Stephen Lutar", email = "stephen@szlholdings.com" }]
+# Mirrors requirements.txt, which is what the Space image installs.
 dependencies = ["fastapi==0.115.12", "uvicorn==0.34.2"]
+# A Hugging Face Space runtime, not a library: the private classifier makes any
+# accidental PyPI upload fail (the importable package name `lib` is generic).
+classifiers = [
+    "Private :: Do Not Upload",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: JavaScript",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+[project.optional-dependencies]
+# Same tools the CI contract jobs install (httpx backs fastapi.testclient).
+test = ["pytest==8.3.5", "httpx==0.28.1"]
 
 [project.urls]
 Homepage = "https://a-11-oy.com"
-Repository = "https://github.com/szl-holdings/anatomy"
+Source = "https://github.com/szl-holdings/anatomy"
+Issues = "https://github.com/szl-holdings/anatomy/issues"
 
 [tool.setuptools]
 packages = ["lib"]
@@ -26,3 +46,6 @@ extend-exclude = ["build", "dist", ".venv", "node_modules"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
+# spaces/cosmos/tests has its own server.py and runs from spaces/cosmos (see
+# cosmos-hf-sync.yml); collecting it from the root shadows ./server.py.
+testpaths = ["tests"]
