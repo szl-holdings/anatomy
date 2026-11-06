@@ -16,4 +16,6 @@ jobs:
       contents: read
       security-events: write
     with:
-      languages: '["javascript-typescript"]'
+      # The served runtime is Python (server.py, living_runtime.py, ...);
+      # the atlas, instruments and QA harnesses are JavaScript.
+      languages: '["javascript-typescript","python"]'
