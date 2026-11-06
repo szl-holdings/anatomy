@@ -3,7 +3,10 @@
 ## Production contract
 
 The public Living Anatomy surface is the creator-profile Hugging Face Space
-`betterwithage/anatomy`, served at `https://betterwithage-anatomy.hf.space`.
+`betterwithage/anatomy` (declared origin `https://betterwithage-anatomy.hf.space`).
+Live readback uses the exact `hf.space` host the Hub reports for that id
+(`scripts/hf_space_origin.py`): when the Hub API redirects the declared id and
+reports another host, the declared alias can answer 404 while the Space runs.
 GitHub `szl-holdings/anatomy` is the runtime source of truth. The Space is a
 source-bound deployment mirror, not an independent source tree and not a second
 command plane.

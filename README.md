@@ -496,10 +496,12 @@ live products it depicts:
 ```bash
 # Confirm the live doctrine posture the heart reports
 curl -s https://szlholdings-a11oy.hf.space/api/a11oy/v1/honest | jq .kernel_commit   # => "c7c0ba17"
-# Inspect and replay the Anatomy bundle receipt (result is STRUCTURAL-ONLY, not signed)
-curl -s https://betterwithage-anatomy.hf.space/api/anatomy/v1/receipt -o anatomy-receipt.json
+# Inspect and replay the Anatomy bundle receipt (result is STRUCTURAL-ONLY, not signed).
+# Read the declared Space betterwithage/anatomy back on the hf.space host the Hub reports for it.
+ANATOMY="$(curl -sL https://huggingface.co/api/spaces/betterwithage/anatomy | jq -r .host)"
+curl -s "$ANATOMY/api/anatomy/v1/receipt" -o anatomy-receipt.json
 curl -s -X POST -H "Content-Type: application/json" --data-binary @anatomy-receipt.json \
-  https://betterwithage-anatomy.hf.space/api/anatomy/v1/verify/receipt | jq .verdict
+  "$ANATOMY/api/anatomy/v1/verify/receipt" | jq .verdict
 # Verify signed governed receipts offline with the independent spec verifier
 git clone https://github.com/szl-holdings/governed-receipt-spec
 python governed-receipt-spec/verify.py <receipts.json>
