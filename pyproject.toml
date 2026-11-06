@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Stephen Lutar", email = "stephen@szlholdings.com" }]
 # Mirrors requirements.txt, which is what the Space image installs.
-dependencies = ["fastapi==0.115.12", "uvicorn==0.34.2"]
+dependencies = ["fastapi==0.162.0", "uvicorn==0.54.0"]
 # A Hugging Face Space runtime, not a library: the private classifier makes any
 # accidental PyPI upload fail (the importable package name `lib` is generic).
 classifiers = [
