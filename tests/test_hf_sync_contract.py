@@ -59,6 +59,47 @@ class HfSyncContractTest(unittest.TestCase):
         )
         self.assertNotIn('SPACE_ID = "SZLHOLDINGS/anatomy"', self.publisher)
 
+    def test_readback_binds_to_the_hub_reported_exact_hf_space_host(self) -> None:
+        # The declared creator id and origin stay declared (szl-holdings/a11oy#3239);
+        # the publisher and the refinement readback follow the exact hf.space host
+        # the Hub reports for SPACE_ID. Behaviour: test_hub_reported_readback.py.
+        refinement = Path("scripts/verify_refinement_observatory.py").read_text(encoding="utf-8")
+        for contract in (
+            "from hf_space_origin import exact_space_host",
+            "DECLARED_LIVE_BASE = LIVE_BASE",
+            "info = api.space_info(repo_id=SPACE_ID)",
+            'resolved = exact_space_host(getattr(info, "host", None))',
+            "    ensure_destination(api)\n    resolve_live_base(api)\n",
+        ):
+            self.assertIn(contract, self.publisher)
+        for contract in (
+            "from hf_space_origin import hub_reported_origin",
+            'SPACE_ID = "betterwithage/anatomy"',
+            "base = hub_reported_origin(SPACE_ID)",
+        ):
+            self.assertIn(contract, refinement)
+        # The Hub-reported host is observed at run time, never hard-coded, and no
+        # readback repoints the declared Space id.
+        for text in (self.publisher, refinement):
+            self.assertNotIn("SZLHOLDINGS/anatomy", text)
+            self.assertNotIn("szlholdings-anatomy.hf.space", text)
+
+    def test_live_witness_reads_back_on_the_hub_reported_host(self) -> None:
+        # Same rule for the Holographic v7 live witness, which also records both
+        # origins in its receipt. Behaviour: test_live_witness_origin.py.
+        witness = Path(".github/workflows/holographic-v7-live-witness.yml").read_text(encoding="utf-8")
+        for contract in (
+            "SPACE_ID: betterwithage/anatomy",
+            "LIVE_ORIGIN: https://betterwithage-anatomy.hf.space",
+            'if LIVE_ORIGIN="$(python scripts/hf_space_origin.py "$SPACE_ID")"; then',
+            '"origin": os.environ["LIVE_ORIGIN"] or None,',
+            '"declared_origin": os.environ["DECLARED_LIVE_ORIGIN"],',
+            "- scripts/hf_space_origin.py",
+        ):
+            self.assertIn(contract, witness)
+        self.assertNotIn("SZLHOLDINGS/anatomy", witness)
+        self.assertNotIn("szlholdings-anatomy.hf.space", witness)
+
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)
         self.assertNotIn("huggingface_hub>=", self.workflow)
