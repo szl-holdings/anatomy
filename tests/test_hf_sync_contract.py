@@ -84,6 +84,22 @@ class HfSyncContractTest(unittest.TestCase):
             self.assertNotIn("SZLHOLDINGS/anatomy", text)
             self.assertNotIn("szlholdings-anatomy.hf.space", text)
 
+    def test_live_witness_reads_back_on_the_hub_reported_host(self) -> None:
+        # Same rule for the Holographic v7 live witness, which also records both
+        # origins in its receipt. Behaviour: test_live_witness_origin.py.
+        witness = Path(".github/workflows/holographic-v7-live-witness.yml").read_text(encoding="utf-8")
+        for contract in (
+            "SPACE_ID: betterwithage/anatomy",
+            "LIVE_ORIGIN: https://betterwithage-anatomy.hf.space",
+            'if LIVE_ORIGIN="$(python scripts/hf_space_origin.py "$SPACE_ID")"; then',
+            '"origin": os.environ["LIVE_ORIGIN"] or None,',
+            '"declared_origin": os.environ["DECLARED_LIVE_ORIGIN"],',
+            "- scripts/hf_space_origin.py",
+        ):
+            self.assertIn(contract, witness)
+        self.assertNotIn("SZLHOLDINGS/anatomy", witness)
+        self.assertNotIn("szlholdings-anatomy.hf.space", witness)
+
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)
         self.assertNotIn("huggingface_hub>=", self.workflow)

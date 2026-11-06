@@ -12,6 +12,7 @@ on:
       - Dockerfile
       - scripts/materialize_second_brain.py
       - scripts/sync_hf_creator_profile.py
+      - scripts/hf_space_origin.py
       - .github/workflows/hf-sync.yml
       - .github/workflows/holographic-v7-live-witness.yml
   schedule:
@@ -26,6 +27,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  SPACE_ID: betterwithage/anatomy
+  # Declared creator-profile origin. The live job reads back on the exact
+  # hf.space host the Hub reports for SPACE_ID and records both in the receipt.
   LIVE_ORIGIN: https://betterwithage-anatomy.hf.space
   RECEIPT: reports/holographic-v7-live-witness.json
 
@@ -56,11 +60,14 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-cache-dir \
             -r requirements.txt "pytest==8.3.5" "httpx>=0.27,<1"
-          python -m py_compile frontier_runtime.py scripts/materialize_second_brain.py
+          python -m py_compile frontier_runtime.py scripts/materialize_second_brain.py \
+            scripts/hf_space_origin.py
           node --check holographic-v7.js
           python -m pytest -q \
             tests/test_frontier_runtime.py \
-            tests/test_holographic_v7_contract.py
+            tests/test_holographic_v7_contract.py \
+            tests/test_hub_reported_readback.py \
+            tests/test_live_witness_origin.py
           git diff --check
 
   live:
@@ -89,9 +96,25 @@ jobs:
           mkdir -p reports /tmp/anatomy-v7-live
           expected="$(git rev-parse HEAD)"
           export EXPECTED_SOURCE_REVISION="$expected"
+          export DECLARED_LIVE_ORIGIN="$LIVE_ORIGIN"
           deadline=$(( $(date +%s) + 1200 ))
           passed=false
           last_reason="deployment has not converged"
+
+          # The declared alias can answer 404 while the Hub serves SPACE_ID from
+          # another hf.space label. Read back only on the exact origin the Hub
+          # reports for SPACE_ID; without one nothing is probed and the receipt
+          # records UNAVAILABLE.
+          if LIVE_ORIGIN="$(python scripts/hf_space_origin.py "$SPACE_ID")"; then
+            if [ "$LIVE_ORIGIN" != "$DECLARED_LIVE_ORIGIN" ]; then
+              echo "::notice::Hub reports ${SPACE_ID} on ${LIVE_ORIGIN}; declared origin ${DECLARED_LIVE_ORIGIN}. Reading back on the Hub-reported host."
+            fi
+          else
+            LIVE_ORIGIN=""
+            deadline=0
+            last_reason="the Hub reported no exact https hf.space origin for ${SPACE_ID}"
+          fi
+          export LIVE_ORIGIN
 
           while [ "$(date +%s)" -lt "$deadline" ]; do
             set +e
@@ -219,6 +242,9 @@ jobs:
               "schema": "szl.anatomy.holographic-v7-live-witness/v1",
               "state": "LIVE" if os.environ["LIVE_PASSED"] == "true" else "UNAVAILABLE",
               "source_repository": "szl-holdings/anatomy",
+              "space": os.environ["SPACE_ID"],
+              "origin": os.environ["LIVE_ORIGIN"] or None,
+              "declared_origin": os.environ["DECLARED_LIVE_ORIGIN"],
               "expected_source_revision": os.environ["EXPECTED_SOURCE_REVISION"],
               "observed_source_revision": (source.get("source") or {}).get("commit"),
               "observed_hf_revision": (source.get("deployment") or {}).get("hf_revision"),
