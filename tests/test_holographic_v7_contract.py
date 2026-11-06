@@ -153,8 +153,8 @@ def test_creator_profile_and_v7_truth_are_documented() -> None:
     readme = read("README.md")
     contract = read("docs/LIVING_ANATOMY_SECOND_BRAIN.md")
     for document in (readme, contract):
-        assert "betterwithage/anatomy" in document
-        assert "SZLHOLDINGS/anatomy" not in document
+        assert "SZLHOLDINGS/anatomy" in document
+        assert "betterwithage/anatomy" not in document
         assert "575" in document
         assert "HANDLES_ONLY" in document
         assert "Conjecture 1" in document

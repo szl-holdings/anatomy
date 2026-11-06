@@ -1,0 +1,17 @@
+{
+  "schema": "szl.anatomy.destination-decision/v1",
+  "decision": "The canonical Anatomy destination is the organization identity SZLHOLDINGS/anatomy (huggingface.co/spaces/SZLHOLDINGS/anatomy). The creator-profile destination (betterwithage/anatomy, betterwithage-anatomy.hf.space) is retired: its hostname no longer serves.",
+  "decided_by": "Stephen P. Lutar Jr. (owner)",
+  "decided_at": "2026-11-06",
+  "authorization": "Owner approval in the operational session: 'i approve get it all operational and done now'",
+  "evidence": {
+    "org_host_serving": "Organization hostname served version, source and Brain health with source-bound HF revision (audit 2026-11-06)",
+    "creator_host": "https://betterwithage-anatomy.hf.space returned 404 at the same audit"
+  },
+  "changes": [
+    "scripts/sync_hf_creator_profile.py: SPACE_ID, EXPECTED_IDENTITY, LIVE_BASE now reference the organization destination",
+    ".github/workflows/hf-sync.yml: publish step renamed to the organization destination",
+    "README.surface.json: primary_url updated to the organization Space"
+  ],
+  "preserved": "Historical receipts (MIGRATION_RECEIPT.json, hf-deploy-manifest.json for the cosmos Space) are unchanged; this decision is recorded additively, not by editing history."
+}

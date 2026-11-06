@@ -20,7 +20,7 @@ class ObservationPublicationTest(unittest.TestCase):
         functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
         self.assertEqual({node.name for node in functions}, names)
         self.ns = {
-            "Any": Any, "HfApi": object, "SPACE_ID": "betterwithage/anatomy",
+            "Any": Any, "HfApi": object, "SPACE_ID": "SZLHOLDINGS/anatomy",
             "current_protected_main": lambda repository, token: SOURCE,
         }
         exec(compile(ast.Module(body=functions, type_ignores=[]), "<publisher checks>", "exec"), self.ns)

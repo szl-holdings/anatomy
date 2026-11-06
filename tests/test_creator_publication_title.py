@@ -68,11 +68,11 @@ class CreatorPublicationTitleTest(unittest.TestCase):
         if self.fail_transport:
             raise TimeoutError('offline unavailable fixture')
         url = request.full_url
-        if url == 'https://huggingface.co/api/spaces/betterwithage/anatomy/commits/main?limit=1':
+        if url == 'https://huggingface.co/api/spaces/SZLHOLDINGS/anatomy/commits/main?limit=1':
             value = json.dumps(self.commits).encode()
-        elif url == f'https://huggingface.co/spaces/betterwithage/anatomy/commit/{REVISION}.diff':
+        elif url == f'https://huggingface.co/spaces/SZLHOLDINGS/anatomy/commit/{REVISION}.diff':
             value = self.diff.encode()
-        elif url == f'https://huggingface.co/spaces/betterwithage/anatomy/resolve/{REVISION}/hf-deploy-manifest.json':
+        elif url == f'https://huggingface.co/spaces/SZLHOLDINGS/anatomy/resolve/{REVISION}/hf-deploy-manifest.json':
             value = json.dumps(self.manifest).encode()
         else:
             raise AssertionError('Unexpected verifier URL: ' + url)
