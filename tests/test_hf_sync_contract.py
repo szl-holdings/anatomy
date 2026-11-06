@@ -12,6 +12,7 @@ class HfSyncContractTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
         cls.publisher = PUBLISHER.read_text(encoding="utf-8")
+        cls.witness_workflow = Path(".github/workflows/holographic-v7-live-witness.yml").read_text(encoding="utf-8")
         cls.release = cls.workflow + "\n" + cls.publisher
         cls.readme = README.read_text(encoding="utf-8")
 
@@ -58,6 +59,23 @@ class HfSyncContractTest(unittest.TestCase):
             self.workflow,
         )
         self.assertNotIn('SPACE_ID = "SZLHOLDINGS/anatomy"', self.publisher)
+
+    def test_readback_binds_to_the_hub_reported_exact_hf_space_host(self) -> None:
+        # The declared creator origin stays declared; live readback follows the
+        # host the Hub reports for SPACE_ID (the API redirects after a namespace
+        # transfer) and refuses anything that is not an exact hf.space origin.
+        self.assertIn("DECLARED_LIVE_BASE = LIVE_BASE", self.publisher)
+        self.assertIn("def exact_space_host(value: object) -> str:", self.publisher)
+        self.assertIn("def resolve_live_base(api: HfApi) -> str:", self.publisher)
+        self.assertIn("info = api.space_info(repo_id=SPACE_ID)", self.publisher)
+        self.assertIn('exact_space_host(getattr(info, "host", None))', self.publisher)
+        self.assertIn(
+            "    ensure_destination(api)\n    resolve_live_base(api)\n",
+            self.publisher,
+        )
+        self.assertIn("Resolve the Hub-reported Space host", self.witness_workflow)
+        self.assertIn('echo "LIVE_ORIGIN=${host}" >> "$GITHUB_ENV"', self.witness_workflow)
+        self.assertIn("hf\\.space$", self.witness_workflow)
 
     def test_release_tooling_is_exactly_pinned(self) -> None:
         self.assertIn("huggingface_hub==1.23.0", self.workflow)

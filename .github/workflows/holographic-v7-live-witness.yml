@@ -26,6 +26,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  SPACE_ID: betterwithage/anatomy
+  # Declared creator-profile origin. The live job re-binds LIVE_ORIGIN to the
+  # exact hf.space host the Hub reports for SPACE_ID before any readback.
   LIVE_ORIGIN: https://betterwithage-anatomy.hf.space
   RECEIPT: reports/holographic-v7-live-witness.json
 
@@ -81,6 +84,24 @@ jobs:
           ref: main
           fetch-depth: 1
           persist-credentials: false
+
+      - name: Resolve the Hub-reported Space host
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="$(curl --fail --silent --show-error --location --max-time 25 \
+            -H 'Accept: application/json' \
+            "https://huggingface.co/api/spaces/${SPACE_ID}" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin).get("host") or "")')"
+          if ! [[ "$host" =~ ^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.hf\.space$ ]]; then
+            echo "::error::Hub-reported host for ${SPACE_ID} is not an exact hf.space origin: '${host}'"
+            exit 1
+          fi
+          if [ "$host" != "$LIVE_ORIGIN" ]; then
+            echo "::notice::Hub reports ${SPACE_ID} on ${host}; declared origin ${LIVE_ORIGIN}. Reading back on the Hub-reported host."
+          fi
+          echo "DECLARED_LIVE_ORIGIN=${LIVE_ORIGIN}" >> "$GITHUB_ENV"
+          echo "LIVE_ORIGIN=${host}" >> "$GITHUB_ENV"
 
       - name: Wait for exact source-bound Holographic v7
         shell: bash
