@@ -725,10 +725,17 @@ def main() -> None:
     api = HfApi(token=hf_token)
     identity = api.whoami(token=hf_token)
     identity_name = str(identity.get("name") or identity.get("fullname") or "")
-    if identity_name.lower() != EXPECTED_IDENTITY:
+    # The publisher's authorization property is WRITE ACCESS to the
+    # destination, not the account NAME: the CI secret may be the org
+    # token (identity SZLHOLDINGS) or a personal token of an org member
+    # with write access. Verify access, not identity.
+    orgs = {str(o.get("name", "")).lower() for o in (identity.get("orgs") or [])}
+    is_org_itself = identity_name.lower() == EXPECTED_IDENTITY.lower()
+    is_org_member = EXPECTED_IDENTITY.lower() in orgs
+    if not (is_org_itself or is_org_member):
         raise RuntimeError(
-            f"wrong Hugging Face identity: expected {EXPECTED_IDENTITY}, "
-            f"got {identity_name!r}"
+            f"publisher is neither {EXPECTED_IDENTITY} nor one of its members: "
+            f"got {identity_name!r} (orgs: {sorted(orgs)})"
         )
     ensure_destination(api)
 
