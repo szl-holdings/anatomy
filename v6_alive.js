@@ -11,7 +11,9 @@
      - No signature verification → the panel shows UNVERIFIED / UNREACHABLE.
        We never display an unverified number as a verified one.
      - The public key is pinned below AND cross-checked against the
-       committed copy at hatun-mcp/main/PUBKEY_szlholdings-ec-p256.pem.
+       committed copy at hatun-mcp commit b8ab4f758c7a (commit-pinned URL). Both
+       must hash to PIN_SPKI_SHA256 (SHA-256 of the SPKI DER) or the panel
+       refuses to show a run as verified (SCPIN-KEY-1).
        A mismatch is displayed as a key-pin failure, not silently ignored.
      - The Hatun MCP gateway chip reads RETIRED: its standalone Hugging Face
        Space no longer exists, so no server-card fetch is attempted and no
@@ -26,7 +28,10 @@
 
   var SINK = 'https://huggingface.co/datasets/SZLHOLDINGS/test-results';
   var RUNS_URL = SINK + '/resolve/main/harness_runs.jsonl';
-  var PUBKEY_URL = 'https://raw.githubusercontent.com/szl-holdings/hatun-mcp/main/PUBKEY_szlholdings-ec-p256.pem';
+  var PUBKEY_URL = 'https://raw.githubusercontent.com/szl-holdings/hatun-mcp/b8ab4f758c7a24567c3f9ff18163fe546374dd27/PUBKEY_szlholdings-ec-p256.pem';
+  /* SHA-256 of the SPKI DER of the pinned org key (SCPIN-KEY-1). PIN_PEM and the
+     copy fetched from PUBKEY_URL must both hash to this value. */
+  var PIN_SPKI_SHA256 = '0ff4fc3ab020f7a105ec4106877480432a68782cb5e2c336cb4ec92ba00d9801';
 
   /* Pinned committed org public key (SPKI, P-256) — szlholdings-ec-p256 */
   var PIN_PEM = '-----BEGIN PUBLIC KEY-----\n'
@@ -38,6 +43,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function b64ToBytes(b64) { var bin = atob(b64.replace(/\s+/g, '')); var out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
   function pemToSpki(pem) { return b64ToBytes(pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')); }
+  function sha256Hex(bytes) { return crypto.subtle.digest('SHA-256', bytes).then(function (d) { return Array.prototype.map.call(new Uint8Array(d), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }); }
   function utf8(s) { return new TextEncoder().encode(s); }
   function concatBytes(parts) { var n = 0, i; for (i = 0; i < parts.length; i++) n += parts[i].length; var out = new Uint8Array(n), o = 0; for (i = 0; i < parts.length; i++) { out.set(parts[i], o); o += parts[i].length; } return out; }
 
@@ -66,9 +72,13 @@
     var payloadBytes = b64ToBytes(env.payload);
     var msg = pae(env.payloadType, payloadBytes);
     var sig = derToP1363(b64ToBytes(env.signatures[0].sig));
-    return crypto.subtle.importKey('spki', pemToSpki(PIN_PEM), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
-      .then(function (key) { return crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, sig, msg); })
-      .then(function (ok) { return { ok: ok, payload: JSON.parse(new TextDecoder().decode(payloadBytes)) }; });
+    var spki = pemToSpki(PIN_PEM);
+    return sha256Hex(spki).then(function (fp) {
+      if (fp !== PIN_SPKI_SHA256) return { ok: false, payload: null };
+      return crypto.subtle.importKey('spki', spki, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+        .then(function (key) { return crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, sig, msg); })
+        .then(function (ok) { return { ok: ok, payload: JSON.parse(new TextDecoder().decode(payloadBytes)) }; });
+    });
   }
 
   function fetchText(url) { return fetch(url, { mode: 'cors', credentials: 'omit', cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }); }
@@ -160,7 +170,7 @@
   function refresh() {
     var state = { status: 'UNREACHABLE', detail: '', pinMatch: null };
     var pPin = fetchText(PUBKEY_URL).then(function (t) {
-      state.pinMatch = t.replace(/\s+/g, '') === PIN_PEM.replace(/\s+/g, '');
+      return sha256Hex(pemToSpki(t)).then(function (fp) { state.pinMatch = fp === PIN_SPKI_SHA256; });
     }).catch(function () { state.pinMatch = null; });
     var pRun = fetchText(RUNS_URL).then(function (txt) {
       var lines = txt.trim().split('\n');
@@ -175,7 +185,13 @@
           .then(function (ev) { state.layers = JSON.parse(ev).layers; }).catch(function () { /* layers optional */ });
       });
     }).catch(function (e) { state.status = 'UNREACHABLE'; state.detail = 'Could not fetch the signed sink (' + e.message + ').'; });
-    Promise.all([pPin, pRun]).then(function () { render(state); });
+    Promise.all([pPin, pRun]).then(function () {
+      if (state.pinMatch === false && state.status === 'VERIFIED') {
+        state.status = 'UNVERIFIED';
+        state.detail = 'The published key does not hash to the pinned SPKI SHA-256. Refusing to display the run as verified.';
+      }
+      render(state);
+    });
   }
 
   /* ---------------- button (injected next to the v5 cluster) ---------------- */
