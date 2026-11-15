@@ -92,8 +92,7 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         css_text = css.read_text(encoding="utf-8")
         self.assertNotIn("@import", css_text)
         self.assertNotIn("url(http", css_text)
-        combined = read("v11_holo3d.js") + "
-" + css_text
+        combined = read("v11_holo3d.js") + chr(10) + css_text
         for marker in ("global-nav", "primary-nav", "GoogleAnalytics", "gtag(", "segment.com", "mixpanel"):
             self.assertNotIn(marker, combined)
             self.assertNotIn(marker, combined.lower() if marker.islower() else combined)
