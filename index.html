@@ -15,7 +15,7 @@
      JS + inline styles + WebGL canvas, so a strict nonce CSP would white-screen it.
      What this still buys: locks resource ORIGINS (no rogue external script/CDN/img),
      object-src 'none', base-uri 'self', and an explicit connect-src allow-list. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://szlholdings-a11oy.hf.space https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space https://szlholdings-sentra.hf.space; object-src 'none'; base-uri 'self'; form-action 'self'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://huggingface.co https://raw.githubusercontent.com https://szlholdings-a11oy.hf.space https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space https://szlholdings-sentra.hf.space; object-src 'none'; base-uri 'self'; form-action 'self'" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
@@ -1859,6 +1859,8 @@
   <script src="./frontier_anatomy.js"></script>
   <!-- v6 alive-proof layer (ratchet 2026-07-21): latest alive-harness run fetched from the public DSSE-signed sink and ECDSA-P256 signature-verified IN THE BROWSER before display. Additive, fail-closed, zero-CDN. -->
   <script src="./v6_alive.js"></script>
+<!-- v3 (fleet-wired, additive) - reads the public receipt chain; wired by v3_fleet.js, fail-closed -->
+<script src="./v3_fleet.js"></script>
   <!-- Neural Quant v7: source-bound Second Brain, formula/quant atlas, and bounded Ouroboros observation. Read-only, handles-only, zero CDN. -->
   <script src="./neural-quant-v7.js"></script>
   <script src="/holographic-v7.js" defer data-szl-holographic-v7="script"></script>

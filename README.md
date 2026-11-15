@@ -181,6 +181,30 @@ creating a second authority plane. The public snapshot remains 575 chunks with
 identity stays `HANDLES_ONLY`; lambda remains `Conjecture 1`, and every frontier
 candidate remains review-gated rather than promoted by the visualization.
 
+## v3 — fleet-wired layer (2026-11-15; additive, evolves v7)
+
+The **⚳ fleet v3** control wires the atlas to the estate's actual compute: it reads the
+**public receipt chain** ([SZLHOLDINGS/frontier-54-runs](https://huggingface.co/datasets/SZLHOLDINGS/frontier-54-runs))
+that every training lane and battery gate publishes to — Massed A6000 lanes and the Salad
+4090/5090 worker fleet. The body stops describing the fleet and starts reading it.
+
+- **Receipt bloodstream** — live counts of the public receipt trees (`benchmark/`, `mesh/`,
+  `receipts/`), fetched from the Hub, bounded, cached 60 s.
+- **Battery gate panel** — the pinned 2026-11-15 frontier wave, each candidate fetched,
+  typed-checked (`kind: szl.estate-battery/mass-training`, `state: MEASURED`, string score), and
+  displayed **AS MEASURED** with its own node/gpu fields. A receipt that fails the contract renders
+  `INVALID`; an unreachable chain renders `UNREACHABLE`. No number is ever shown that did not come
+  from a receipt.
+- **Fleet roster** — lanes are `DECLARED` in source (not measured); the receipts are the
+  measured facts. The panel never blurs the two.
+- **Handles only, read-only** — receipt metadata only (model, score, base, node, gpu, ts);
+  no raw candidate content; no key; promotion of any candidate remains owner-gated.
+- This layer changes nothing doctrinal: locked-proven stays exactly 8 and Λ remains Conjecture 1.
+
+The same change adds `https://huggingface.co` and `https://raw.githubusercontent.com` to the
+`connect-src` allow-list of both the served header policy (`server.py`) and the page meta policy,
+which also un-breaks the v6 alive-proof fetches that the pre-2026-11-15 policy refused.
+
 ## v6 — alive-proof layer (ratchet 2026-07-21)
 
 The **⛬ alive-proof (v6)** control closes the loop between the map and the
@@ -199,7 +223,7 @@ a signature fails, the panel says so — no fabricated green light. A signed
 GREEN run proves liveness at the time it ran, not doctrine upgrades:
 locked-proven stays exactly 8 and Λ remains Conjecture 1.
 
-**Current state (checked 2026-11-06):** the page's own Content-Security-Policy
+**Update (2026-11-15, v3 fleet layer):** the CSP `connect-src` in both `server.py` and the page meta policy now allow-lists `huggingface.co` and `raw.githubusercontent.com`, so these fetches are no longer refused by policy. The panel remains fail-closed: it still verifies the DSSE signature before showing any run. **Current state (checked 2026-11-06):** the page's own Content-Security-Policy
 `connect-src` (the `server.py` header and the `index.html` meta policy) lists
 neither `huggingface.co` nor `raw.githubusercontent.com`, so the browser refuses
 both fetches and the panel reports `UNREACHABLE`. That is the fail-closed path,

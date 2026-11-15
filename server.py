@@ -307,7 +307,7 @@ CONTENT_SECURITY_POLICY = (
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob:; "
     "font-src 'self'; "
-    "connect-src 'self' https://szlholdings-a11oy.hf.space https://a-11-oy.com "
+    "connect-src 'self' https://huggingface.co https://raw.githubusercontent.com https://szlholdings-a11oy.hf.space https://a-11-oy.com "
     "https://szlholdings-killinchu.hf.space https://szlholdings-amaru.hf.space "
     "https://szlholdings-sentra.hf.space; "
     "form-action 'self'; "
