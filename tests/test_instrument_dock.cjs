@@ -19,7 +19,7 @@ test('dock yields to every native open panel, including dynamically created lega
   // Derive panel states from their own styles so newly introduced native panels
   // cannot silently escape the dock contract. Exclude the dock rule itself.
   const nativeSources = [html.slice(0, html.indexOf('#anatomy-instruments {')),
-    ...['v5_organs.js', 'v6_alive.js'].map(file => fs.readFileSync(path.join(root, file), 'utf8'))];
+    ...['v5_organs.js', 'v6_alive.js', 'v4_holo.js'].map(file => fs.readFileSync(path.join(root, file), 'utf8'))];
   const states = new Set(nativeSources.flatMap(source =>
     [...source.matchAll(/#[\w-]+\.open\b/g)].map(match => match[0])));
   assert.ok(states.has('#v8-flow.open'));

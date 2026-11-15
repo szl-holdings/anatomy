@@ -97,6 +97,7 @@ ARTIFACT_PATHS = (
     "lib/szl_verify_widget.js",
     "v6_alive.js",
     "v3_fleet.js",
+    "v4_holo.js",
     "yachay-second-brain.js",
     "server.py",
     "hf-deploy-manifest.json",

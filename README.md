@@ -181,6 +181,27 @@ creating a second authority plane. The public snapshot remains 575 chunks with
 identity stays `HANDLES_ONLY`; lambda remains `Conjecture 1`, and every frontier
 candidate remains review-gated rather than promoted by the visualization.
 
+
+## v4 — receipt hologram / Λ·HOLO (2026-11-15; additive, evolves v3 + v7)
+
+v4_holo.js adds the first instrument that renders the receipt chain itself as a living
+organism. Every receipt file in [SZLHOLDINGS/frontier-54-runs](https://huggingface.co/datasets/SZLHOLDINGS/frontier-54-runs)
+becomes a light cell whose position, color and shimmer are deterministic functions of
+its file-name hash — **the same chain always renders the same organism: the picture is
+the hash.** The Λ spine is a declared trefoil; benchmark receipts form the cyan organ
+ring, the receipts tree the green memory ring, the mesh tree the violet halo.
+
+- The six pinned battery receipts (the 2026-11-15 frontier wave, same pins as FLEET v3)
+  render as gold cells whose pulse is driven by the receipt score **AS MEASURED**; every
+  other cell is name-bound only and labeled exactly that way — never presented as a
+  measurement. WebGL2 fail-closed (UNSUPPORTED), chain unreachable fail-closed
+  (UNREACHABLE), 60s cache, handles only, no key sent.
+- Techniques studied from the public 2026 state of the art (hex-lattice domains, cosine
+  palettes, volumetric glow, hash-deterministic placement) are re-derived in
+  self-contained GLSL — zero CDN, zero third-party code, nothing copied.
+- Doctrine v11 LOCKED unchanged; Λ remains Conjecture 1; candidate promotion stays
+  owner-gated.
+
 ## v3 — fleet-wired layer (2026-11-15; additive, evolves v7)
 
 The **⚳ fleet v3** control wires the atlas to the estate's actual compute: it reads the

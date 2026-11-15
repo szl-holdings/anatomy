@@ -1861,6 +1861,8 @@
   <script src="./v6_alive.js"></script>
 <!-- v3 (fleet-wired, additive) - reads the public receipt chain; wired by v3_fleet.js, fail-closed -->
 <script src="./v3_fleet.js"></script>
+<!-- v4 (receipt hologram, additive) - the chain rendered as a living organism; wired by v4_holo.js, fail-closed -->
+<script src="./v4_holo.js"></script>
   <!-- Neural Quant v7: source-bound Second Brain, formula/quant atlas, and bounded Ouroboros observation. Read-only, handles-only, zero CDN. -->
   <script src="./neural-quant-v7.js"></script>
   <script src="/holographic-v7.js" defer data-szl-holographic-v7="script"></script>
@@ -1907,7 +1909,8 @@
     body:has(#panel.open, #atlas.open, #forecast.open, #qbio.open,
       #v8-flow.open, #v5panel.open, #v6panel.open,
       #tour.show, #v9-tour.show, #btn-v10-lens.active,
-      #vf-static.show, .ux-sheet, #dissect.sheet-open, #ux-more-menu.open) #anatomy-instruments {
+      #vf-static.show, .ux-sheet, #dissect.sheet-open, #ux-more-menu.open,
+      #v4holo.open) #anatomy-instruments {
       visibility: hidden;
     }
   </style>
