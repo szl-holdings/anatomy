@@ -1,0 +1,38 @@
+/* SPDX-License-Identifier: Apache-2.0 — Living Anatomy Holographic v11 (holo3d).
+   Functional open/close display rules live in index.html so the instrument-dock
+   contract can derive them; this file carries cosmetics only. */
+#v11-holo-fab{position:fixed;right:max(24px, env(safe-area-inset-right));bottom:max(24px, env(safe-area-inset-bottom));
+  z-index:23;display:inline-flex;align-items:center;gap:8px;min-height:44px;
+  font-family:var(--font-m);font-size:11px;letter-spacing:.06em;padding:10px 15px;border-radius:9px;
+  color:var(--text);background:rgba(13,18,33,.82);border:1px solid var(--border-strong);cursor:pointer;
+  box-shadow:var(--shadow);backdrop-filter:blur(var(--blur))}
+#v11-holo-fab:hover,#v11-holo-fab:focus-visible{border-color:var(--ok)}
+#v11-holo{position:fixed;inset:3vh 3vw;z-index:31;display:none;flex-direction:column;
+  background:rgba(6,9,18,.92);border:1px solid var(--border-strong);border-radius:var(--radius);
+  box-shadow:var(--shadow)}
+#v11-holo header{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border)}
+#v11-holo header h2{margin:0;font-family:var(--font-m);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ok)}
+#v11-holo-close{font-family:var(--font-m);font-size:11px;min-height:44px;color:var(--text);background:transparent;
+  border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;cursor:pointer}
+#v11-holo .stage{position:relative;flex:1;min-height:0}
+#v11-holo-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#v11-holo-offline{position:absolute;top:14px;left:50%;transform:translateX(-50%);margin:0;
+  font-family:var(--font-m);font-size:11px;color:var(--warn);
+  background:rgba(13,18,33,.9);border:1px solid var(--warn);border-radius:999px;padding:6px 14px}
+#v11-holo-hud{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:8px;flex-wrap:wrap;
+  justify-content:center;padding:0 12px;pointer-events:none}
+.v11-chip{font:600 10.5px/1.6 var(--font-m);letter-spacing:.08em;color:var(--text);
+  background:rgba(13,18,33,.72);border:1px solid var(--border);border-radius:999px;padding:4px 12px;
+  backdrop-filter:blur(8px)}
+.v11-chip.ok{color:var(--audit);border-color:rgba(158,240,192,.35)}
+.v11-chip.off{color:var(--warn);border-color:rgba(255,126,182,.4)}
+.v11-chip.note{color:var(--gate);border-color:rgba(255,209,102,.35)}
+#v11-holo-tip{position:absolute;opacity:0;pointer-events:none;font:600 11px/1.4 var(--font-m);
+  color:#041018;background:var(--nerve);border-radius:6px;padding:3px 8px;transform:translate(-50%,-160%);
+  transition:opacity .15s}
+@media (max-width: 860px){#v11-holo{inset:2vh 2vw}}
+@media (max-width: 520px){#v11-holo-fab{right:12px;bottom:12px;padding:10px 12px}}
+@media (prefers-reduced-motion: reduce){#v11-holo,#v11-holo-fab{transition:none;animation:none}}
+@media (forced-colors: active){#v11-holo,#v11-holo-fab{border:1px solid CanvasText}}
