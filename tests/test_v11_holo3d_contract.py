@@ -31,7 +31,7 @@ class HolographicV11Holo3dContract(unittest.TestCase):
     def test_dock_yields_to_the_v11_panel(self) -> None:
         html = read("index.html")
         rule = re.search(
-            r"body:has(#panel.open,[^{]*{s*visibility:s*hidden;s*}", html
+            r"body:has\(#panel\.open,[^\{]*\{\s*visibility:\s*hidden;\s*\}", html
         )
         self.assertIsNotNone(rule)
         self.assertIn("#v11-holo.open", rule.group(0))
@@ -72,7 +72,7 @@ class HolographicV11Holo3dContract(unittest.TestCase):
             "https://",
         ):
             self.assertNotIn(forbidden, source)
-        self.assertIsNone(re.search(r".content", source))
+        self.assertIsNone(re.search(r"\.content\b", source))
 
     def test_holo3d_module_is_syntax_valid(self) -> None:
         node = shutil.which("node")
@@ -93,9 +93,9 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         self.assertNotIn("@import", css_text)
         self.assertNotIn("url(http", css_text)
         combined = read("v11_holo3d.js") + chr(10) + css_text
-        for marker in ("global-nav", "primary-nav", "GoogleAnalytics", "gtag(", "segment.com", "mixpanel"):
-            self.assertNotIn(marker, combined)
-            self.assertNotIn(marker, combined.lower() if marker.islower() else combined)
+        lowered = combined.lower()
+        for marker in ("global-nav", "primary-nav", "googleanalytics", "gtag(", "segment.com", "mixpanel"):
+            self.assertNotIn(marker, lowered)
 
     def test_receipt_is_valid(self) -> None:
         receipt = json.loads(read("docs/v11_holo3d.receipt.json"))
