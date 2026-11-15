@@ -22,6 +22,10 @@
 <title>SZL Living Anatomy — Governed Agent Body · Evidence Bay</title>
 <meta name="description" content="A navigable governed-agent anatomy with an evidence-bound capability contract: purpose, live or snapshot evidence, limits, provenance, receipts, and reproducible verification." />
 <style>
+  /* v11 holo3d panel — open/close (instrument-dock contract derives .open states here) */
+  #v11-holo{display:none}
+  #v11-holo.open{display:flex}
+
   /* ============ DESIGN TOKENS — cinematic dark scientific ============ */
   :root{
     --bg:#04060c; --bg2:#0a0e1a;
@@ -1866,6 +1870,8 @@
   <!-- Neural Quant v7: source-bound Second Brain, formula/quant atlas, and bounded Ouroboros observation. Read-only, handles-only, zero CDN. -->
   <script src="./neural-quant-v7.js"></script>
   <script src="/holographic-v7.js" defer data-szl-holographic-v7="script"></script>
+<link rel="stylesheet" href="/v11_holo3d.css" data-szl-holographic-v11="style">
+<script src="/v11_holo3d.js" defer data-szl-holographic-v11="script"></script>
   <!-- Thin YACHAY note: public Second Brain Space. Additive HUD, not a Three.js rewrite. -->
   <script src="./yachay-second-brain.js"></script>
   <script src="./szl-holo-v2.js" defer data-szl-holo-space-asset="script-v2"></script>
@@ -1910,10 +1916,24 @@
       #v8-flow.open, #v5panel.open, #v6panel.open,
       #tour.show, #v9-tour.show, #btn-v10-lens.active,
       #vf-static.show, .ux-sheet, #dissect.sheet-open, #ux-more-menu.open,
-      #v4holo.open) #anatomy-instruments {
+      #v4holo.open, #v11-holo.open) #anatomy-instruments {
       visibility: hidden;
     }
   </style>
+  <!-- v11 holo3d — fully 3D holographic constellation of the governed frontier (handles only, fail-closed) -->
+  <button id="v11-holo-fab" type="button" aria-haspopup="dialog" aria-controls="v11-holo">3D HOLO v11</button>
+  <section id="v11-holo" role="dialog" aria-modal="true" aria-label="Holographic v11 — 3D frontier constellation" aria-hidden="true">
+    <header>
+      <h2>Holographic v11 — 3D frontier constellation</h2>
+      <button id="v11-holo-close" type="button">Close (Esc)</button>
+    </header>
+    <div class="stage">
+      <canvas id="v11-holo-canvas" tabindex="0" aria-label="3D holographic constellation of governed frontier handles"></canvas>
+      <p id="v11-holo-offline" hidden>CHAIN UNREACHABLE — failing closed</p>
+      <div id="v11-holo-hud" role="status" aria-live="polite"></div>
+      <div id="v11-holo-tip" aria-hidden="true"></div>
+    </div>
+  </section>
   <script>
     window.addEventListener('load', function () {
       var dock = document.createElement('aside');

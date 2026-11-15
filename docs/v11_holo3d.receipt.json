@@ -1,0 +1,21 @@
+{
+ "schema": "szl.holo3d/v1",
+ "ts": "2026-11-15T05:04:12.493828+00:00",
+ "surface": "szl-holdings/anatomy \u2014 Living Anatomy front door",
+ "change": "Holographic v11 (holo3d): fully 3D holographic constellation of the governed frontier \u2014 handles, formula atlas and ouroboros loops rendered as an interactive WebGL constellation from the repo-vendored three.min.js (same-origin, CSP-safe), launched from a fixed FAB in a dock-yielding dialog panel.",
+ "doctrine": "Handles only (SAFE_HANDLE + HANDLES_ONLY; candidate text never crosses the public API). Layout is PROCEDURAL and labelled illustrative \u2014 never claimed as measured topology. Fails closed when the chain is unreachable. Same-origin fetch with redirect:error, credentials:same-origin, cache:no-store. No persistence APIs, no tracking, no new navigation layer.",
+ "files_changed": [
+  "v11_holo3d.js (new)",
+  "v11_holo3d.css (new)",
+  "index.html (dock-yield rule + asset pair + FAB/panel markup + display rules)",
+  "tests/test_v11_holo3d_contract.py (new)",
+  "docs/v11_holo3d.receipt.json (new)"
+ ],
+ "leaders_leveraged": [
+  "spatial-hud \u2014 instanced-particle GLSL holo rendering + glass HUD",
+  "HOLO.SYS holographic shader visualizer \u2014 scanline + fresnel + additive holo shaders",
+  "Brain-Storm neuroanatomical atlas \u2014 measured-vs-rendered honesty labelling doctrine"
+ ],
+ "owner_directive": "2026-11-15: all my spaces need to be fully 3D holographic; scrape the web for the leaders and leverage it all",
+ "receipt_author": "Vibe CTO lane (owner delegation 2026-11-15)"
+}
