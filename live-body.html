@@ -11,7 +11,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
 <title>SZL Living Anatomy — BODY v1 · the Sovereign Org as one living organism</title>
-<meta name="description" content="Body v1: the Sovereign Org rendered as one living governed organism. CatmullRom Bezier-tube vessels = the one DSSE chain; GPU pulses = REAL receipts from /api/a11oy/v1/ledger; 4 organs (Reasoning/Policy/Operator/Receipts) glow LIVE or dim UNREACHABLE on real probes; Λ (F19) drives the double-beat heartbeat + overall glow; verticals & SLSA shown honestly as ROADMAP where no endpoint exists. Honest by construction. Λ = Conjecture 1." />
+<meta name="description" content="A read-only observation schematic for Reasoning, Policy, Operator and Receipts. Pulses replay source-identified recent ledger nodes; this view does not verify signatures or the chain. LIVE requires validated fresh evidence. Static Lambda remains advisory and source-reported. Missing evidence stays unavailable." />
 <style>
   :root{
     --void:#080c14; --void2:#0b1120;
@@ -115,8 +115,8 @@
 <div class="hud" id="title"><div class="inner">
   <div class="eyebrow">SZL Living Anatomy · body v1</div>
   <h1>The Sovereign Org as <span class="accent">one living organism</span></h1>
-  <div class="sub">Vessels are the one DSSE chain. Each travelling pulse is a REAL receipt
-    from the ledger; each organ glows only on a real probe; Λ drives the heartbeat.
+  <div class="sub">Vessels are an observation schematic. Pulses replay recent ledger nodes;
+    signatures and chain integrity are not verified here. LIVE requires fresh evidence.
     <a href="./index.html">← full 3D atlas</a></div>
 </div></div>
 
@@ -128,7 +128,7 @@
   <div class="row"><span class="k">doctrine</span><b id="m-doctrine">…</b></div>
   <div id="lambda-wrap">
     <div id="lambda-val">Λ …</div>
-    <div id="lambda-meta">heartbeat driver · /v1/lambda</div>
+    <div id="lambda-meta">advisory source declaration · awaiting observation</div>
     <canvas id="ecg" width="560" height="68" aria-hidden="true"></canvas>
   </div>
 </div>
@@ -147,7 +147,7 @@
 
 <div class="hud panel" id="side">
   <div class="controls">
-    <button id="run" class="btn primary" type="button">▶ Run proactive cycle</button>
+    <button id="run" class="btn primary" type="button">▶ Replay observed receipts</button>
     <button id="refresh" class="btn" type="button">↻ Refresh</button>
   </div>
   <div id="log" aria-live="polite"></div>
@@ -161,7 +161,7 @@
 <div class="legend hud">
   <span><i style="background:var(--proof)"></i>live receipt pulse</span>
   <span><i style="background:var(--warn)"></i>denied gate</span>
-  <span><i style="background:var(--gold)"></i>Λ heartbeat</span>
+  <span><i style="background:var(--gold)"></i>Λ visualization · fresh measured evidence only</span>
   <span><i style="background:var(--dim)"></i>unreachable / roadmap</span>
 </div>
 
@@ -229,9 +229,9 @@ for (const o of LiveBody.ORGANS) {
 }
 const HEART = organMeshes.get("receipts");   // Λ heartbeat target
 
-/* ============================ vessels (the chain) ======================== *
+/* ============================ schematic vessels ========================= *
  * One CatmullRom Bezier tube from each organ to the heart (RECEIPTS). These ARE
- * the one DSSE chain; pulses travel them. <12 tubes => trivial draw-call cost. */
+ * observed receipt paths; they do not encode chain topology. <12 tubes. */
 const vessels = new Map();   // organId -> {curve, mesh}
 function makeVessel(fromPos, toPos, color) {
   const mid = fromPos.clone().lerp(toPos, 0.5);
@@ -305,15 +305,16 @@ for (let i = 0; i < POOL; i++) {
     color: new THREE.Color(K.proof), denied: false, dir: 1 });
 }
 function spawnPulse(organId, color, denied) {
-  const v = vessels.get(organId) || vessels.get("policy");
-  if (!v) return;
+  const v = vessels.get(organId);
+  if (!v) return false; // unclassified/hub records never invent a policy origin
   const p = pulseCore.find((x) => !x.active);
-  if (!p) return;   // pool exhausted this frame; honest backpressure (no over-budget spawns)
+  if (!p) return false;   // pool exhausted; count actual allocations only
   p.active = true; p.t = 0; p.dir = 1; p.denied = !!denied;
   p.speed = 0.45 + Math.random() * 0.2;
   p.curve = v.curve; p.color.set(denied ? K.warn : (color || K.proof));
   p.core.material.color.copy(p.color); p.gl.material.color.copy(p.color);
   p.grp.visible = true;
+  return true;
 }
 
 /* ============================ HUD: organ rows ============================ */
@@ -334,8 +335,9 @@ function setOrganDot(row, state, color) {
 }
 
 /* ============================ live data wiring =========================== */
-const STATE = { lambda: 0.90, lambdaPass: true, organLive: {}, lastSeq: -1, immune: 0 };
+const STATE = { lambda: null, lambdaPass: null, lambdaObservation: null, organLive: {}, organObservations: {}, immune: 0 };
 let seenIds = new Set();
+const escaped = (value) => String(value).replace(/[&<>"']/g, (c) => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"})[c]);
 
 function logLine(html) {
   const el = $("log");
@@ -346,16 +348,17 @@ function logLine(html) {
 async function refreshOrgans() {
   await Promise.all(LiveBody.ORGANS.map(async (o) => {
     const r = await LiveBody.probeOrgan(o);
+    STATE.organObservations[o.id] = r;
     const row = organRows.get(o.id);
     row.dataset.state = r.status;
     const od = row.querySelector(".od");
-    if (r.status === LiveBody.STATUS.LIVE) {
+    if (LiveBody.isFreshLive(r)) {
       od.textContent = r.detail; setOrganDot(row, "live", o.color);
       STATE.organLive[o.id] = true;
       const om = organMeshes.get(o.id);
       om.mat.emissiveIntensity = 0.6;        // healthy glow
     } else {
-      od.textContent = `unreachable — ${r.detail} · honest empty-state`;
+      od.textContent = `${r.status} — ${r.detail}`;
       setOrganDot(row, "unreachable"); STATE.organLive[o.id] = false;
       organMeshes.get(o.id).mat.emissiveIntensity = 0.06;   // dim, honest
     }
@@ -370,45 +373,47 @@ async function refreshMind() {
     $("m-backend").textContent = "unreachable"; $("m-mode").textContent = m.why || "—";
     $("m-doctrine").textContent = "—"; return;
   }
-  if (m.sovereign === true) { sov.className = "badge sov-true"; sov.textContent = "true (local serves)"; }
-  else { sov.className = "badge sov-false"; sov.textContent = "false (router serves)"; }
+  sov.className = "badge sov-unknown";
+  sov.textContent = `${m.sovereign} (${m.status})`;
   $("m-backend").textContent = m.backend; $("m-mode").textContent = m.mode;
   $("m-doctrine").textContent = m.doctrine || "—";
 }
 
 async function refreshLambda() {
   const d = await LiveBody.fetchLambda();
+  STATE.lambda = null; STATE.lambdaPass = null; STATE.lambdaObservation = d;
   if (!d.reachable || d.lambda == null) {
-    $("lambda-val").textContent = "Λ unreachable";
+    $("lambda-val").textContent = `Λ ${d.status}`;
     $("lambda-meta").textContent = `${d.why || "no data"} · honest empty-state`;
     return;
   }
-  STATE.lambda = d.lambda; STATE.lambdaPass = d.pass;
+  if (LiveBody.isFreshLive(d)) { STATE.lambda = d.lambda; STATE.lambdaPass = d.pass; }
   $("lambda-val").textContent = `Λ ${d.lambda.toFixed(5)}`;
   $("lambda-meta").textContent =
-    `${d.pass ? "≥" : "<"} floor ${d.floor} · ${d.axes.length}-axis ${d.aggregate ? "· " + d.aggregate.split("(")[0].trim() : ""}`;
+    `${d.status} · ${d.pass ? "≥" : "<"} floor ${d.floor} · ${d.axes.length}-axis · advisory; animation is not a measurement`;
   $("h-lambda").textContent = `Λ = ${d.uniqueness}`;
 }
 
 async function refreshDoctrine() {
   const d = await LiveBody.fetchDoctrine();
-  if (!d.reachable) return;
+  if (!d.reachable) { $("h-lambda").textContent = `Λ status ${d.status}`; return; }
   $("h-lambda").textContent = `Λ = ${d.lambda}`;
 }
 
 async function refreshImmune() {
   const im = await LiveBody.fetchImmune();
-  STATE.immune = im.reachable ? im.intensity : 0;
+  STATE.immune = LiveBody.isFreshLive(im) || (im.status === LiveBody.STATUS.DEGRADED && Date.now() < im.fresh_until) ? im.intensity : 0;
+  STATE.immuneObservation = im;
   swarm.count = Math.round(STATE.immune * SWARM_MAX);
-  if (im.reachable) logLine(`<b>immune:</b> ${im.detail}`);
+  logLine(`<b>immune:</b> ${escaped(im.detail || im.why)}`);
 }
 
 /* spawn pulses for REAL receipts we haven't shown yet (honest: 1 pulse / receipt) */
 async function refreshLedger(initial) {
   const L = await LiveBody.fetchLedger();
-  if (!L.reachable) {
-    logLine(`<b>ledger:</b> UNREACHABLE — ${L.why} · no pulses faked.`);
-    return 0;
+  if (!L.reachable || !LiveBody.isFreshLive(L)) {
+    logLine(`<b>ledger:</b> ${escaped(L.status)} — ${escaped(L.why || "no fresh source observation")} · no pulses.`);
+    return null;
   }
   let spawned = 0;
   const recent = L.receipts.slice(-POOL);   // cap to pool; never exceed budget
@@ -416,42 +421,45 @@ async function refreshLedger(initial) {
     if (seenIds.has(r.id)) continue;
     seenIds.add(r.id);
     if (!initial) {                         // on refresh, only animate genuinely-new receipts
-      spawnPulse(r.organ, organMeshes.get(r.organ)?.color.getStyle(), r.denied);
-      spawned++;
+      if (spawnPulse(r.organ, organMeshes.get(r.organ)?.color.getStyle(), r.denied)) spawned++;
     }
   }
-  logLine(`<b>ledger:</b> ${L.count} receipts on the chain${spawned ? ` · +${spawned} new pulse(s)` : ""}.`);
+  const unclassified = recent.filter((r) => r.organ === "receipts").length;
+  logLine(`<b>ledger:</b> ${L.count} recent nodes returned${spawned ? ` · +${spawned} new pulse(s)` : ""} · ${unclassified} hub/unclassified (no source path) · not the chain total; signatures and chain not verified here.`);
   return L.count;
 }
 
 async function refreshAll(initial) {
-  await Promise.all([refreshOrgans(), refreshMind(), refreshLambda(), refreshDoctrine(), refreshImmune()]);
+  await Promise.all([refreshOrgans(), refreshMind(), refreshLambda(), refreshDoctrine(), refreshImmune(), window.probeOrganIntegrity()]);
   await refreshLedger(initial);
 }
 
-/* the proactive cycle: replay the REAL chain's organ order as travelling pulses */
+/* Replay source-identified recent nodes; not throughput or chain verification. */
 let running = false;
 async function runCycle() {
   if (running) return; running = true;
   const btn = $("run"); btn.setAttribute("aria-disabled", "true");
   const L = await LiveBody.fetchLedger();
-  if (!L.reachable) {
-    logLine(`<b>cycle:</b> ledger UNREACHABLE — ${L.why}; nothing faked.`);
+  if (!L.reachable || !LiveBody.isFreshLive(L)) {
+    logLine(`<b>cycle:</b> ledger ${escaped(L.status)} — ${escaped(L.why || "no fresh source observation")}; no replay.`);
     btn.removeAttribute("aria-disabled"); running = false; return;
   }
-  logLine(`<b>proactive cycle:</b> replaying ${L.receipts.length} real receipts…`);
+  logLine(`<b>receipt replay:</b> visualizing ${L.receipts.length} observed nodes; this is not live throughput…`);
+  let spawned = 0;
   for (const r of L.receipts) {
-    spawnPulse(r.organ, organMeshes.get(r.organ)?.color.getStyle(), r.denied);
+    if (!LiveBody.isFreshLive(L)) break;
+    if (spawnPulse(r.organ, organMeshes.get(r.organ)?.color.getStyle(), r.denied)) spawned++;
     await sleep(150);
   }
-  logLine(`<b>cycle complete</b> — every pulse was a real receipt (seq 0…${L.receipts.length - 1}).`);
+  logLine(`<b>replay stopped:</b> ${spawned} schematic pulses · hub/unclassified nodes have no source path · no signature or chain verification claimed.`);
   btn.removeAttribute("aria-disabled"); running = false;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ============================ Λ heartbeat (E7) =========================== *
  * Double-beat ECG waveform; rate scales with Λ. Drives heart scale + emissive
- * and the overall organism glow. Honest: when Λ is unreachable it flatlines. */
+ * and the overall organism glow. Declarations, absent and stale evidence flatline.
+ * The waveform is a visualization, never a measured time-series. */
 const ecg = $("ecg"), ectx = ecg.getContext("2d");
 let beatPhase = 0;
 function heartbeatEnvelope(phase) {
@@ -461,11 +469,12 @@ function heartbeatEnvelope(phase) {
 }
 function drawECG() {
   const w = ecg.width, h = ecg.height; ectx.clearRect(0, 0, w, h);
-  ectx.strokeStyle = STATE.lambdaPass ? K.gold : K.warn; ectx.lineWidth = 1.6;
+  const active = LiveBody.isFreshLive(STATE.lambdaObservation);
+  ectx.strokeStyle = active ? (STATE.lambdaPass ? K.gold : K.warn) : K.dim; ectx.lineWidth = 1.6;
   ectx.beginPath();
   for (let x = 0; x <= w; x++) {
     const ph = ((x / w) + beatPhase) % 1;
-    const y = h * 0.5 - heartbeatEnvelope(ph) * h * 0.42;
+    const y = h * 0.5 - (active ? heartbeatEnvelope(ph) : 0) * h * 0.42;
     x === 0 ? ectx.moveTo(x, y) : ectx.lineTo(x, y);
   }
   ectx.stroke();
@@ -475,10 +484,27 @@ function drawECG() {
 let last = performance.now(), dragX = 0, dragY = 0, autoSpin = 0.04;
 function animate(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  LiveBody.refreshIntegrityView();
   // heartbeat rate from Λ (0.90→~0.8Hz, 1.0→~1.2Hz)
-  const rate = 0.8 + Math.max(0, STATE.lambda - 0.9) * 4;
-  beatPhase = (beatPhase + dt * rate) % 1;
-  const env = heartbeatEnvelope(beatPhase);
+  const active = LiveBody.isFreshLive(STATE.lambdaObservation);
+  const rate = active ? 0.8 + Math.max(0, STATE.lambda - 0.9) * 4 : 0;
+  beatPhase = active ? (beatPhase + dt * rate) % 1 : 0;
+  const env = active ? heartbeatEnvelope(beatPhase) : 0;
+  if (!active && STATE.lambda !== null) {
+    STATE.lambda = null; STATE.lambdaPass = null;
+    $("lambda-meta").textContent = "stale observation · refresh required; heartbeat stopped";
+  }
+  for (const [id, obs] of Object.entries(STATE.organObservations)) {
+    if (STATE.organLive[id] && !LiveBody.isFreshLive(obs)) {
+      STATE.organLive[id] = false;
+      const row = organRows.get(id); row.dataset.state = "stale";
+      row.querySelector(".od").textContent = "stale observation · refresh required";
+      setOrganDot(row, "stale"); organMeshes.get(id).mat.emissiveIntensity = 0.06;
+    }
+  }
+  if (STATE.immuneObservation && Date.now() >= (STATE.immuneObservation.fresh_until || 0)) {
+    STATE.immune = 0; swarm.count = 0;
+  }
   // heart pulse + overall glow
   const s = 1 + env * 0.16; HEART.core.scale.setScalar(s);
   HEART.mat.emissiveIntensity = (STATE.organLive.receipts ? 0.55 : 0.06) + env * 0.7;
