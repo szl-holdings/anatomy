@@ -390,37 +390,55 @@ no-CDN posture as `index.html` — served by this Space at `/live-body.html`.
 It does **not** modify the 3D engine (`app.js`, `data.js`).
 
 Every organ probe is a read-only GET to the a11oy host
-(`https://szlholdings-a11oy.hf.space`), and an organ glows LIVE only on a real
-2xx + JSON answer:
+(`https://szlholdings-a11oy.hf.space`). HTTP success establishes reachability.
+An organ glows LIVE only when its schema, explicit positive evidence markers,
+and source timestamp pass validation. Observations expire after 60 seconds;
+future or missing timestamps cannot establish LIVE. Valid declarations remain
+`source-reported`, and negative evidence remains visible.
 
-| Organ | Role | Live endpoint read |
+| Organ | Read-only observation | Endpoint read |
 |---|---|---|
-| REASONING | scores Λ (13-axis) and recommends the decision | `/api/a11oy/v1/lambda` |
-| POLICY | the deny-by-default gate (F12) | `/api/a11oy/v1/honest` |
-| OPERATOR | approves and executes admitted work | `/api/a11oy/readyz` |
-| RECEIPTS | signs and replays a receipt for every action | `/api/a11oy/v1/ledger` |
+| REASONING | advisory Λ declaration; static axes are not measured telemetry | `/api/a11oy/v1/lambda` |
+| POLICY | declared doctrine lock; this does not establish gate enforcement | `/api/a11oy/v1/honest` |
+| OPERATOR | service and operator capability readiness, checked separately | `/api/a11oy/readyz` |
+| RECEIPTS | bounded recent ledger nodes; no signing or chain verification here | `/api/a11oy/v1/ledger` |
 
 The **GPU-mind posture** card reads `/api/a11oy/code/healthz`
 (`sovereign` / `backend` / `mode`); the honesty strip reads the doctrine lock
-from `/api/a11oy/v1/honest`; the immune intensity is the real fraction of mesh
-engines down from `/api/a11oy/v1/govern/health`; and the organ-integrity strip
+from `/api/a11oy/v1/honest`; immune intensity uses consistent engine counts and
+individual mesh observations from `/api/a11oy/v1/govern/health`. Animation requires
+fresh source evidence; a missing or zero denominator stays unavailable.
+The organ-integrity strip
 reads `/api/anatomy/v1/organs/integrity` on this Space, falling back to the a11oy
-command body. **Run proactive cycle** replays the real receipts on the ledger as
-pulses that travel from the organ that emitted each action to RECEIPTS. The four
+command body only on transport or schema failure. A valid blocked, unknown, or
+computed advisory response stops fallback. **Replay observed receipts** visualizes
+recent nodes using their source digest/ID and index/sequence, never positional
+identities invented by the UI. The count is the number returned, not the DAG total.
+Vessels and action routing are schematic; neither signature validity nor chain
+integrity is established by this page. Only explicit known action names select
+an organ path. Unknown schemas/actions remain hub/unclassified observations with
+no invented path, and pulse counts reflect successful allocations. The four
 verticals (insurance, defense, finance, real estate) have no live endpoint here,
 so they render in an explicit ROADMAP state and pulse only when a real receipt
 names them.
 
 **Honest by design (doctrine v11/v12):**
 - `sovereign:true` is shown **only** when `/code/healthz` reports the literal
-  `true` — never synthesized from a truthy value. If the mind is unreachable the
-  card shows `sovereign: false`. The half-state (banner sovereign while a router
-  serves) is the one outcome the view will never render.
+  `true` — never synthesized from a truthy value. It is labeled as source-reported.
+  Missing or invalid evidence shows unknown, rather than inventing `false`.
 - Energy is shown as **UNAVAILABLE**; no meter is wired.
-- **Λ is shown as Conjecture 1**, pulled live, never hardcoded as proven.
-- An unreachable endpoint degrades to an honest UNREACHABLE dim; no green light
-  is ever fabricated for an organ that did not answer.
+- **Λ remains advisory** with the source's uniqueness statement. Static Lambda
+  values remain visible without a heartbeat. A measured, timestamped value may
+  drive an illustrative waveform; that waveform is not a measured time-series.
+- Failed refresh or expiry clears live animation and organ glow. Manual refresh
+  includes the integrity strip; its prior LIVE status also expires on screen.
+- Fetch deadlines include the response body; malformed, oversized, or stalled
+  JSON cannot produce healthy observations. Unknown receipt counts remain null.
 - Read-only, sends no key, open-weight only.
+
+Run the focused regression suite with
+`node --test tests/test_live_body_observations.cjs` (Node 24). The existing
+container-contract workflow runs it alongside the other observation UI tests.
 
 `SCREENSHOT_NOTES.md` keeps the review notes for the original six-organ layout
 (2026-06-13) that Body v1 replaced on 2026-06-30.

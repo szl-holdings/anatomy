@@ -53,7 +53,7 @@ jobs:
           -W error::pytest.PytestUnhandledCoroutineWarning tests
 
       - name: Verify typed observation display behavior
-        run: node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs
+        run: node --test tests/test_dependency_observations.cjs tests/test_modal_focus.cjs tests/test_instrument_dock.cjs tests/test_live_body_observations.cjs
 
       # Headless (no browser): real covenant-cockpit.js logic against the
       # bundled receipts.sample.json; exits 1 on any failed invariant.
