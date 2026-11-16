@@ -427,7 +427,7 @@ names them.
   `true` — never synthesized from a truthy value. It is labeled as source-reported.
   Missing or invalid evidence shows unknown, rather than inventing `false`.
 - Energy is shown as **UNAVAILABLE**; no meter is wired.
-- **Λ remains advisory** with the source's uniqueness statement. Static Lambda
+- **Λ uniqueness remains Conjecture 1 (OPEN)**; the source's scoped statement and static Lambda
   values remain visible without a heartbeat. A measured, timestamped value may
   drive an illustrative waveform; that waveform is not a measured time-series.
 - Failed refresh or expiry clears live animation and organ glow. Manual refresh
