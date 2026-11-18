@@ -13,11 +13,14 @@
     ["overview", "Overview"],
     ["pipeline", "Pipeline"],
     ["formulas", "Formulas"],
+    ["ancient", "Ancient Math"],
     ["quant", "Quant"],
     ["ouroboros", "Ouroboros"],
   ];
   const state = {
     payload: null,
+    ancientPayload: null,
+    ancientLoading: false,
     loading: false,
     activeTab: "overview",
     previousFocus: null,
@@ -165,6 +168,9 @@
       }
       if (section) section.hidden = !active;
     });
+    if (tabId === "ancient" && !state.ancientPayload && !state.ancientLoading) {
+      void loadAncient();
+    }
   };
 
   const focusableNodes = () => {
@@ -484,6 +490,89 @@
     );
   };
 
+
+  // Source links are a fixed scholarly-reference allowlist; never use raw
+  // corpus HTML, dynamic HTML insertion, third-party scripts, or arbitrary provider input.
+  const safeResearchLink = (rawUrl, label) => {
+    const hosts = new Set([
+      "github.com", "www.nist.gov", "khipukamayuq.com",
+      "mathshistory.st-andrews.ac.uk", "mathworld.wolfram.com",
+      "en.wikisource.org", "www.open.edu", "www.euclids-elements.org",
+      "www.claymath.org", "www.slub-dresden.de", "www.famsi.org",
+      "maya.nmai.si.edu",
+    ]);
+    try {
+      const url = new URL(String(rawUrl || ""));
+      if (url.protocol !== "https:" || url.username || url.password ||
+          !hosts.has(url.hostname.toLowerCase())) return null;
+      const link = el("a", "nq7-item-link", label);
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.setAttribute("aria-label", "Open attributed research reference");
+      return link;
+    } catch {
+      return null;
+    }
+  };
+
+  const renderAncient = (payload) => {
+    const section = document.getElementById("nq7-section-ancient");
+    if (!section) return;
+    section.replaceChildren();
+    if (payload?.ready !== true ||
+        payload?.state !== "CURATED_RESEARCH_EXACT_EXAMPLES" ||
+        !Array.isArray(payload?.records) || payload.records.length !== 10) {
+      section.append(el("div", "nq7-error", "Curated ancient mathematics is unavailable; no historical claim is admitted."));
+      return;
+    }
+    section.append(
+      el("h3", "nq7-section-title", "Ancient mathematical traditions · attributed, not appropriated"),
+      el("p", "nq7-copy",
+        "Egyptian papyri, Greek propositions, Maya codices, and Andean khipu are distinct sources. " +
+        "Fixed, exact arithmetic examples are educational demonstrations—not manuscript decoding, " +
+        "Lean proofs, new historical discoveries, or permissions to train on museum material."),
+      makeMetricCard("Source references", String(payload.record_count),
+        "Pinned SZL context · scholarly historical links · arithmetic independently recomputed"),
+      el("p", "nq7-copy",
+        "Catalog " + shortDigest(payload.catalog_sha256) +
+        " · source pins are declared at build time, not continuously verified."),
+    );
+    const list = el("div", "nq7-list");
+    payload.records.forEach((item) => {
+      const card = el("article", "nq7-item");
+      const copy = el("div");
+      copy.append(
+        el("div", "nq7-item-title", String(item.title || item.id || "Reference")),
+        el("div", "nq7-item-meta",
+          [item.tradition, item.artifact, item.status].filter(Boolean).join(" · ")),
+        el("div", "nq7-ancient-formula", String(item.formula || "")),
+        el("p", "nq7-copy",
+          "Example: " + String(item.example || "") +
+          " · observed " + String(item.witness?.observed ?? "UNKNOWN") +
+          " / expected " + String(item.witness?.expected ?? "UNKNOWN")),
+        el("p", "nq7-copy", String(item.limit || "No interpretation admitted.")),
+        el("p", "nq7-item-meta", "SZL research lens (analogy, not origin): " + String(item.analogy || "")),
+      );
+      const links = el("div", "nq7-ancient-links");
+      for (const [key, label] of [
+        ["historical_url", "HIST"],
+        ["math_url", "MATH"],
+        ["szl_link", "SZL"],
+      ]) {
+        const anchor = safeResearchLink(item[key], label);
+        if (anchor) links.append(anchor);
+      }
+      card.append(copy, links);
+      list.append(card);
+    });
+    section.append(list);
+    section.append(el("p", "nq7-copy",
+      "Authority: fixed local arithmetic only; no historical decipherment, training, promotion, " +
+      "consequential execution, publication, or change to the eight locked SZL formulas. " +
+      "An unknown or damaged khipu cord is not a zero."));
+  };
+
   const renderQuant = (payload) => {
     const section = document.getElementById("nq7-section-quant");
     if (!section) return;
@@ -642,6 +731,10 @@
     TABS.forEach(([id]) => {
       const section = document.getElementById(`nq7-section-${id}`);
       if (!section) return;
+      if (id === "ancient" && state.ancientPayload) {
+        renderAncient(state.ancientPayload);
+        return;
+      }
       section.replaceChildren(
         el(
           "div",
@@ -651,6 +744,49 @@
       );
     });
     setNodeText("nq7-receipt", "Exact v7 source receipt unavailable.");
+  };
+
+
+  const loadAncient = async () => {
+    if (state.ancientLoading) return;
+    state.ancientLoading = true;
+    const section = document.getElementById("nq7-section-ancient");
+    if (section) section.replaceChildren(
+      el("p", "nq7-copy", "Checking the pinned research references and fixed arithmetic examples...")
+    );
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch("/api/anatomy/v1/brain/ancient-math", {
+        method: "GET",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const payload = await response.json();
+      if (!response.ok || payload?.ready !== true ||
+          payload?.evidence_state !== "COMPUTED_ARITHMETIC_ONLY" ||
+          payload?.authority?.historical_decipherment !== "NONE" ||
+          payload?.authority?.lean_proof !== "NOT_CLAIMED" ||
+          payload?.source_identity !== "PINNED_DECLARATIONS_NOT_LIVE_VERIFIED" ||
+          payload?.record_count !== 10 ||
+          !Array.isArray(payload.records) || payload.records.length !== 10 ||
+          payload.records.some((row) => row?.witness?.status !== "PASS_EXACT_ARITHMETIC")) {
+        throw new Error("unqualified ancient mathematics catalog");
+      }
+      state.ancientPayload = payload;
+      renderAncient(payload);
+    } catch {
+      state.ancientPayload = null;
+      if (section) section.replaceChildren(
+        el("div", "nq7-error",
+          "Ancient mathematics reference unavailable. No synthetic success or historical proof is inferred.")
+      );
+    } finally {
+      window.clearTimeout(timeout);
+      state.ancientLoading = false;
+    }
   };
 
   const loadData = async (force = false) => {

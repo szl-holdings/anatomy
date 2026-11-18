@@ -24,6 +24,7 @@ class FrontierSourcePackagingTest(unittest.TestCase):
         exec(compile(ast.Module(body=[function], type_ignores=[]), "<publisher files>", "exec"), namespace)
         required = (
             "README.md", "Dockerfile", "requirements.txt", "server.py", "living_runtime.py",
+            "ancient_math_atlas.py",
             "organ_integrity.py", "style.css", "favicon.svg", "frontier_runtime.py",
             "frontier_source_contract.py", "second_brain_runtime.py", "neural-quant-v7.js",
             "pipeline_observation.py",
@@ -43,6 +44,7 @@ class FrontierSourcePackagingTest(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("fixture")
             self.assertIn("frontier_source_contract.py", namespace["runtime_files"]())
+            self.assertIn("ancient_math_atlas.py", namespace["runtime_files"]())
             Path("frontier_source_contract.py").unlink()
             with self.assertRaisesRegex(RuntimeError, "frontier_source_contract.py"):
                 namespace["runtime_files"]()

@@ -21,6 +21,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 import server as anatomy_server
+from ancient_math_atlas import catalog_payload as ancient_math_catalog_payload
 from frontier_runtime import (
     ATLAS as FRONTIER_ATLAS,
     FORMULA_KINDS,
@@ -45,6 +46,7 @@ BRAIN = PublicSecondBrain()
 # Anatomy receipt before the first request can populate any receipt cache.
 _EXTRA_ARTIFACTS = (
     "living_runtime.py",
+    "ancient_math_atlas.py",
     "frontier_runtime.py",
     "frontier_source_contract.py",
     "second_brain_runtime.py",
@@ -89,6 +91,7 @@ def _living_manifest() -> dict[str, Any]:
             "brain_context": "/api/anatomy/v1/brain/context",
             "brain_frontier": "/api/anatomy/v1/brain/frontier",
             "brain_formulas": "/api/anatomy/v1/brain/formulas",
+            "ancient_math_atlas": "/api/anatomy/v1/brain/ancient-math",
             "brain_quant": "/api/anatomy/v1/brain/quant",
             "brain_ouroboros": "/api/anatomy/v1/brain/ouroboros",
             "brain_pipeline": "/api/anatomy/v1/brain/pipeline",
@@ -101,6 +104,13 @@ def _living_manifest() -> dict[str, Any]:
         }
     )
     payload["organs"] = {
+        "research_atlas": {
+            "name": "ANCIENT MATH · CURATED REFERENCES",
+            "state": ancient_math_catalog_payload()["state"],
+            "endpoint": "/api/anatomy/v1/brain/ancient-math",
+            "authority_state": "READ_ONLY",
+            "lean_proof": "NOT_CLAIMED",
+        },
         "brain": {
             "name": "YACHAY",
             "state": brain["state"],
@@ -150,6 +160,7 @@ def _living_version(force: bool = False) -> dict[str, Any]:
     payload["experienceVersion"] = "NEURAL_QUANT_V7"
     payload["runtime"] = "living-anatomy+yachay-neural-quant-v7"
     payload["secondBrainSourceRevision"] = BRAIN.source_revision
+    payload["ancientMathCatalogSha256"] = ancient_math_catalog_payload().get("catalog_sha256")
     payload["secondBrainCandidateSetSha256"] = health["frontier"][
         "candidate_set_sha256"
     ]
@@ -163,6 +174,14 @@ def _living_evidence(force: bool = False) -> dict[str, Any]:
     payload = _ORIGINAL_EVIDENCE(force=force)
     brain = BRAIN.health()
     dependencies = payload.setdefault("dependencies", {})
+    ancient = ancient_math_catalog_payload()
+    dependencies["ancientMath"] = {
+        "state": ancient["state"],
+        "recordCount": ancient["record_count"],
+        "catalogSha256": ancient.get("catalog_sha256"),
+        "authority": "READ_ONLY_FIXED_EXAMPLES",
+        "details": "/api/anatomy/v1/brain/ancient-math",
+    }
     dependencies["secondBrain"] = {
         "ready": brain["ready"],
         "state": brain["state"],
@@ -347,6 +366,19 @@ class LivingAnatomyHandler(anatomy_server.HardenedHandler):
                 status=404,
                 evidence_state="UNAVAILABLE",
                 extra_headers=self._brain_headers("UNAVAILABLE"),
+            )
+            return
+        if path == "/api/anatomy/v1/brain/ancient-math":
+            payload = ancient_math_catalog_payload()
+            self._send_json(
+                payload,
+                status=200 if payload["ready"] else 503,
+                evidence_state=str(payload["evidence_state"]),
+                extra_headers={
+                    "X-SZL-Authority": "READ_ONLY",
+                    "X-SZL-Historical-Proof": "NOT_CLAIMED",
+                    "X-SZL-Content-Access": "CURATED_METADATA_ONLY",
+                },
             )
             return
         if path == "/api/anatomy/v1/frontier/status":

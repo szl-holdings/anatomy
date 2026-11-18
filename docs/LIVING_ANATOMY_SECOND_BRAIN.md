@@ -21,6 +21,24 @@ Neural Quant v7 projects those planes into the 3D Anatomy experience together
 with the attributed formula/quant atlas, modeled review DAG, and explicitly
 qualified Ouroboros observations.
 
+## Ancient Mathematics research reference plane
+
+An additional optional read-only endpoint,
+`GET /api/anatomy/v1/brain/ancient-math`, presents ten curated historical
+and modern arithmetic examples as text-only source-attributed metadata.
+It is deliberately separate from the 30-attributed/21-executable formula
+registry, the 575-chunk Second Brain projection, the eight locked Lean
+formula IDs and the nine quant domains. All of those pre-existing counts
+and proof boundaries remain unchanged.
+
+See [Ancient Mathematics Atlas](ANCIENT_MATHEMATICS_ATLAS.md) for the
+Egyptian papyri, Euclid, Maya Codex, Andean khipu and SZL KCRC examples,
+their historical references and exact finite arithmetic witnesses.
+The publisher includes the original Python module and independently
+compares the live catalog digest. This new source plane has no private
+corpus, manuscript scrape, training, model execution, promotion, approval,
+proof certification, or production-write permissions.
+
 ## Public interfaces
 
 | Interface | Purpose |

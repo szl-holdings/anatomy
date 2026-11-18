@@ -667,3 +667,24 @@
     outline: 2px solid Highlight;
   }
 }
+
+/* Ancient mathematics: explicit provenance and exact-example instruments.
+ * Tab retains the v7 focus ring, safe-area and 44px link controls. */
+.nq7-ancient-formula {
+  margin: 8px 0;
+  color: var(--nq7-proof);
+  font: 600 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.nq7-ancient-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.nq7-ancient-links .nq7-item-link {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 9px;
+}

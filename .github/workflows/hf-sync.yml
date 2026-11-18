@@ -54,6 +54,7 @@ jobs:
           python -m py_compile \
             server.py \
             living_runtime.py \
+            ancient_math_atlas.py \
             frontier_runtime.py \
             second_brain_runtime.py \
             lib/refinement_contract.py \
