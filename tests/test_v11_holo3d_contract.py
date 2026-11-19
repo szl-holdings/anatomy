@@ -28,6 +28,18 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         self.assertEqual(html.count('data-szl-holographic-v7="style"'), 1)
         self.assertEqual(html.count('data-szl-holographic-v7="script"'), 1)
 
+    def test_v11_launch_button_joins_one_owned_dock_and_modal_overlays_fabs(self) -> None:
+        html = read("index.html")
+        css = read("v11_holo3d.css")
+        self.assertEqual(html.count('id="v11-holo-fab"'), 1)
+        self.assertIn("'szl-v7-launcher', 'v11-holo-fab', 'yachay-sb'", html)
+        self.assertIn("#anatomy-instruments #v11-holo-fab,", html)
+        self.assertIn("#anatomy-instruments #v11-holo-fab { min-height: 48px; }", html)
+        self.assertIn("body:has(#panel.open, #atlas.open", html)
+        self.assertIn("#v4holo.open, #v11-holo.open) #anatomy-instruments", html)
+        self.assertRegex(css, r"#v11-holo\{[^}]*z-index:\s*120;")
+        self.assertNotIn("z-index:31;display:none", css)
+
     def test_dock_yields_to_the_v11_panel(self) -> None:
         html = read("index.html")
         rule = re.search(
