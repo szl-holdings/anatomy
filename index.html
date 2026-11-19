@@ -1895,6 +1895,7 @@
     #anatomy-instruments #fa-launch,
     #anatomy-instruments #nq7-launcher,
     #anatomy-instruments #szl-v7-launcher,
+    #anatomy-instruments #v11-holo-fab,
     #anatomy-instruments #yachay-sb {
       position: relative;
       inset: auto;
@@ -1906,7 +1907,8 @@
     }
     #anatomy-instruments #fa-launch,
     #anatomy-instruments #nq7-launcher,
-    #anatomy-instruments #szl-v7-launcher { min-height: 48px; }
+    #anatomy-instruments #szl-v7-launcher,
+    #anatomy-instruments #v11-holo-fab { min-height: 48px; }
     #anatomy-instruments #yachay-sb { grid-column: 1 / -1; }
     #anatomy-instruments #yachay-sb .body { max-height: 40dvh; overflow: auto; }
     body.fa-open #anatomy-instruments,
@@ -1920,7 +1922,8 @@
       visibility: hidden;
     }
   </style>
-  <!-- v11 holo3d — fully 3D holographic constellation of the governed frontier (handles only, fail-closed) -->
+  <!-- v11 holo3d — source-handle-only 3D frontier; launcher joins the existing
+       instrument dock on window load to avoid stacked fixed FAB hit targets. -->
   <button id="v11-holo-fab" type="button" aria-haspopup="dialog" aria-controls="v11-holo">3D HOLO v11</button>
   <section id="v11-holo" role="dialog" aria-modal="true" aria-label="Holographic v11 — 3D frontier constellation" aria-hidden="true">
     <header>
@@ -1939,7 +1942,7 @@
       var dock = document.createElement('aside');
       dock.id = 'anatomy-instruments';
       dock.setAttribute('aria-label', 'Anatomy evidence and brain instruments');
-      ['fa-launch', 'nq7-launcher', 'szl-v7-launcher', 'yachay-sb'].forEach(function (id) {
+      ['fa-launch', 'nq7-launcher', 'szl-v7-launcher', 'v11-holo-fab', 'yachay-sb'].forEach(function (id) {
         var instrument = document.getElementById(id);
         if (instrument) dock.appendChild(instrument);
       });

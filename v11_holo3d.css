@@ -7,7 +7,9 @@
   color:var(--text);background:rgba(13,18,33,.82);border:1px solid var(--border-strong);cursor:pointer;
   box-shadow:var(--shadow);backdrop-filter:blur(var(--blur))}
 #v11-holo-fab:hover,#v11-holo-fab:focus-visible{border-color:var(--ok)}
-#v11-holo{position:fixed;inset:3vh 3vw;z-index:31;display:none;flex-direction:column;
+/* The v11 modal must sit above independent legacy floating launchers.
+   The launcher itself is moved into #anatomy-instruments (z-index:76) on load. */
+#v11-holo{position:fixed;inset:3vh 3vw;z-index:120;display:none;flex-direction:column;
   background:rgba(6,9,18,.92);border:1px solid var(--border-strong);border-radius:var(--radius);
   box-shadow:var(--shadow)}
 #v11-holo header{display:flex;align-items:center;justify-content:space-between;gap:12px;
