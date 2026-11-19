@@ -11,6 +11,7 @@ from __future__ import annotations
 import glob
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -18,6 +19,10 @@ from pathlib import Path
 from typing import Any
 
 from huggingface_hub import CommitOperationAdd, HfApi
+
+# The checked-out protected source, not a second remote or unpinned package.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from ancient_math_atlas import catalog_payload as ancient_math_catalog_payload
 
 SPACE_ID = "SZLHOLDINGS/anatomy"
 EXPECTED_IDENTITY = "SZLHOLDINGS"
@@ -97,6 +102,7 @@ def runtime_files() -> list[str]:
         "server.py",
         "organ_integrity.py",
         "living_runtime.py",
+        "ancient_math_atlas.py",
         "frontier_runtime.py",
         "frontier_source_contract.py",
         "second_brain_runtime.py",
@@ -124,6 +130,7 @@ def runtime_files() -> list[str]:
         "server.py",
         "living_runtime.py",
         "organ_integrity.py",
+        "ancient_math_atlas.py",
         "style.css",
         "favicon.svg",
         "frontier_runtime.py",
@@ -409,6 +416,9 @@ def verify_live(
     frontier_source_count: int,
     pipeline_dependency: dict[str, Any],
 ) -> None:
+    expected_ancient = ancient_math_catalog_payload()
+    if not expected_ancient["ready"] or expected_ancient["record_count"] != 10:
+        raise RuntimeError("local ancient mathematics catalog not admitted")
     last_error: Exception | None = None
     for attempt in range(24):
         try:
@@ -439,6 +449,9 @@ def verify_live(
             )
             neural = get_json(
                 LIVE_BASE + "/api/anatomy/v1/brain/neural-quant-v7?k=12"
+            )
+            ancient = get_json(
+                LIVE_BASE + "/api/anatomy/v1/brain/ancient-math"
             )
             holographic = get_json(
                 LIVE_BASE + "/api/anatomy/v1/holographic-v7?refresh=1"
@@ -471,6 +484,18 @@ def verify_live(
             )
             assert living["organs"]["neural_quant"]["locked_proven_count"] == 8
             assert living["organs"]["neural_quant"]["quant_domain_count"] == 9
+
+            assert ancient["schema"] == expected_ancient["schema"]
+            assert ancient["ready"] is True
+            assert ancient["state"] == "CURATED_RESEARCH_EXACT_EXAMPLES"
+            assert ancient["source_identity"] == "PINNED_DECLARATIONS_NOT_LIVE_VERIFIED"
+            assert ancient["record_count"] == expected_ancient["record_count"]
+            assert ancient["catalog_sha256"] == expected_ancient["catalog_sha256"]
+            assert ancient["source_pins"] == expected_ancient["source_pins"]
+            assert all(row["witness"]["status"] == "PASS_EXACT_ARITHMETIC" for row in ancient["records"])
+            assert ancient["authority"]["lean_proof"] == "NOT_CLAIMED"
+            assert ancient["authority"]["historical_decipherment"] == "NONE"
+            assert ancient["authority"]["provider_mutation"] == "NONE"
 
             assert brain["ready"] is True
             assert brain["source_revision"] == brain_revision
@@ -614,6 +639,8 @@ def verify_live(
             assert version["gitSha"] == source_revision
             assert version["deploymentRevision"] == target_sha
             assert version["secondBrainSourceRevision"] == brain_revision
+            assert version["ancientMathCatalogSha256"] == expected_ancient["catalog_sha256"]
+            assert evidence["dependencies"]["ancientMath"]["catalogSha256"] == expected_ancient["catalog_sha256"]
             assert version["secondBrainCandidateSetSha256"] == candidate_set_sha256
             assert version["experienceVersion"] == "NEURAL_QUANT_V7"
             assert evidence["gitSha"] == source_revision

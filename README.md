@@ -143,6 +143,22 @@ through the same five-part contract: **Purpose · Try · Evidence · Limits · R
   checks the typed observation contract, and uses the exact HF parent revision
   after rechecking GitHub main at the upload boundary.
 
+## Ancient mathematics — historical references with exact example witnesses
+
+The Neural Quant **Ancient Math** tab is a **read-only research reference**
+for ancient Egyptian mathematical papyri, Greek proofs, the Dresden Maya
+Codex, and Andean khipu numeration. It presents ten separately attributed,
+exactly checked **illustrative calculations**, including SZL's distinctly
+**modern** KCRC polynomial fingerprint. It neither copies manuscript texts
+nor treats an ancient record as cryptographic evidence or a new Lean theorem.
+No private graph, training, autonomous decisions, or runtime effects are added.
+
+The source-bound local API is `GET /api/anatomy/v1/brain/ancient-math`.
+Its catalog digest and source pins are inspectable. Follow
+[the source, mathematical derivations, qualifications, and references](docs/ANCIENT_MATHEMATICS_ATLAS.md).
+This section documents a proposed feature; public availability requires a
+separately authorized HF publish and independent readback.
+
 ## v7 — YACHAY Neural Quant brain
 
 The atlas now mounts a source-bound **Neural Quant v7** instrument over the
