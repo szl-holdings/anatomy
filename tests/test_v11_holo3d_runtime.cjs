@@ -163,3 +163,13 @@ test("native formula and Ouroboros handles envelope is parsed",async()=>{
   assert.match(result.fallbackText,/loops 1/);
   assert.equal(result.observedFetches.length,4);
 });
+
+test("HTTP 200 with invalid formula feed remains degraded, not green",async()=>{
+  const feeds=good();
+  feeds.formulas={ready:false,content_access:"HANDLES_ONLY",handles:handles("attributed-formula",3)};
+  const result=await mount(feeds);
+  assert.match(result.hudText,/DEGRADED SOURCE FEEDS: formulas/);
+  assert.match(result.fallbackText,/formulas 0/);
+  assert.match(result.fallbackText,/handles 2/);
+  assert.equal(result.ids["v11-holo-offline"].hidden,true);
+});
