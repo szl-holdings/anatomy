@@ -11,7 +11,7 @@ const SOURCE = fs.readFileSync(path.join(__dirname, "..", "v11_holo3d.js"), "utf
 
 class Element {
   constructor(id = "") {
-    this.id = id; this.children = []; this.events = new Map();
+    this.id = id; this.tagName = id; this.children = []; this.events = new Map();
     this.attributes = {}; this.hidden = false; this.textContent = "";
     this.className = ""; this.style = {}; this.clientWidth = 420; this.clientHeight = 320;
     this.classList = { add: () => {}, remove: () => {} };
@@ -22,6 +22,10 @@ class Element {
   setAttribute(name, value) { this.attributes[name] = value; }
   focus() {}
   querySelector(name) { return name === ".stage" ? this.stage : null; }
+  querySelectorAll(name) {
+    if (name !== "a[href], button:not([disabled])") return [];
+    return this.children.filter(e => e.tagName === "a" || e.tagName === "button");
+  }
 }
 
 function handles(kind, count) {
@@ -44,6 +48,7 @@ async function mount(feeds) {
     ids[id] = new Element(id);
   ids["v11-holo"].stage = new Element("holo-stage");
   let observedFetches = [];
+  let scheduledFrames = 0;
   const fakeFetch = async (url, opts) => {
     observedFetches.push({url, opts});
     const key = url.includes("/holographic-v7") ? "status"
@@ -75,7 +80,7 @@ async function mount(feeds) {
     body:{contains:()=>true},
     getElementById:(id)=>ids[id]||null,
     createElement:(tag)=> {
-      const elem=new Element();
+      const elem=new Element(tag);
 
       // ID assigned after append via the script; retrieve it from stage.
       Object.defineProperty(elem,"id",{
@@ -86,7 +91,7 @@ async function mount(feeds) {
     },
   };
   const sandbox={window,document,fetch:fakeFetch,AbortController,
-    cancelAnimationFrame:()=>{},requestAnimationFrame:()=>0,
+    cancelAnimationFrame:()=>{},requestAnimationFrame:()=>++scheduledFrames,
     setTimeout,clearTimeout,
   };
   vm.runInNewContext(SOURCE,sandbox,{filename:"v11_holo3d.js",timeout:1000});
@@ -95,7 +100,8 @@ async function mount(feeds) {
   const fallback=ids["v11-holo-fallback"];
   const fallbackText=fallback ? fallback.children.map(e=>String(e.textContent || "")).join(" | ") : "";
   const hudText=ids["v11-holo-hud"].children.map(e=>String(e.textContent || "")).join(" | ");
-  return { ids, fallback, fallbackText,hudText,observedFetches };
+  return { ids, fallback, fallbackText,hudText,observedFetches,
+    document, window, sandbox, frames:()=>scheduledFrames };
 }
 
 const good=()=> ({
@@ -134,6 +140,8 @@ test("source not ready is explicit HOLD and never a green renderer",async()=>{
   assert.match(result.hudText,/SOURCE STATUS HOLD/);
   assert.match(result.fallbackText,/Source status unverified/);
   assert.doesNotMatch(result.hudText,/handles 2/);
+  assert.match(result.fallbackText,/handles 0/);
+  assert.doesNotMatch(result.fallbackText,/frontier:/);
 });
 
 test("all feeds unavailable remain fail closed",async()=>{
@@ -172,4 +180,51 @@ test("HTTP 200 with invalid formula feed remains degraded, not green",async()=>{
   assert.match(result.fallbackText,/formulas 0/);
   assert.match(result.fallbackText,/handles 2/);
   assert.equal(result.ids["v11-holo-offline"].hidden,true);
+});
+test("fallback keyboard trap reaches evidence link and retry, not WebGL canvas",async()=>{
+  const {ids,fallback,document}=await mount(good());
+  const close=ids["v11-holo-close"], canvas=ids["v11-holo-canvas"];
+  const link=fallback.children.find(e=>e.tagName==="a");
+  const retry=fallback.children.find(e=>e.tagName==="button");
+  assert.ok(link && retry);
+  let focused=null;
+  for(const el of [close,canvas,link,retry]) el.focus=()=>{focused=el;};
+  const keydown=ids["v11-holo"].events.get("keydown");
+  const tab=()=>keydown({key:"Tab",shiftKey:false,preventDefault(){}});
+  document.activeElement=close;tab();assert.equal(focused,link);
+  document.activeElement=link;tab();assert.equal(focused,retry);
+  document.activeElement=retry;tab();assert.equal(focused,close);
+  assert.notEqual(focused,canvas);
+});
+
+function threeStub() {
+  const metrics={resizes:0};
+  class Object3D {
+    constructor(){this.children=[];this.rotation={x:0,y:0};this.position={set(){}};}
+    add(node){this.children.push(node);}
+  }
+  class Renderer {setPixelRatio(){} setSize(){metrics.resizes++;} dispose(){} render(){}}
+  class Camera extends Object3D {updateProjectionMatrix(){}}
+  class Geometry {setAttribute(){}}
+  class Material {constructor(opts){this.uniforms=opts?.uniforms||{};}}
+  const Simple=class {};
+  return {metrics,
+    WebGLRenderer:Renderer,Scene:Object3D,PerspectiveCamera:Camera,
+    Group:Object3D,Color:Simple,BufferGeometry:Geometry,BufferAttribute:Simple,
+    ShaderMaterial:Material,Points:Simple,LineSegments:Simple,
+    LineBasicMaterial:Simple,Mesh:Simple,IcosahedronGeometry:Simple,
+    MeshBasicMaterial:Simple,AdditiveBlending:1};
+}
+
+test("retry after WebGL recovers sizes and schedules the renderer",async()=>{
+  const result=await mount(good());
+  assert.ok(result.fallback);
+  assert.equal(result.frames(),0);
+  const stub=threeStub();
+  result.window.THREE=stub;
+  result.sandbox.THREE=stub;
+  result.fallback.children.find(e=>e.tagName==="button").events.get("click")();
+  for(let i=0;i<12;i++) await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(stub.metrics.resizes>0,"Recovered renderer must have nonzero-size initialization");
+  assert.ok(result.frames()>0,"Recovered renderer must have a render-loop request");
 });
