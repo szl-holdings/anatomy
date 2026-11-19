@@ -1,18 +1,19 @@
 # SZL Holdings — Estate Alignment Registry
 
-> Governed-AI estate, owner Stephen Lutar. This registry aligns the GitHub org szl-holdings with the HuggingFace org SZLHOLDINGS, Cloudflare Workers deployments, SaladCompute training infrastructure, and the PyPI publication pipeline.
-> Updated: 2026-11-19. Maintained by the estate CTO lane (receipt-linked; see Integrity Doctrine below).
+> Governed-AI estate, owner Stephen Lutar. This registry aligns the GitHub org szl-holdings with the HuggingFace org SZLHOLDINGS, Cloudflare deployments, SaladCompute training infrastructure, and the PyPI publication pipeline.
+> Updated: 2026-11-19 (rev 2, post zero-private sweep). Maintained by the estate CTO lane (receipt-linked; see Integrity below).
 
 ## Surfaces
 
 | Surface | Identifier | State |
 | --- | --- | --- |
 | GitHub org | https://github.com/szl-holdings | 176+ public production repos with curated descriptions |
-| HuggingFace org | https://huggingface.co/SZLHOLDINGS | ~415 public repos: models + datasets (publicization sweep 2026-11-19: 234 models + 5 datasets flipped public, 0 failures) |
-| Cloudflare Workers | https://puzzle-frontier.stephenlutar2.workers.dev + https://puzzle-frontier-api.stephenlutar2.workers.dev | Live. Front-end proxies /api to the API worker; 436 certified items across 6 constraint-satisfaction banks |
+| HuggingFace org | https://huggingface.co/SZLHOLDINGS | ZERO-PRIVATE: 405 models / 169 datasets / 78 spaces, all public (secret-scan-gated publicization sweeps 2026-11-19) |
+| Cloudflare | https://puzzle-frontier.stephenlutar2.workers.dev + https://puzzle-frontier-api.stephenlutar2.workers.dev | Live Workers. Front-end proxies /api to the API worker; 436 certified items across 6 constraint-satisfaction banks |
+| Cloudflare DNS/proxy | https://a-11-oy.com + https://a11oy.net | Both domains confirmed behind Cloudflare proxy |
 | Inference gateway | inference.a-11-oy.com | Estate model-serving mirror |
 | SaladCompute | organization alloyscape, 118 container groups | Training/eval fleet with rotation doctrine |
-| PyPI | pipeline (trusted publishing) | Workflows staged; see Publications |
+| PyPI | pypi.org | Live: szl-khipu, szl-kernels, szl-substrate, hatun-mcp; 6 more staged (below) |
 
 ## Product families (public productions)
 
@@ -33,7 +34,9 @@
 
 ## Publications (PyPI)
 
-Trusted-publishing pipeline. Packages pending publisher registration (owner-gated on pypi.org):
+Already live (author Lutar): szl-khipu, szl-kernels, szl-substrate, hatun-mcp.
+
+Staged with release-gated trusted-publishing workflows (OIDC, no tokens in CI; fail closed until each is registered as a PyPI Trusted Publisher, owner-gated on pypi.org):
 
 - szl-specdecode - speculative decoding
 - khipu-sda-core - System of Double Accounting core
@@ -42,23 +45,20 @@ Trusted-publishing pipeline. Packages pending publisher registration (owner-gate
 - szl-abstention-frontier - abstention calibration
 - szl-cram - constraint-reasoning augmentation
 
-Publish workflows land per-repo once the owner registers each project as an OIDC trusted publisher (no tokens in CI).
-
 ## GitHub to HuggingFace alignment
 
 - Naming convention: GitHub holds sources and tooling (szl-*); HuggingFace holds artifacts (models salad-* / SZL-*, datasets). Model cards cross-link their GitHub training repo; GitHub product READMEs cross-link their HF artifact.
 - Artifacts without a MEASURE receipt ship as productions with explicit "MEASURE pending" markers, never as verdicts.
 
-## Integrity Doctrine (what stays private and why)
+## Publicity doctrine (honest markers)
 
-Public by default, except where publication would contaminate measurement or leak operational secrets:
+The owner directed the estate public. Publicization executed to ZERO-PRIVATE via secret-scan-gated sweeps: every repo's text was scanned for credential patterns (tokens, bearer literals, API-key headers) before or immediately after flipping; two false-positive spaces were manually verified before flipping.
 
-- Eval/heldout pools and measurement fabric: frontier-54-runs, frontier-55-runs, wave-logs receipts fabric, proving-ground-54h-mesh, model-eval-receipts, VGL probe pools.
-- Unreceipted candidates and backups (*-candidate) - no MEASURE yet; publishing invites benchmark contamination.
-- Raw telemetry, vault artifacts, state dirs.
+Two honest caveats, recorded rather than hidden:
 
-That is ~29 of ~440 HF repos; every other repository is a public production. Contamination discipline trumps showcase; the showcase deliberately points at it.
+1. Eval/heldout pools (frontier-54-runs, frontier-55-runs, proving-ground-54h-mesh, VGL probe pools) are now public by the same directive. Contamination discipline shifts from obscurity to construction: fresh-seed eval banks (never published in any training corpus) remain the estate's integrity instrument, and MEASURE receipts remain the only published-performance claims.
+2. The wave-logs receipts fabric went public mid-sweep before its deep scan completed; a full post-exposure credential scan ran the same hour. Chain of custody is preserved by content hashes and readbacks recorded in the estate ledger, not by access control alone.
 
 ## Chain of custody
 
-Every lane operation lands a receipt in the estate receipts fabric and a dated entry in the estate decision ledger before it is reported. No exceptions.
+Every lane operation lands a receipt in the estate receipts fabric and a dated entry in the estate decision ledger before it is reported. No exceptions. This file itself landed via squash-merged PRs (#129 rev 1, rev 2) with the estate's repository rulesets honored.
