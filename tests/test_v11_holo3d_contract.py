@@ -84,6 +84,16 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_holo3d_behavioral_replay_in_node(self) -> None:
+        node = shutil.which("node")
+        if node is None:
+            self.skipTest("node unavailable for behavioral check")
+        result = subprocess.run(
+            [node, "--test", str(ROOT / "tests/test_v11_holo3d_runtime.cjs")],
+            capture_output=True, text=True, timeout=30, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_assets_are_bounded_and_add_no_nav_or_tracking_layer(self) -> None:
         js = ROOT / "v11_holo3d.js"
         css = ROOT / "v11_holo3d.css"
