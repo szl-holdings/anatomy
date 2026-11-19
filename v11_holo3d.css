@@ -36,3 +36,18 @@
 @media (max-width: 520px){#v11-holo-fab{right:12px;bottom:12px;padding:10px 12px}}
 @media (prefers-reduced-motion: reduce){#v11-holo,#v11-holo-fab{transition:none;animation:none}}
 @media (forced-colors: active){#v11-holo,#v11-holo-fab{border:1px solid CanvasText}}
+
+/* Accessible, read-only source-handle fallback when WebGL or one feed fails. */
+#v11-holo-fallback{position:absolute;inset:14px 14px 70px;z-index:2;overflow:auto;
+  padding:16px;border:1px solid var(--border-strong);border-radius:10px;
+  background:rgba(6,9,18,.95);font:12px/1.6 var(--font-m);color:var(--text)}
+#v11-holo-fallback[hidden]{display:none}
+#v11-holo-fallback p{margin:10px 0;color:var(--text-muted)}
+#v11-holo-fallback ul{max-height:26vh;overflow:auto;list-style:disc;padding-left:22px}
+#v11-holo-fallback li{overflow-wrap:anywhere}
+#v11-holo-fallback a,#v11-holo-fallback button{display:inline-block;margin:8px 10px 0 0;
+  padding:8px 12px;min-height:44px;color:var(--ok);background:transparent;
+  border:1px solid var(--border-strong);border-radius:8px}
+#v11-holo-fallback button{cursor:pointer;font:inherit}
+#v11-holo-fallback a:focus-visible,#v11-holo-fallback button:focus-visible{outline:2px solid var(--ok)}
+@media(max-width:520px){#v11-holo-fallback{inset:8px 8px 76px;padding:10px}}
