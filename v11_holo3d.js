@@ -267,9 +267,11 @@
     retry.type = "button";
     retry.textContent = "Retry source + renderer";
     retry.addEventListener("click", () => {
+      if (state.building) return;
       state.built = false;
       region.hidden = true;
-      void build();
+      // A successful retry must actually start the recovered 3D renderer.
+      void build().then(resumeRenderer);
     });
     region.appendChild(retry);
     region.hidden = false;
@@ -321,6 +323,9 @@
       const ready = Boolean(status?.ready === true && status?.frontier?.ready === true);
       state.sourceReady = ready;
       if (!ready) {
+        // The status gate is authoritative: discard independently received
+        // handles rather than showing them under an unverified source.
+        state.feeds = { status, handles: [], formulas: [], loops: [] };
         chip("SOURCE STATUS HOLD — not production proof", "off");
         showFallback("SOURCE_STATUS_HOLD");
         state.built = true;
@@ -363,6 +368,13 @@
     }
   }
 
+  function resumeRenderer() {
+    if (!state.open || !state.renderer) return;
+    sizeRenderer();
+    cancelAnimationFrame(state.raf);
+    state.raf = requestAnimationFrame(frame);
+  }
+
   function openPanel() {
     const panel = $(PANEL_ID);
     if (!panel) return;
@@ -370,11 +382,7 @@
     state.lastFocus = document.activeElement;
     panel.classList.add("open");
     panel.setAttribute("aria-hidden", "false");
-    void build().then(() => {
-      sizeRenderer();
-      cancelAnimationFrame(state.raf);
-      if (state.renderer) state.raf = requestAnimationFrame(frame);
-    });
+    void build().then(resumeRenderer);
     const closeBtn = $("v11-holo-close");
     if (closeBtn) closeBtn.focus({ preventScroll: true });
   }
@@ -401,13 +409,22 @@
       if (e.key === "Escape") { closePanel(); return; }
       if (e.key === "Tab") {
         const closeBtn = $("v11-holo-close");
-        const focusables = [closeBtn, $(CANVAS_ID)].filter(Boolean);
+        // When WebGL is unavailable, the evidence link and retry button
+        // must be reachable by keyboard; the hidden canvas is not useful.
+        const fallback = $("v11-holo-fallback");
+        const controls = fallback && !fallback.hidden
+          ? Array.from(fallback.querySelectorAll("a[href], button:not([disabled])"))
+          : [$(CANVAS_ID)];
+        const focusables = [closeBtn, ...controls].filter(Boolean);
+        if (!focusables.length) return;
         const idx = focusables.indexOf(document.activeElement);
         e.preventDefault();
-        const next = e.shiftKey
-          ? focusables[(idx - 1 + focusables.length) % focusables.length]
-          : focusables[(idx + 1) % focusables.length];
-        if (next) next.focus({ preventScroll: true });
+        const next = idx < 0
+          ? (e.shiftKey ? focusables[focusables.length - 1] : focusables[0])
+          : e.shiftKey
+            ? focusables[(idx - 1 + focusables.length) % focusables.length]
+            : focusables[(idx + 1) % focusables.length];
+        next.focus({ preventScroll: true });
       }
     });
     const canvas = $(CANVAS_ID);
