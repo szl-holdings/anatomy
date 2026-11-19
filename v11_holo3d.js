@@ -296,6 +296,15 @@
         return null;
       });
       const [status, handles, formulas, loops] = values;
+      // A 200 response with a failed/non-handle source contract is not a
+      // healthy feed. Keep other independently valid source feeds available.
+      for (let i = 1; i < values.length; i++) {
+        if (results[i].status === "fulfilled" &&
+            (!values[i] || values[i].ready !== true ||
+              values[i].content_access !== "HANDLES_ONLY")) {
+          state.feedUnavailable.push(labels[i]);
+        }
+      }
       if (results[0].status === "rejected") {
         if (offline) {
           offline.hidden = false;
