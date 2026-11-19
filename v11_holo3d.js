@@ -46,6 +46,8 @@
     lastY: 0,
     lastFocus: null,
     resizeObserver: null,
+    feedUnavailable: [],
+    sourceReady: false,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -68,17 +70,28 @@
     if (!(url.startsWith("/") && !url.startsWith("//")) && !url.startsWith(ORIGIN)) {
       throw new Error("CROSS_ORIGIN_REJECTED");
     }
-    const res = await fetch(url, {
-      headers: { accept: "application/json" },
-      redirect: "error",
-      credentials: "same-origin",
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return res.json();
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 9000);
+    try {
+      const res = await fetch(url, {
+        headers: { accept: "application/json" },
+        redirect: "error",
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (!res.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+        throw new Error("NOT_JSON");
+      }
+      return await res.json();
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   function acceptHandles(payload) {
+    if (!payload || payload.ready !== true || payload.content_access !== "HANDLES_ONLY") return [];
     const rows = Array.isArray(payload)
       ? payload
       : Array.isArray(payload && (payload.handles || payload.items || payload.results))
@@ -90,12 +103,11 @@
   }
 
   function acceptRows(payload) {
-    const rows = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload && (payload.formulas || payload.loops || payload.items))
-        ? payload.formulas || payload.loops || payload.items
-        : [];
-    return rows.filter((h) => h && typeof h === "object" && (h.nodeId || h.id || h.name));
+    if (!payload || payload.ready !== true || payload.content_access !== "HANDLES_ONLY") return [];
+    // The live formulas + Ouroboros APIs use the same handles[] envelope as the
+    // Brain search API, not separate formulas[]/loops[] arrays. Reuse the exact
+    // safe-handle predicate so no free-form source text can enter the renderer.
+    return acceptHandles(payload);
   }
 
   function fib(i, n, r) {
@@ -209,33 +221,134 @@
     state.raf = requestAnimationFrame(frame);
   }
 
+  // Only public handle IDs and aggregate counts are used in this DOM fallback.
+  // Missing WebGL is a *renderer* condition, never an outage of the source chain.
+  function showFallback(code) {
+    const panel = $(PANEL_ID);
+    const stage = panel?.querySelector(".stage");
+    if (!stage) return;
+    let region = $("v11-holo-fallback");
+    if (!region) {
+      region = document.createElement("div");
+      region.id = "v11-holo-fallback";
+      region.setAttribute("role", "region");
+      region.setAttribute("aria-label", "Holographic source evidence without WebGL");
+      stage.appendChild(region);
+    }
+    region.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = code === "RENDERER_UNAVAILABLE"
+      ? "3D rendering unavailable; observed read-only source handles remain accessible"
+      : code === "SOURCE_STATUS_HOLD"
+        ? "Source status unverified; showing no operational green"
+        : "Source handle feeds unavailable; no data fabricated";
+    region.appendChild(heading);
+    const summary = document.createElement("p");
+    summary.textContent = "Read-only review memory · handles " + state.feeds.handles.length
+      + " · formulas " + state.feeds.formulas.length
+      + " · loops " + state.feeds.loops.length
+      + " · inaccessible feeds " + state.feedUnavailable.join(", ");
+    region.appendChild(summary);
+    const evidence = document.createElement("p");
+    evidence.textContent = "Candidate content and private graph remain controller-only. No training, model, or production claim.";
+    region.appendChild(evidence);
+    const sample = document.createElement("ul");
+    for (const handle of state.feeds.handles.slice(0, 12)) {
+      const li = document.createElement("li");
+      li.textContent = String(handle.nodeId); // exact SAFE_HANDLE-filtered ID only
+      sample.appendChild(li);
+    }
+    region.appendChild(sample);
+    const source = document.createElement("a");
+    source.href = ENDPOINTS.handles;
+    source.textContent = "Inspect same-origin source handles";
+    region.appendChild(source);
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Retry source + renderer";
+    retry.addEventListener("click", () => {
+      state.built = false;
+      region.hidden = true;
+      void build();
+    });
+    region.appendChild(retry);
+    region.hidden = false;
+  }
+
   async function build() {
     if (state.built || state.building) return;
     state.building = true;
+    state.feeds = { status: null, handles: [], formulas: [], loops: [] };
+    state.feedUnavailable = [];
+    $(HUD_ID)?.replaceChildren();
+    const offline = $(OFFLINE_ID);
+    if (offline) offline.hidden = true;
+    const prior = $("v11-holo-fallback");
+    if (prior) prior.hidden = true;
     try {
-      const [status, handles, formulas, loops] = await Promise.all([
-        fetchJson(ENDPOINTS.status).catch(() => null),
-        fetchJson(ENDPOINTS.handles),
-        fetchJson(ENDPOINTS.formulas),
-        fetchJson(ENDPOINTS.loops),
-      ]);
+      const labels = ["status", "handles", "formulas", "loops"];
+      const endpoints = [ENDPOINTS.status, ENDPOINTS.handles, ENDPOINTS.formulas, ENDPOINTS.loops];
+      // One failed optional feed must not take a healthy Second Brain down.
+      const results = await Promise.allSettled(endpoints.map((url) => fetchJson(url)));
+      const values = results.map((item, index) => {
+        if (item.status === "fulfilled") return item.value;
+        state.feedUnavailable.push(labels[index]);
+        return null;
+      });
+      const [status, handles, formulas, loops] = values;
+      if (results[0].status === "rejected") {
+        if (offline) {
+          offline.hidden = false;
+          offline.textContent = "SOURCE STATUS UNAVAILABLE — failing closed";
+        }
+        chip("SOURCE FEEDS UNAVAILABLE — no invented data", "off");
+        showFallback("SOURCE_FEEDS_UNAVAILABLE");
+        return;
+      }
       state.feeds.status = status;
       state.feeds.handles = acceptHandles(handles);
       state.feeds.formulas = acceptRows(formulas);
       state.feeds.loops = acceptRows(loops);
-      if (!state.feeds.handles.length && !state.feeds.formulas.length && !state.feeds.loops.length) {
-        throw new Error("no accepted handles");
+      const ready = Boolean(status?.ready === true && status?.frontier?.ready === true);
+      state.sourceReady = ready;
+      if (!ready) {
+        chip("SOURCE STATUS HOLD — not production proof", "off");
+        showFallback("SOURCE_STATUS_HOLD");
+        state.built = true;
+        return;
       }
-      if (!buildScene()) throw new Error("renderer unavailable");
+      const available = state.feeds.handles.length + state.feeds.formulas.length + state.feeds.loops.length;
+      if (!available) throw new Error("SOURCE_FEEDS_UNAVAILABLE");
+      if (state.feedUnavailable.length) {
+        chip("DEGRADED SOURCE FEEDS: " + state.feedUnavailable.join(", "), "off");
+      }
+      try {
+        if (!buildScene()) throw new Error("RENDERER_UNAVAILABLE");
+      } catch (_rendererError) {
+        if (state.renderer) {
+          try { state.renderer.dispose(); } catch (_) {}
+        }
+        state.renderer = null;
+        state.nodes = [];
+        state.group = null;
+        showFallback("RENDERER_UNAVAILABLE");
+        chip("3D RENDERER UNAVAILABLE — read-only evidence fallback", "note");
+        state.built = true;
+        return;
+      }
       state.built = true;
       chip("handles " + state.feeds.handles.length, "ok");
       chip("formulas " + state.feeds.formulas.length, "ok");
       chip("loops " + state.feeds.loops.length, "ok");
+      chip("REVIEW MEMORY ONLY — not model or release readiness", "note");
       chip("PROCEDURAL LAYOUT — handles only; positions illustrative, not measured", "note");
-    } catch (err) {
-      const off = $(OFFLINE_ID);
-      if (off) off.hidden = false;
-      chip("CHAIN UNREACHABLE — failing closed", "off");
+    } catch (_error) {
+      if (offline) {
+        offline.hidden = false;
+        offline.textContent = "SOURCE HANDLES UNAVAILABLE — failing closed";
+      }
+      chip("SOURCE FEEDS UNAVAILABLE — no invented data", "off");
+      showFallback("SOURCE_FEEDS_UNAVAILABLE");
     } finally {
       state.building = false;
     }
@@ -251,7 +364,7 @@
     void build().then(() => {
       sizeRenderer();
       cancelAnimationFrame(state.raf);
-      state.raf = requestAnimationFrame(frame);
+      if (state.renderer) state.raf = requestAnimationFrame(frame);
     });
     const closeBtn = $("v11-holo-close");
     if (closeBtn) closeBtn.focus({ preventScroll: true });
