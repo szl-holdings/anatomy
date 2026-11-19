@@ -76,7 +76,7 @@ async function mount(feeds) {
     getElementById:(id)=>ids[id]||null,
     createElement:(tag)=> {
       const elem=new Element();
-      const setId=Object.getOwnPropertyDescriptor(elem,"id");
+
       // ID assigned after append via the script; retrieve it from stage.
       Object.defineProperty(elem,"id",{
         configurable:true,enumerable:true,get(){return this._id||"";},
