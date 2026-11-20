@@ -97,3 +97,36 @@ test('actual v5 renderers explicitly separate catalog, mesh, and ledger source f
   assert.match(source,/#v5-blood\[data-evidence/); // inline CSS selector
   assert.match(source,/#v5-blood \.bdot\{[^}]*animation:none/);
 });
+
+function rendererBody(startMarker, endMarker, reply) {
+  const a=source.indexOf(startMarker), b=source.indexOf(endMarker,a);
+  assert.ok(a>=0 && b>a);
+  const sandbox={ meshObservation, ledgerObservation, getJSON:()=>Promise.resolve(reply),
+    esc:x=>String(x==null?'':x).replace(/</g,'&lt;'), emptyState:x=>x,
+    verifyCardHTML:()=>'<div>OFFLINE VERIFY BUTTON</div>', wireVerify:()=>{} };
+  vm.runInNewContext(source.slice(a,b),sandbox);
+  return { sandbox, body:{innerHTML:'',querySelector:()=>null} };
+}
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
+
+test('actual mesh view renders a zero-source node as REPORTED DOWN, never LIVE',async()=>{
+  const {sandbox,body}=rendererBody('function renderMesh(b){','/* ===================================================================\n     3a.',mesh({engines_live:0,mesh:[{name:'engine',live:false}]}));
+  sandbox.renderMesh(body);await settle();
+  assert.match(body.innerHTML,/SOURCE-REPORTED DOWN/);
+  assert.match(body.innerHTML,/REPORTED DOWN/);
+  assert.doesNotMatch(body.innerHTML,/class="v5-chip live"/);
+});
+test('actual mesh view discards contradictory upstream booleans',async()=>{
+  const {sandbox,body}=rendererBody('function renderMesh(b){','/* ===================================================================\n     3a.',mesh({engines_live:1,mesh:[{live:'true'}]}));
+  sandbox.renderMesh(body);await settle();
+  assert.match(body.innerHTML,/INVALID_MESH_REPORT/);
+  assert.doesNotMatch(body.innerHTML,/REPORTED UP|class="v5-chip live"/);
+});
+test('actual ledger view distinguishes source count from a signer/chain verification',async()=>{
+  const {sandbox,body}=rendererBody('function renderLedger(b){','function verifyCardHTML()',ledger({total_receipts:13}));
+  sandbox.renderLedger(body);await settle();
+  assert.match(body.innerHTML,/SOURCE-REPORTED/);
+  assert.match(body.innerHTML,/No full-chain replay, independent signer provenance/);
+  assert.match(body.innerHTML,/OFFLINE VERIFY BUTTON/);
+  assert.doesNotMatch(body.innerHTML,/class="v5-chip live"|every governed decision appends one signed receipt/);
+});
