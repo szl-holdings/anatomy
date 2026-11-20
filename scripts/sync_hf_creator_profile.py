@@ -821,8 +821,7 @@ def main() -> None:
 
 
     observed_manifest = live_deploy_manifest()
-    reuse_inputs = deployment_inputs_match(observed_manifest, deploy_manifest)
-    if reuse_inputs:
+    if deployment_inputs_match(observed_manifest, deploy_manifest):
         info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
         current_sha = str(getattr(info, "sha", "") or "")
         observed_run_id = str(observed_manifest.get("workflow_run_id") or "")
@@ -830,36 +829,35 @@ def main() -> None:
             raise RuntimeError("reusable creator-profile revision is invalid")
         if not observed_run_id.isdigit():
             raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
-        reuse_inputs = reusable_hf_head(api, current_sha, source_revision, observed_run_id)
-        if not reuse_inputs:
+        if not reusable_hf_head(api, current_sha, source_revision, observed_run_id):
             print("REPUBLISH: current HF HEAD is not the source-bound workflow commit", flush=True)
-    if reuse_inputs:
-        # The Space serves the pipeline snapshot it was built with, so the live
-        # readback must be checked against the deployed dependency. Its digest
-        # equals the new capture; only the a11oy revision label may differ.
-        deployed_pipeline_dependency = observed_manifest["dependencies"][
-            "second_brain"
-        ]["pipeline_dependency"]
-        print(
-            "NOOP: exact Anatomy, Brain, frontier, formula, quant, and pipeline "
-            f"snapshot inputs are already deployed at {current_sha}; verifying and "
-            "preserving revision. Deployed a11oy pipeline revision "
-            f"{deployed_pipeline_dependency.get('source_revision')}, current a11oy "
-            f"head {pipeline_dependency.get('source_revision')}.",
-            flush=True,
-        )
-        wait_running(api, current_sha)
-        verify_live(
-            source_revision,
-            current_sha,
-            brain_revision,
-            observed_run_id,
-            candidate_set_sha256,
-            frontier_candidate_count,
-            frontier_source_count,
-            deployed_pipeline_dependency,
-        )
-        return
+        else:
+            # The Space serves the pipeline snapshot it was built with, so the live
+            # readback must be checked against the deployed dependency. Its digest
+            # equals the new capture; only the a11oy revision label may differ.
+            deployed_pipeline_dependency = observed_manifest["dependencies"][
+                "second_brain"
+            ]["pipeline_dependency"]
+            print(
+                "NOOP: exact Anatomy, Brain, frontier, formula, quant, and pipeline "
+                f"snapshot inputs are already deployed at {current_sha}; verifying and "
+                "preserving revision. Deployed a11oy pipeline revision "
+                f"{deployed_pipeline_dependency.get('source_revision')}, current a11oy "
+                f"head {pipeline_dependency.get('source_revision')}.",
+                flush=True,
+            )
+            wait_running(api, current_sha)
+            verify_live(
+                source_revision,
+                current_sha,
+                brain_revision,
+                observed_run_id,
+                candidate_set_sha256,
+                frontier_candidate_count,
+                frontier_source_count,
+                deployed_pipeline_dependency,
+            )
+            return
 
     operations = [
         CommitOperationAdd(path_in_repo=path, path_or_fileobj=path)
