@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'v5_organs.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'v5_organs.js'), 'utf8').replace(/\r\n/g, '\n');
 const start = source.indexOf('  /* ---- fail-closed public observations');
 const end = source.indexOf('  /* ===================================================================\n     1. WILLAY', start);
 assert.ok(start > 0 && end > start, 'real v5 evidence classifiers must be present');
@@ -94,6 +94,6 @@ test('actual v5 renderers explicitly separate catalog, mesh, and ledger source f
   assert.doesNotMatch(blood,/\.innerHTML='bloodstream/);
   assert.match(stack,/ledgerObservation\(ledger\)/);
   assert.match(stack,/SOURCE-REPORTED/);
-  assert.match(source,/#v5-blood \[?data-evidence/); // later state selector is inline CSS
+  assert.match(source,/#v5-blood\[data-evidence/); // inline CSS selector
   assert.match(source,/#v5-blood \.bdot\{[^}]*animation:none/);
 });
