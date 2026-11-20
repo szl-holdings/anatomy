@@ -101,7 +101,7 @@ test('actual v5 renderers explicitly separate catalog, mesh, and ledger source f
 function rendererBody(startMarker, endMarker, reply) {
   const a=source.indexOf(startMarker), b=source.indexOf(endMarker,a);
   assert.ok(a>=0 && b>a);
-  const sandbox={ meshObservation, ledgerObservation, getJSON:()=>Promise.resolve(reply),
+  const sandbox={ EP:{mesh:'fixture-mesh', ledger:'fixture-ledger'}, meshObservation, ledgerObservation, getJSON:()=>Promise.resolve(reply),
     esc:x=>String(x==null?'':x).replace(/</g,'&lt;'), emptyState:x=>x,
     verifyCardHTML:()=>'<div>OFFLINE VERIFY BUTTON</div>', wireVerify:()=>{} };
   vm.runInNewContext(source.slice(a,b),sandbox);
