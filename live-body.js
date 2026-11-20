@@ -439,6 +439,20 @@ function integrityObservation(j) {
       "/" + ev.organs.length + " reported LIVE · energy UNAVAILABLE · Conjecture 1 OPEN",
   };
 }
+/* Expose only the validated upstream observation clock, never a render tick.
+ * A source timestamp is still only reported evidence, not a verified signature. */
+function updateIntegritySourceTime(rec) {
+  const el = typeof document !== "undefined" && document.getElementById("integrity-observed");
+  if (!el) return;
+  const at = rec?.source_observed_at;
+  const millis = typeof at === "string" ? Date.parse(at) : NaN;
+  const source = Number.isFinite(millis) ? new Date(millis).toISOString() : null;
+  const state = String(rec?.status || STATUS.UNAVAILABLE).toUpperCase();
+  const label = source
+    ? "source observed at " + source + " (" + state + "; not signature-verified)"
+    : "source observed at UNAVAILABLE (" + state + "; not signature-verified)";
+  if (el.textContent !== label) el.textContent = label;
+}
 async function probeOrganIntegrity(timeoutMs = 9000) {
   let rec = { ...unavailable("no observation"), blocked: null, organs: [], endpoint: null };
   for (const url of [
@@ -457,6 +471,7 @@ async function probeOrganIntegrity(timeoutMs = 9000) {
   if (typeof window !== "undefined") window.__szlOrganIntegrity = rec;
   const el = typeof document !== "undefined" && document.getElementById("integrity-strip");
   if (el) { el.dataset.state = rec.status; el.textContent = rec.detail; }
+  updateIntegritySourceTime(rec);
   return rec;
 }
 function refreshIntegrityView(now = Date.now()) {
@@ -467,6 +482,7 @@ function refreshIntegrityView(now = Date.now()) {
     const el = typeof document !== "undefined" && document.getElementById("integrity-strip");
     if (el) { el.dataset.state = rec.status; el.textContent = rec.detail; }
   }
+  updateIntegritySourceTime(rec);
   return rec || null;
 }
 if (typeof window !== "undefined" && typeof document !== "undefined") {

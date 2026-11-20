@@ -217,7 +217,7 @@ test("integrity wrapper negatives take precedence over a positive inner body", a
 test("integrity display expires without another request and refresh can restore it", async () => {
   const h = body(integrity());
   const el = { dataset: {}, textContent: "" };
-  h.context.document.getElementById = () => el;
+  h.context.document.getElementById = (id) => id === "integrity-strip" ? el : null;
   await h.integrity();
   assert.equal(el.dataset.state, "live");
   h.api.refreshIntegrityView(NOW + 60001);
@@ -350,4 +350,55 @@ test("missing renderer constructor fails closed rather than claiming a 3D frame"
   assert.equal(r.renderer, null);
   assert.equal(r.target.hidden, true);
   assert.equal(r.status.hidden, false);
+});
+
+/* Source-grounded timestamps survive absent WebGL and TTL expiry. No client clock as evidence. */
+function integrityHUD(payload) {
+  const h = body(payload);
+  const strip = { dataset: {}, textContent: "" };
+  const observed = { textContent: "" };
+  h.context.document.getElementById = (id) =>
+    id === "integrity-strip" ? strip : (id === "integrity-observed" ? observed : null);
+  return { h, strip, observed };
+}
+test("integrity HUD exposes actual source time with a screen-reader-readable fallback", async () => {
+  assert.match(html, /id="integrity-observed" role="status" aria-live="polite"/);
+  const { h, observed } = integrityHUD(integrity());
+  const rec = await h.integrity();
+  assert.equal(rec.status, "live");
+  assert.equal(rec.source_observed_at, stamp());
+  assert.match(observed.textContent, /source observed at/);
+  assert.ok(observed.textContent.includes(stamp()), observed.textContent);
+  assert.match(observed.textContent, /not signature-verified/);
+});
+test("integrity HUD uses source checked_at only when observed_at absent", async () => {
+  const sourceAt = stamp(-5000);
+  const { h, observed } = integrityHUD(integrity({
+    observed_at: undefined, checked_at: sourceAt,
+  }));
+  const rec = await h.integrity();
+  assert.equal(rec.source_observed_at, sourceAt);
+  assert.ok(observed.textContent.includes(sourceAt), observed.textContent);
+});
+test("integrity HUD cannot invent a timestamp on absent or malformed evidence", async () => {
+  for (const raw of [undefined, "yesterday"]) {
+    const { h, observed } = integrityHUD(integrity({
+      observed_at: raw, checked_at: undefined,
+    }));
+    const rec = await h.integrity();
+    assert.notEqual(rec.status, "live");
+    assert.equal(rec.source_observed_at, null);
+    assert.match(observed.textContent, /UNAVAILABLE/);
+    assert.ok(!observed.textContent.includes(stamp()), observed.textContent);
+  }
+});
+test("stale integrity retains original observation time and changes status, not source clock", async () => {
+  const { h, observed, strip } = integrityHUD(integrity());
+  await h.integrity();
+  assert.ok(observed.textContent.includes(stamp()));
+  h.api.refreshIntegrityView(NOW + 60001);
+  assert.equal(strip.dataset.state, "stale");
+  assert.ok(observed.textContent.includes(stamp()), observed.textContent);
+  assert.match(observed.textContent, /STALE/);
+  assert.ok(!observed.textContent.includes(stamp(60001)));
 });
