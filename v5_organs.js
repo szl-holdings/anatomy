@@ -106,7 +106,7 @@
       return { valid: false, state: "UNAVAILABLE", reason: "INVALID_MESH_REPORT" };
     }
     var observedUp = d.mesh.filter(function(n){ return n.live === true; }).length;
-    if (d.engines_live === 0 && observedUp > 0){
+    if ((d.engines_live === 0 && observedUp > 0) || (d.engines_live > 0 && observedUp === 0)){
       return { valid: false, state: "UNAVAILABLE", reason: "INCONSISTENT_MESH_REPORT" };
     }
     return { valid: true, state: d.engines_live > 0 ? "SOURCE_REPORTED_ACTIVE" : "SOURCE_REPORTED_DOWN",
