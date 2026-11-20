@@ -1,11 +1,28 @@
-"""Fail-closed checks for reusing a published Hugging Face revision."""
+"""Fail-closed checks for reusing a published Hugging Face revision.
 
-import inspect
+Extract the pure verifier from source so container contract CI does not need
+the publisher-only huggingface_hub dependency.
+"""
+
+import ast
+from pathlib import Path
 import unittest
 from types import SimpleNamespace
 
-from scripts.sync_hf_creator_profile import main, reusable_hf_head
 
+PUBLISHER = Path("scripts/sync_hf_creator_profile.py")
+TREE = ast.parse(PUBLISHER.read_text(encoding="utf-8"))
+HELPER = next(
+    node for node in TREE.body
+    if isinstance(node, ast.FunctionDef) and node.name == "reusable_hf_head"
+)
+MAIN = next(
+    node for node in TREE.body
+    if isinstance(node, ast.FunctionDef) and node.name == "main"
+)
+_namespace = {"HfApi": object, "SPACE_ID": "SZLHOLDINGS/anatomy"}
+exec(compile(ast.Module(body=[HELPER], type_ignores=[]), str(PUBLISHER), "exec"), _namespace)
+reusable_hf_head = _namespace["reusable_hf_head"]
 
 REV = "a" * 40
 SOURCE = "b" * 40
@@ -38,8 +55,7 @@ class SourceBoundNoopTests(unittest.TestCase):
         ])
 
     def test_unrelated_commit_on_head_must_republish(self):
-        hub = StubHub(title="SZL estate showcase card (weaver)")
-        self.assertFalse(reusable_hf_head(hub, REV, SOURCE, RUN))
+        self.assertFalse(reusable_hf_head(StubHub(title="SZL estate showcase card"), REV, SOURCE, RUN))
 
     def test_wrong_source_or_workflow_run_must_republish(self):
         hub = StubHub()
@@ -59,9 +75,15 @@ class SourceBoundNoopTests(unittest.TestCase):
             reusable_hf_head(StubHub(error=OSError("unavailable")), REV, SOURCE, RUN)
 
     def test_publisher_noop_path_rechecks_exact_head(self):
-        source = inspect.getsource(main)
-        self.assertIn("reuse_inputs = reusable_hf_head(", source)
-        self.assertIn("if reuse_inputs:", source)
+        calls = [
+            node for node in ast.walk(MAIN)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "reusable_hf_head"
+        ]
+        self.assertEqual(len(calls), 1)
+        source = PUBLISHER.read_text(encoding="utf-8")
+        self.assertIn("if deployment_inputs_match(observed_manifest, deploy_manifest):", source)
 
 
 if __name__ == "__main__":
