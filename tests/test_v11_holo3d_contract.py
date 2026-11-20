@@ -54,6 +54,7 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         source = read("v11_holo3d.js")
         for endpoint in (
             "/api/anatomy/v1/holographic-v7",
+            "/api/anatomy/v1/frontier/status",
             "/api/anatomy/v1/frontier/handles",
             "/api/anatomy/v1/frontier/formulas",
             "/api/anatomy/v1/frontier/ouroboros",
@@ -65,6 +66,9 @@ class HolographicV11Holo3dContract(unittest.TestCase):
         self.assertIn('credentials: "same-origin"', source)
         self.assertIn('cache: "no-store"', source)
         self.assertIn("HANDLES_ONLY", source)
+        self.assertIn("SOURCE COHERENCE HOLD", source)
+        self.assertIn("SOURCE SNAPSHOTS MATCH", source)
+        self.assertIn("candidate_set_sha256", source)
         self.assertIn("failing closed", source)
         self.assertIn("prefers-reduced-motion", source)
         self.assertIn("ResizeObserver", source)
