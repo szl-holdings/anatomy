@@ -19,19 +19,22 @@
 
   const ENDPOINTS = Object.freeze({
     status: "/api/anatomy/v1/holographic-v7",
+    witness: "/api/anatomy/v1/frontier/status",
     handles: "/api/anatomy/v1/frontier/handles?q=second%20brain%20anatomy%20evidence%20receipts&k=24",
     formulas: "/api/anatomy/v1/frontier/formulas?k=48",
     loops: "/api/anatomy/v1/frontier/ouroboros?k=24",
   });
 
   const SAFE_HANDLE = /^frontier:[0-9a-f]{32}$/;
+  const SOURCE_SHA = /^[0-9a-f]{40}$/;
+  const CANDIDATE_SHA = /^[0-9a-f]{64}$/;
   const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const state = {
     built: false,
     building: false,
     open: false,
-    feeds: { handles: [], formulas: [], loops: [], status: null },
+    feeds: { handles: [], formulas: [], loops: [], status: null, witness: null },
     raf: 0,
     renderer: null,
     scene: null,
@@ -90,24 +93,77 @@
     }
   }
 
-  function acceptHandles(payload) {
-    if (!payload || payload.ready !== true || payload.content_access !== "HANDLES_ONLY") return [];
-    const rows = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload && (payload.handles || payload.items || payload.results))
-        ? payload.handles || payload.items || payload.results
-        : [];
-    return rows.filter((h) => h && typeof h === "object" &&
-      SAFE_HANDLE.test(String(h.nodeId ?? "")) &&
-      String(h.contentAccess ?? "") === "HANDLES_ONLY");
+  // Cross-feed metadata agreement is an UNSIGNED consistency observation.
+  // It neither authenticates the GitHub commit nor attests model weights.
+  function sourcePairCoherent(hologram, witness) {
+    const embedded = hologram?.frontier;
+    if (hologram?.schema !== "szl.anatomy.holographic-v7/v1" ||
+        hologram?.ready !== true || hologram?.state !== "SOURCE_BOUND_READ_ONLY" ||
+        hologram?.claims?.claim_promoted !== false ||
+        hologram?.claims?.content_exposed !== false ||
+        hologram?.claims?.execution_performed !== false ||
+        hologram?.claims?.weights_trained !== false ||
+        !embedded || !witness) return false;
+    for (const source of [embedded, witness]) {
+      if (source.schema !== "szl.anatomy.frontier-status/v1" ||
+          source.state !== "SOURCE_BOUND_REVIEW_MEMORY" || source.ready !== true ||
+          source.authority !== "READ_ONLY" || source.content_access !== "HANDLES_ONLY" ||
+          source.anatomy_surface !== "HOLOGRAPHIC_V7" ||
+          source.execution_authority !== "NONE" ||
+          source.promotion_authority !== "NONE" ||
+          source.training_authority !== "NONE" ||
+          source.second_brain_source_repository !== "szl-holdings/szl-second-brain" ||
+          !SOURCE_SHA.test(String(source.second_brain_source_revision ?? "")) ||
+          !CANDIDATE_SHA.test(String(source.candidate_set_sha256 ?? "")) ||
+          !Number.isSafeInteger(source.candidate_count) || source.candidate_count < 0) {
+        return false;
+      }
+    }
+    // Fields are sourced from two endpoints, NOT a publisher-signed receipt.
+    return [
+      "schema", "state", "ready", "authority", "content_access",
+      "anatomy_surface", "execution_authority", "promotion_authority",
+      "training_authority", "second_brain_source_repository",
+      "second_brain_source_revision", "candidate_set_sha256", "candidate_count",
+    ].every((key) => embedded[key] === witness[key]);
   }
 
-  function acceptRows(payload) {
-    if (!payload || payload.ready !== true || payload.content_access !== "HANDLES_ONLY") return [];
-    // The live formulas + Ouroboros APIs use the same handles[] envelope as the
-    // Brain search API, not separate formulas[]/loops[] arrays. Reuse the exact
-    // safe-handle predicate so no free-form source text can enter the renderer.
-    return acceptHandles(payload);
+  function coherentFeed(payload, digest) {
+    if (!payload || payload.ready !== true ||
+        payload.schema !== "szl.anatomy.frontier-handles/v1" ||
+        payload.state !== "REVIEW_REQUIRED" ||
+        payload.content_access !== "HANDLES_ONLY" ||
+        payload.anatomy_surface !== "HOLOGRAPHIC_V7" ||
+        payload.execution_authority !== "NONE" ||
+        payload.promotion_authority !== "NONE" ||
+        payload.training_authority !== "NONE" ||
+        !CANDIDATE_SHA.test(String(digest ?? "")) ||
+        payload.candidate_set_sha256 !== digest ||
+        !Array.isArray(payload.handles) || payload.handles.length > 64 ||
+        !Number.isSafeInteger(payload.returned_count) ||
+        payload.returned_count !== payload.handles.length) return false;
+    const ids = new Set();
+    return payload.handles.every((handle) => {
+      if (!handle || typeof handle !== "object" ||
+          typeof handle.nodeId !== "string" || !SAFE_HANDLE.test(handle.nodeId) ||
+          handle.contentAccess !== "HANDLES_ONLY" || ids.has(handle.nodeId)) return false;
+      ids.add(handle.nodeId);
+      return true;
+    });
+  }
+
+  function acceptHandles(payload, digest) {
+    // Never retain arbitrary envelope fields inside renderer state. Even a
+    // well-formed handle feed may carry untrusted extra metadata.
+    return coherentFeed(payload, digest)
+      ? payload.handles.map((handle) => ({ nodeId: handle.nodeId, contentAccess: "HANDLES_ONLY" }))
+      : [];
+  }
+
+  function acceptRows(payload, digest) {
+    // Formula and Ouroboros endpoints share the same strictly bounded
+    // handles[] envelope, not executable formulas or private candidate text.
+    return acceptHandles(payload, digest);
   }
 
   function fib(i, n, r) {
@@ -241,7 +297,9 @@
       ? "3D rendering unavailable; observed read-only source handles remain accessible"
       : code === "SOURCE_STATUS_HOLD"
         ? "Source status unverified; showing no operational green"
-        : "Source handle feeds unavailable; no data fabricated";
+        : code === "SOURCE_COHERENCE_HOLD"
+          ? "Source snapshots unavailable or inconsistent; no handles admitted"
+          : "Source handle feeds unavailable; no data fabricated";
     region.appendChild(heading);
     const summary = document.createElement("p");
     summary.textContent = "Read-only review memory · handles " + state.feeds.handles.length
@@ -280,33 +338,28 @@
   async function build() {
     if (state.built || state.building) return;
     state.building = true;
-    state.feeds = { status: null, handles: [], formulas: [], loops: [] };
+    state.feeds = { status: null, witness: null, handles: [], formulas: [], loops: [] };
     state.feedUnavailable = [];
+    state.sourceReady = false;
     $(HUD_ID)?.replaceChildren();
     const offline = $(OFFLINE_ID);
     if (offline) offline.hidden = true;
     const prior = $("v11-holo-fallback");
     if (prior) prior.hidden = true;
     try {
-      const labels = ["status", "handles", "formulas", "loops"];
-      const endpoints = [ENDPOINTS.status, ENDPOINTS.handles, ENDPOINTS.formulas, ENDPOINTS.loops];
-      // One failed optional feed must not take a healthy Second Brain down.
+      const labels = ["status", "witness", "handles", "formulas", "loops"];
+      const endpoints = [
+        ENDPOINTS.status, ENDPOINTS.witness, ENDPOINTS.handles,
+        ENDPOINTS.formulas, ENDPOINTS.loops,
+      ];
+      // Optional handle feeds remain independent, but the source witness is required.
       const results = await Promise.allSettled(endpoints.map((url) => fetchJson(url)));
       const values = results.map((item, index) => {
         if (item.status === "fulfilled") return item.value;
         state.feedUnavailable.push(labels[index]);
         return null;
       });
-      const [status, handles, formulas, loops] = values;
-      // A 200 response with a failed/non-handle source contract is not a
-      // healthy feed. Keep other independently valid source feeds available.
-      for (let i = 1; i < values.length; i++) {
-        if (results[i].status === "fulfilled" &&
-            (!values[i] || values[i].ready !== true ||
-              values[i].content_access !== "HANDLES_ONLY")) {
-          state.feedUnavailable.push(labels[i]);
-        }
-      }
+      const [status, witness, handles, formulas, loops] = values;
       if (results[0].status === "rejected") {
         if (offline) {
           offline.hidden = false;
@@ -317,25 +370,41 @@
         return;
       }
       state.feeds.status = status;
-      state.feeds.handles = acceptHandles(handles);
-      state.feeds.formulas = acceptRows(formulas);
-      state.feeds.loops = acceptRows(loops);
-      const ready = Boolean(status?.ready === true && status?.frontier?.ready === true);
-      state.sourceReady = ready;
-      if (!ready) {
-        // The status gate is authoritative: discard independently received
-        // handles rather than showing them under an unverified source.
-        state.feeds = { status, handles: [], formulas: [], loops: [] };
+      if (status?.ready !== true || status?.frontier?.ready !== true) {
         chip("SOURCE STATUS HOLD — not production proof", "off");
         showFallback("SOURCE_STATUS_HOLD");
         state.built = true;
         return;
       }
+      if (!sourcePairCoherent(status, witness)) {
+        // Two 200 responses can disagree. Never render handles under an
+        // unpaired or mutable snapshot, even when the older status was ready.
+        chip("SOURCE COHERENCE HOLD — snapshots not paired", "off");
+        showFallback("SOURCE_COHERENCE_HOLD");
+        state.built = true;
+        return;
+      }
+      state.feeds.witness = witness;
+      const digest = witness.candidate_set_sha256;
+      const optional = [handles, formulas, loops];
+      for (let i = 0; i < optional.length; i++) {
+        // A malformed 200 response is not evidence. A bad optional feed
+        // degrades only itself, never contaminating independently valid handles.
+        if (results[i + 2].status === "fulfilled" &&
+            !coherentFeed(optional[i], digest)) {
+          state.feedUnavailable.push(labels[i + 2]);
+        }
+      }
+      state.feeds.handles = acceptHandles(handles, digest);
+      state.feeds.formulas = acceptRows(formulas, digest);
+      state.feeds.loops = acceptRows(loops, digest);
+      state.sourceReady = true;
       const available = state.feeds.handles.length + state.feeds.formulas.length + state.feeds.loops.length;
       if (!available) throw new Error("SOURCE_FEEDS_UNAVAILABLE");
       if (state.feedUnavailable.length) {
         chip("DEGRADED SOURCE FEEDS: " + state.feedUnavailable.join(", "), "off");
       }
+      chip("SOURCE SNAPSHOTS MATCH — unsigned metadata, not GitHub/weight attestation", "note");
       try {
         if (!buildScene()) throw new Error("RENDERER_UNAVAILABLE");
       } catch (_rendererError) {
