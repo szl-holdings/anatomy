@@ -678,6 +678,18 @@ def verify_live(
     ) from last_error
 
 
+def reusable_hf_head(api: HfApi, revision: str, source_revision: str, workflow_run_id: str) -> bool:
+    """Reuse only an exact source-bound HF publication commit, not a foreign HEAD."""
+    commits = api.list_repo_commits(repo_id=SPACE_ID, repo_type="space", revision=revision)
+    if not commits:
+        raise RuntimeError("reusable HF revision has no commit metadata")
+    head = commits[0]
+    observed_revision = str(getattr(head, "commit_id", "") or getattr(head, "id", "")).lower()
+    if observed_revision != revision.lower():
+        raise RuntimeError("HF commit metadata does not match the observed HEAD")
+    expected_title = f"hf-sync: source {source_revision} run {workflow_run_id}"
+    return str(getattr(head, "title", "")) == expected_title
+
 def main() -> None:
     hf_token = os.environ.get("HF_TOKEN", "")
     github_token = os.environ.get("GITHUB_TOKEN", "")
@@ -809,7 +821,8 @@ def main() -> None:
 
 
     observed_manifest = live_deploy_manifest()
-    if deployment_inputs_match(observed_manifest, deploy_manifest):
+    reuse_inputs = deployment_inputs_match(observed_manifest, deploy_manifest)
+    if reuse_inputs:
         info = api.repo_info(repo_id=SPACE_ID, repo_type="space")
         current_sha = str(getattr(info, "sha", "") or "")
         observed_run_id = str(observed_manifest.get("workflow_run_id") or "")
@@ -817,6 +830,10 @@ def main() -> None:
             raise RuntimeError("reusable creator-profile revision is invalid")
         if not observed_run_id.isdigit():
             raise RuntimeError("reusable deployment manifest lacks a workflow run ID")
+        reuse_inputs = reusable_hf_head(api, current_sha, source_revision, observed_run_id)
+        if not reuse_inputs:
+            print("REPUBLISH: current HF HEAD is not the source-bound workflow commit", flush=True)
+    if reuse_inputs:
         # The Space serves the pipeline snapshot it was built with, so the live
         # readback must be checked against the deployed dependency. Its digest
         # equals the new capture; only the a11oy revision label may differ.
