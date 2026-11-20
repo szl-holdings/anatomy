@@ -300,3 +300,54 @@ test("UI shows static Lambda as a declaration while its heartbeat stays disabled
   assert.match(ui.$("lambda-val").textContent, /0.92000/);
   assert.match(ui.$("lambda-meta").textContent, /source-reported/);
 });
+
+/* Pass-2 consumer proof: exercise the exact shipped WebGL admission function. */
+function rendererHarness(Three, ratio = 3) {
+  const target = { hidden: false };
+  const status = { hidden: true, textContent: "" };
+  const context = vm.createContext({
+    THREE: Three, target, status, window: { devicePixelRatio: ratio },
+    K: { void: "#080c14" },
+  });
+  const start = html.indexOf("function initializeRenderer(");
+  const end = html.indexOf("const renderer = initializeRenderer(", start);
+  assert.ok(start > 0 && end > start, "shipped renderer initializer must exist");
+  vm.runInContext(html.slice(start, end) +
+    "\nglobalThis.result = initializeRenderer(THREE, target, status);", context);
+  return { target, status, renderer: context.result };
+}
+test("WebGL denied leaves an explicit read-only accessible fallback", () => {
+  const Three = { WebGLRenderer: class { constructor() { throw new Error("context denied"); } } };
+  const r = rendererHarness(Three);
+  assert.equal(r.renderer, null);
+  assert.equal(r.target.hidden, true);
+  assert.equal(r.status.hidden, false);
+  assert.match(r.status.textContent, /WebGL unavailable/);
+  assert.match(r.status.textContent, /no 3D frame/);
+  assert.match(html, /id="renderer-fallback" role="status" aria-live="polite" hidden/);
+  assert.match(html, /#scene\[hidden\]\{display:none\}/);
+  assert.match(html, /if \(!renderer\) \$\("boot"\)\.style\.display = "none"/);
+  assert.match(html, /if \(renderer\) renderer\.render\(scene, camera\)/);
+  assert.match(html, /if \(renderer\) renderer\.setSize\(w, h, false\)/);
+  assert.match(html, /else setTimeout\(\(\) => animate\(performance\.now\(\)\), 1000\)/);
+});
+test("a valid WebGL renderer does not display the fallback", () => {
+  class GoodRenderer {
+    constructor(opts) { this.opts = opts; }
+    setPixelRatio(value) { this.ratio = value; }
+    setClearColor(color, alpha) { this.alpha = alpha; }
+  }
+  const r = rendererHarness({ WebGLRenderer: GoodRenderer, Color: class {} });
+  assert.ok(r.renderer instanceof GoodRenderer);
+  assert.equal(r.renderer.opts.canvas, r.target);
+  assert.equal(r.renderer.ratio, 2);
+  assert.equal(r.renderer.alpha, 1);
+  assert.equal(r.target.hidden, false);
+  assert.equal(r.status.hidden, true);
+});
+test("missing renderer constructor fails closed rather than claiming a 3D frame", () => {
+  const r = rendererHarness({});
+  assert.equal(r.renderer, null);
+  assert.equal(r.target.hidden, true);
+  assert.equal(r.status.hidden, false);
+});

@@ -30,6 +30,11 @@
   a{color:var(--proof);text-decoration:none} a:hover{text-decoration:underline}
 
   #scene{position:fixed;inset:0;display:block;touch-action:none}
+  #scene[hidden]{display:none}
+  #renderer-fallback{position:fixed;top:48%;left:50%;transform:translate(-50%,-50%);
+    z-index:1;max-width:min(470px,90vw);padding:16px;text-align:center;
+    color:var(--muted);font:12px/1.6 var(--font-m);pointer-events:none}
+  #renderer-fallback[hidden]{display:none}
 
   /* ---- HUD overlay (does not steal scene pointer unless on a panel) ---- */
   .hud{position:fixed;z-index:5;pointer-events:none}
@@ -110,6 +115,7 @@
 </head>
 <body>
 <canvas id="scene" aria-label="3D living organism of the Sovereign Org"></canvas>
+<div id="renderer-fallback" role="status" aria-live="polite" hidden></div>
 <div id="boot">initializing living body…</div>
 
 <div class="hud" id="title"><div class="inner">
@@ -174,9 +180,24 @@ const $ = (id) => document.getElementById(id);
 
 /* ============================ scene scaffold ============================== */
 const canvas = $("scene");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.setClearColor(new THREE.Color(K.void), 1);
+/* Renderer admission is separate from source health. Without WebGL, leave the
+ * read-only organ/receipt HUD operational and never claim a 3D frame. */
+function initializeRenderer(three, target, status) {
+  try {
+    if (!three || typeof three.WebGLRenderer !== "function") throw new Error("WebGL unavailable");
+    const engine = new three.WebGLRenderer({ canvas: target, antialias: true, alpha: false });
+    engine.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    engine.setClearColor(new three.Color(K.void), 1);
+    return engine;
+  } catch (_error) {
+    target.hidden = true;
+    status.hidden = false;
+    status.textContent = "3D WebGL unavailable. Read-only source status panels remain available; no 3D frame, signed chain or model inference is claimed.";
+    return null;
+  }
+}
+const renderer = initializeRenderer(THREE, canvas, $("renderer-fallback"));
+if (!renderer) $("boot").style.display = "none";
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(new THREE.Color(K.void), 0.085);
@@ -546,14 +567,19 @@ function animate(now) {
   root.rotation.x = Math.max(-0.5, Math.min(0.5, root.rotation.x));
   dragX *= 0.85; dragY *= 0.85;
   drawECG();
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  if (renderer) renderer.render(scene, camera);
+  scheduleFrame();
+}
+function scheduleFrame() {
+  if (renderer) requestAnimationFrame(animate);
+  else setTimeout(() => animate(performance.now()), 1000);
 }
 
 /* ============================ resize + input ============================= */
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (renderer) renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 window.addEventListener("resize", resize); resize();
 
@@ -572,7 +598,7 @@ $("refresh").addEventListener("click", () => refreshAll(false));
 (async () => {
   await refreshAll(true);          // initial: seed seenIds without a pulse storm
   $("boot").style.display = "none";
-  requestAnimationFrame(animate);
+  scheduleFrame();
   // a short delayed replay so the first load visibly shows real receipts flowing
   setTimeout(runCycle, 400);
 })();
