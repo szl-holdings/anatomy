@@ -955,6 +955,46 @@ def _evidence_contract(force: bool = False) -> dict[str, object]:
     }
 
 
+def _readiness_contract(force: bool = False) -> dict[str, object]:
+    """Readiness means bound deployment source plus complete local bundle only.
+
+    No upstream dependency, model capability, publisher signature, or action
+    authority is promoted by this endpoint.
+    """
+    source_bound = False
+    bundle_complete = False
+    try:
+        version = _version_contract(force=force)
+        source_bound = version.get("evidenceState") == "MEASURED"
+        local_receipt = _local_receipt()
+        receipt = local_receipt.get("receipt")
+        evidence = receipt.get("evidence") if isinstance(receipt, dict) else None
+        bundle_complete = (
+            local_receipt.get("verification_state") == "STRUCTURAL_ONLY"
+            and _artifact_set_complete(evidence)
+            and _artifact_manifest_digest_valid(evidence)
+        )
+    except Exception:
+        # Readiness is unavailable; do not leak provider, file, or key errors.
+        source_bound = False
+        bundle_complete = False
+    ready = source_bound and bundle_complete
+    return {
+        "schema": "szl.anatomy-readiness/v1",
+        "ok": ready,
+        "ready": ready,
+        "status": "ready" if ready else "degraded",
+        "transport_state": "REACHABLE",
+        "source_binding_state": "MEASURED" if source_bound else "UNAVAILABLE",
+        "bundle_verification_state": "STRUCTURAL_ONLY" if bundle_complete else "FAILED",
+        "authority_state": "READ_ONLY",
+        "scope": "source-bound deployment and local bundle integrity only",
+        "functional_inference_verified": False,
+        "upstream_quality_qualified": False,
+        "publisher_signature_verified": False,
+    }
+
+
 def _manifest() -> dict[str, object]:
     return {
         "schema": "szl.anatomy-manifest/v1",
@@ -976,6 +1016,7 @@ def _manifest() -> dict[str, object]:
         },
         "endpoints": {
             "version": "/version",
+            "readiness": "/readyz",
             "evidence_index": "/evidence",
             "manifest": "/api/anatomy/v1/manifest",
             "capabilities": "/api/anatomy/v1/capabilities",
@@ -1055,6 +1096,15 @@ class HardenedHandler(SimpleHTTPRequestHandler):
                     "note": "Transport health only; quality and upstream freshness are not inferred.",
                 },
                 evidence_state="SNAPSHOT",
+            )
+            return
+        if path == "/readyz":
+            payload = _readiness_contract(force=force)
+            self._send_json(
+                payload,
+                status=200 if payload["ready"] else 503,
+                evidence_state="MIXED" if payload["ready"] else "UNAVAILABLE",
+                extra_headers={"X-SZL-Readiness-Scope": "SOURCE_AND_LOCAL_BUNDLE"},
             )
             return
         if path == "/version":
