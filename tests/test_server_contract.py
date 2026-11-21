@@ -72,6 +72,89 @@ class AnatomyContractTest(unittest.TestCase):
         self.assertEqual("REACHABLE", headers["X-SZL-Transport-State"])
         self.assertEqual("nosniff", headers["X-Content-Type-Options"])
 
+    def _source_bound_fixture(self):
+        return {
+            "source": {"commit": "a" * 40},
+            "deployment": {"hf_revision": "b" * 40, "commit_binding": "MEASURED"},
+            "alignment_state": "SOURCE_BOUND_DEPLOYMENT",
+        }
+
+    def _complete_local_receipt(self):
+        return {
+            "receipt": {"evidence": self.complete_manifest()},
+            "verification_state": "STRUCTURAL_ONLY",
+        }
+
+    def test_readyz_requires_bound_source_and_local_bundle(self):
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=self._source_bound_fixture()),
+            mock.patch.object(server, "_local_receipt", return_value=self._complete_local_receipt()),
+        ):
+            status, headers, body = self.request("/readyz")
+        self.assertEqual(200, status)
+        self.assertIs(body["ready"], True)
+        self.assertIs(body["ok"], True)
+        self.assertEqual("ready", body["status"])
+        self.assertEqual("MEASURED", body["source_binding_state"])
+        self.assertEqual("STRUCTURAL_ONLY", body["bundle_verification_state"])
+        self.assertEqual("SOURCE_AND_LOCAL_BUNDLE", headers["X-SZL-Readiness-Scope"])
+        self.assertEqual("MIXED", headers["X-SZL-Evidence-State"])
+        self.assertEqual("no-store", headers["Cache-Control"])
+        self.assertIs(body["functional_inference_verified"], False)
+        self.assertIs(body["upstream_quality_qualified"], False)
+        self.assertIs(body["publisher_signature_verified"], False)
+
+    def test_readyz_refuses_internal_exceptions_without_exposing_sensitive_text(self):
+        with mock.patch.object(server, "_source_attestation",
+                               side_effect=RuntimeError("secret private token")):
+            status, _, body = self.request("/readyz")
+        self.assertEqual(503, status)
+        self.assertFalse(body["ready"])
+        self.assertEqual("UNAVAILABLE", body["source_binding_state"])
+        self.assertNotIn("secret", json.dumps(body))
+
+    def test_readyz_holds_when_source_binding_is_unverified(self):
+        with (
+            mock.patch.object(server, "_source_attestation", return_value={
+                "source": {"commit": "a" * 40},
+                "deployment": {"hf_revision": "b" * 40},
+                "alignment_state": "PENDING_GITHUB_SYNC",
+            }),
+            mock.patch.object(server, "_local_receipt", return_value=self._complete_local_receipt()),
+        ):
+            status, headers, body = self.request("/readyz")
+        self.assertEqual(503, status)
+        self.assertIs(body["ready"], False)
+        self.assertEqual("degraded", body["status"])
+        self.assertEqual("UNAVAILABLE", body["source_binding_state"])
+        self.assertEqual("UNAVAILABLE", headers["X-SZL-Evidence-State"])
+
+    def test_readyz_holds_on_missing_bundle_artifacts(self):
+        manifest = self.complete_manifest()
+        manifest["artifacts"][0]["bytes"] = 0
+        receipt = {"receipt": {"evidence": manifest}, "verification_state": "STRUCTURAL_ONLY"}
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=self._source_bound_fixture()),
+            mock.patch.object(server, "_local_receipt", return_value=receipt),
+        ):
+            status, _, body = self.request("/readyz")
+        self.assertEqual(503, status)
+        self.assertIs(body["ready"], False)
+        self.assertEqual("FAILED", body["bundle_verification_state"])
+
+    def test_readyz_holds_on_rehashed_but_incomplete_artifact_inventory(self):
+        manifest = self.complete_manifest()
+        manifest["artifacts"].pop()
+        manifest["artifact_set_sha256"] = server._sha256(server._canonical(manifest["artifacts"]))
+        receipt = {"receipt": {"evidence": manifest}, "verification_state": "STRUCTURAL_ONLY"}
+        with (
+            mock.patch.object(server, "_source_attestation", return_value=self._source_bound_fixture()),
+            mock.patch.object(server, "_local_receipt", return_value=receipt),
+        ):
+            status, _, body = self.request("/readyz")
+        self.assertEqual(503, status)
+        self.assertFalse(body["ready"])
+
     def test_static_bundle_is_served_from_the_anatomy_root(self):
         for path, marker in (("/", "SZL Living Anatomy"), ("/frontier_anatomy.js", "Evidence Bay")):
             with urllib.request.urlopen(self.base + path, timeout=5) as response:
