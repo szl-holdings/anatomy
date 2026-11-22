@@ -61,7 +61,8 @@
     '.v5-btn{pointer-events:auto;font-family:var(--font-m,monospace);font-size:11px;letter-spacing:.03em;color:var(--text,#dfe);background:rgba(255,255,255,.04);border:1px solid var(--border,rgba(255,255,255,.18));border-radius:9px;padding:8px 12px;cursor:pointer}',
     '.v5-btn:hover{border-color:#39d8c8;color:#39d8c8}',
     '#v5-blood{position:fixed;z-index:21;top:12px;left:50%;transform:translateX(-50%);pointer-events:auto;cursor:pointer;font-family:var(--font-m,monospace);font-size:10.5px;letter-spacing:.04em;color:#ff8fb0;background:rgba(8,11,20,.82);border:1px solid rgba(255,59,92,.4);border-radius:999px;padding:5px 13px;backdrop-filter:blur(6px);display:flex;gap:9px;align-items:center}',
-    '#v5-blood .bdot{width:7px;height:7px;border-radius:50%;background:#ff3b5c;box-shadow:0 0 8px #ff3b5c;animation:v5beat 1.2s ease-in-out infinite}',
+    '#v5-blood .bdot{width:7px;height:7px;border-radius:50%;background:#3a4456;box-shadow:none;animation:none}',
+    '#v5-blood[data-evidence="source-reported"] .bdot{background:#ffd166}',
     '@keyframes v5beat{0%,100%{transform:scale(.8);opacity:.7}50%{transform:scale(1.3);opacity:1}}',
     '.v5-verify{border:1px solid #39d8c8;background:rgba(57,216,200,.07);border-radius:12px;padding:13px 14px;margin:16px 0}',
     '.v5-verify .vh{font-family:var(--font-m,monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#39d8c8;margin-bottom:8px}',
@@ -94,20 +95,53 @@
   }
   function emptyState(msg){ return '<div class="v5-note"><div class="nh">honest empty-state</div>'+esc(msg)+'</div>'; }
 
+  /* ---- fail-closed public observations: HTTP 200 is not operational proof ----
+   These pure classifiers never verify model identity, signatures, freshness or
+   execution. They are safe inputs to the SOURCE-REPORTED visual plane only. */
+  function meshObservation(d){
+    if (!d || typeof d !== "object" || !Array.isArray(d.mesh) || d.mesh.length > 64 ||
+        !Number.isSafeInteger(d.engines_live) || !Number.isSafeInteger(d.engines_total) ||
+        d.engines_live < 0 || d.engines_total < 0 || d.engines_live > d.engines_total ||
+        d.mesh.some(function(n){ return !n || typeof n !== "object" || typeof n.live !== "boolean"; })){
+      return { valid: false, state: "UNAVAILABLE", reason: "INVALID_MESH_REPORT" };
+    }
+    var observedUp = d.mesh.filter(function(n){ return n.live === true; }).length;
+    if (d.mesh.length !== d.engines_total || observedUp !== d.engines_live){
+      return { valid: false, state: "UNAVAILABLE", reason: "INCONSISTENT_MESH_REPORT" };
+    }
+    return { valid: true, state: d.engines_live > 0 ? "SOURCE_REPORTED_ACTIVE" : "SOURCE_REPORTED_DOWN",
+      enginesLive: d.engines_live, enginesTotal: d.engines_total,
+      nodesUp: observedUp, nodesTotal: d.mesh.length };
+  }
+  function ledgerObservation(d){
+    if (!d || typeof d !== "object" || !Number.isSafeInteger(d.total_receipts) ||
+        d.total_receipts < 0 || typeof d.chain_alg !== "string" ||
+        !/^[a-zA-Z0-9_-]{1,48}$/.test(d.chain_alg)){
+      return { valid: false, state: "UNAVAILABLE", reason: "INVALID_LEDGER_REPORT" };
+    }
+    return { valid: true, state: "SOURCE_REPORTED", count: d.total_receipts,
+      algorithm: d.chain_alg, signatureVerified: false, chainVerified: false };
+  }
+
   /* ===================================================================
      1. WILLAY — conscience / immune-gate (live classifiers)
      =================================================================== */
   function renderWillay(b){
     getJSON(EP.willay).then(function(d){
-      var cs=(d&&d.classifiers)||[];
-      var tc=(d&&d.trust_ceiling);
+      var cs=d&&d.classifiers;
+      if (!Array.isArray(cs) || cs.length > 64){
+        b.innerHTML=emptyState("WILLAY catalog invalid or unavailable; no classifier readiness inferred.");
+        return;
+      }
+      var tc=d&&d.trust_ceiling;
       var h='';
-      h+='<div class="v5-card"><div class="v5-h">Inspectable signed refusals <span class="v5-chip live">LIVE</span></div>';
-      h+='<div class="v5-sub">trust ceiling '+esc(tc!=null?tc:'—')+' · '+esc(cs.length)+' classifiers</div>';
+      h+='<div class="v5-card"><div class="v5-h">Inspectable classifier catalog <span class="v5-chip partial">SOURCE-REPORTED</span></div>';
+      h+='<div class="v5-sub">trust ceiling '+esc(tc!=null?tc:'UNAVAILABLE')+' · '+esc(cs.length)+' declared classifiers</div>';
       h+='<p>'+esc((d&&d.honest_note)||'')+'</p></div>';
-      h+='<div class="v5-note"><div class="nh">honest label</div>Refusals are <b>tamper-EVIDENT</b> (alteration is detectable via the signed receipt), <b>not tamper-proof</b>. These are auditable rules — the inverse of a removed / hidden classifier. No Anthropic classifier code or weights are used.</div>';
+      h+='<div class="v5-note"><div class="nh">operational boundary</div>Catalog retrieval proves neither classifier execution nor a signed refusal. Independent signed-turn verification is NOT PERFORMED by this panel.</div>';
       cs.forEach(function(c){
-        h+='<div class="v5-card"><div class="v5-h">'+esc(c.title||c.category)+' <span class="v5-chip live">'+esc((c.category||'').toUpperCase())+'</span></div>';
+        if(!c || typeof c!=="object") return;
+        h+='<div class="v5-card"><div class="v5-h">'+esc(c.title||c.category)+' <span class="v5-chip partial">'+esc((c.category||'').toUpperCase())+'</span></div>';
         h+='<div class="v5-sub">fires on: '+esc(c.fires_on||'')+'</div>';
         h+='<p>'+esc(c.rationale||'')+'</p>';
         h+='<div class="v5-sub" style="margin-top:7px">lineage: '+esc(c.lineage||'')+'</div></div>';
@@ -121,25 +155,29 @@
      =================================================================== */
   function renderMesh(b){
     getJSON(EP.mesh).then(function(d){
-      var nodes=(d&&d.mesh)||[];
-      var h='';
-      h+='<div class="v5-card"><div class="v5-h">Governed inference mesh <span class="v5-chip live">LIVE</span></div>';
-      h+='<div class="v5-sub">engines live '+esc((d&&d.engines_live))+' / '+esc((d&&d.engines_total))+' · governance '+esc((d&&d.governance))+'</div>';
-      h+='<p>The circulatory system as a sovereign mesh. Each node’s status is read live — a node that is offline reads <b>DOWN</b>, never a fabricated green light. Per-node F11 Ayni reciprocity (LOCKED) keeps the mesh balanced.</p></div>';
-      nodes.forEach(function(n){
-        var live=!!n.live;
-        h+='<div class="v5-card"><div class="v5-h">'+esc(n.name||n.model||'node')+' <span class="v5-chip '+(live?'live':'down')+'">'+(live?'LIVE':'DOWN')+'</span></div>';
-        h+='<div class="v5-sub">model '+esc(n.model||'—')+' · tier '+esc(n.tier||'—')+' · effort '+esc(n.effort||'—')+'</div>';
-        h+='<div class="v5-sub" style="margin-top:5px">F11 Ayni reciprocity contribution: '+(live?'active (LOCKED)':'paused — node down')+'</div></div>';
-      });
-      // GLM honest status
-      var glm=d&&d.glm;
-      if(glm){
-        var glmLive=!!glm.on_metal_live;
-        h+='<div class="v5-card"><div class="v5-h">GLM engine <span class="v5-chip '+(glmLive?'live':'down')+'">'+(glmLive?'LIVE':'DOWN')+'</span></div>';
-        h+='<div class="v5-sub">'+esc(glm.model_tag||'')+'</div><p>'+esc(glm.note||'')+(glm.remote_provider_enabled?'':' Remote provider not enabled.')+'</p></div>';
+      var report=meshObservation(d);
+      if(!report.valid){
+        b.innerHTML=emptyState('Mesh observation rejected: '+report.reason+'. No model or node is marked live.');
+        return;
       }
-      h+='<div class="v5-note"><div class="nh">roadmap · honest energy</div>VRAM-fusion across nodes is <b>ROADMAP</b> — today the mesh is a scheduler / router ("Smart Routing"), not a fused address space. Energy joules are <b>UNAVAILABLE</b> unless a live NVML meter answers; '+esc((d&&d.meter_fresh_live)?'a meter is fresh':'no fresh meter')+' — never fabricated.</div>';
+      var nodes=d.mesh;
+      var h='';
+      h+='<div class="v5-card"><div class="v5-h">Governed inference mesh <span class="v5-chip partial">'+(report.enginesLive>0?'SOURCE-REPORTED ACTIVE':'SOURCE-REPORTED DOWN')+'</span></div>';
+      h+='<div class="v5-sub">engines reported '+esc(report.enginesLive)+' / '+esc(report.enginesTotal)+' · nodes reported '+esc(report.nodesUp)+' / '+esc(report.nodesTotal)+' · governance '+esc(d.governance||'UNAVAILABLE')+'</div>';
+      h+='<p>This is upstream inventory metadata, not measured GPU inference, source freshness, artifact identity or independently verified signed turns. F11 is a formal reference, not a live network witness.</p></div>';
+      nodes.forEach(function(n){
+        var up=n.live===true;
+        h+='<div class="v5-card"><div class="v5-h">'+esc(n.name||n.model||'node')+' <span class="v5-chip '+(up?'partial':'down')+'">'+(up?'REPORTED UP':'REPORTED DOWN')+'</span></div>';
+        h+='<div class="v5-sub">model '+esc(n.model||'—')+' · tier '+esc(n.tier||'—')+' · effort '+esc(n.effort||'—')+'</div>';
+        h+='<div class="v5-sub" style="margin-top:5px">F11 reference is not proof of reachability or admitted inference.</div></div>';
+      });
+      var glm=d.glm;
+      if(glm && typeof glm==="object"){
+        var glmUp=glm.on_metal_live===true;
+        h+='<div class="v5-card"><div class="v5-h">GLM engine <span class="v5-chip '+(glmUp?'partial':'down')+'">'+(glmUp?'REPORTED UP':'REPORTED DOWN')+'</span></div>';
+        h+='<div class="v5-sub">'+esc(glm.model_tag||'')+'</div><p>'+esc(glm.note||'')+(glm.remote_provider_enabled===true?'':' Remote provider not enabled.')+'</p></div>';
+      }
+      h+='<div class="v5-note"><div class="nh">independent admission missing</div>Zero signed inference turns verified here. VRAM fusion is ROADMAP; energy joules are UNAVAILABLE without a measured meter. '+esc(d.meter_fresh_live===true?'Meter status is source-reported, not independently metered.':'No fresh meter reported.')+'</div>';
       b.innerHTML=h;
     }).catch(function(e){ b.innerHTML=emptyState('Mesh /govern/health unreachable ('+e.message+'). No node is shown as up. Try again when '+EP.mesh+' answers.'); });
   }
@@ -147,30 +185,45 @@
   /* ===================================================================
      3a. Ledger bloodstream counter (live) + 3b. buyer-verifiable receipt
      =================================================================== */
-  var bloodHUD = el('div',{id:'v5-blood',title:'Receipt bloodstream — live unified ledger. Click to inspect + verify offline.','role':'button','tabindex':'0'},
-    '<span class="bdot"></span><span id="v5-blood-txt">ledger …</span>');
+  var bloodHUD = el('div',{id:'v5-blood',title:'Receipt ledger count — source-reported only; click to inspect and verify offline.','role':'button','tabindex':'0','data-evidence':'unavailable'},
+    '<span class="bdot" aria-hidden="true"></span><span id="v5-blood-txt" role="status" aria-live="polite">ledger · awaiting source</span>');
   document.body.appendChild(bloodHUD);
   function refreshBlood(){
     getJSON(EP.ledger).then(function(d){
-      var n=(d&&d.total_receipts);
-      var alg=(d&&d.chain_alg)||'?';
-      var head='';
-      try{ var org=d.organs; for(var k in org){ if(org[k]&&org[k].chain_head){ head=org[k].chain_head; break; } } }catch(_){}
-      document.getElementById('v5-blood-txt').innerHTML='bloodstream · '+esc(n)+' receipts · '+esc(alg)+(head?' · head '+esc(head.slice(0,8)):'')+' · LIVE';
-    }).catch(function(){ document.getElementById('v5-blood-txt').textContent='bloodstream · ledger unreachable · honest empty-state'; });
+      var report=ledgerObservation(d);
+      var target=document.getElementById('v5-blood-txt');
+      if(!report.valid){
+        bloodHUD.setAttribute('data-evidence','unavailable');
+        target.textContent='bloodstream · UNAVAILABLE ('+report.reason+')';
+        return;
+      }
+      bloodHUD.setAttribute('data-evidence','source-reported');
+      target.textContent='bloodstream · '+report.count+' SOURCE-REPORTED entries · signature NOT VERIFIED';
+    }).catch(function(){
+      bloodHUD.setAttribute('data-evidence','unavailable');
+      document.getElementById('v5-blood-txt').textContent='bloodstream · UNREACHABLE · no verified pulse';
+    });
   }
   bloodHUD.addEventListener('click',function(){ openPanel('ledger','Receipt bloodstream — unified ledger',renderLedger); });
   bloodHUD.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); bloodHUD.click(); } });
 
   function renderLedger(b){
     getJSON(EP.ledger).then(function(d){
+      var report=ledgerObservation(d);
+      if(!report.valid){ b.innerHTML=emptyState('Ledger observation rejected: '+report.reason); return; }
       var head='', idx='';
-      try{ var org=d.organs; for(var k in org){ if(org[k]){ head=org[k].chain_head||''; idx=org[k].chain_index; break; } } }catch(_){}
+      if(d.organs && typeof d.organs==='object'){
+        for(var k in d.organs){
+          if(Object.prototype.hasOwnProperty.call(d.organs,k) && d.organs[k] && typeof d.organs[k]==='object'){
+            head=d.organs[k].chain_head||''; idx=d.organs[k].chain_index; break;
+          }
+        }
+      }
       var h='';
-      h+='<div class="v5-card"><div class="v5-h">Unified ledger <span class="v5-chip live">LIVE</span></div>';
-      h+='<div class="v5-sub">total receipts '+esc(d.total_receipts)+' · chain '+esc(d.chain_alg)+' · schema '+esc(d.schema)+'</div>';
-      h+='<div class="v5-lean">chain head: '+esc(head||'—')+'\nchain index: '+esc(idx)+'</div>';
-      h+='<p>The bloodstream of the body: every governed decision appends one signed receipt to a '+esc(d.chain_alg)+' hash-chain. Append-only, tamper-evident.</p></div>';
+      h+='<div class="v5-card"><div class="v5-h">Unified ledger <span class="v5-chip partial">SOURCE-REPORTED</span></div>';
+      h+='<div class="v5-sub">reported entries '+esc(report.count)+' · chain algorithm '+esc(report.algorithm)+' · schema '+esc(d.schema||'UNAVAILABLE')+'</div>';
+      h+='<div class="v5-lean">reported chain head: '+esc(head||'UNAVAILABLE')+'\nreported index: '+esc(idx==null?'UNAVAILABLE':idx)+'</div>';
+      h+='<p>No full-chain replay, independent signer provenance, source freshness or DSSE signature is verified by this read-only ledger count. Inspect an individual receipt below; do not treat a successful HTTP response as admission.</p></div>';
       h+=verifyCardHTML();
       b.innerHTML=h;
       wireVerify(b.querySelector('.v5-verify'));
@@ -304,25 +357,33 @@
     var S=D.STACK_LAYER||{};
     if(!S.layers){ b.innerHTML=emptyState('Stack-layer data not loaded.'); return; }
     function paint(mesh, ledger){
-      var engLive=mesh&&mesh.engines_live, engTot=mesh&&mesh.engines_total;
-      var nodes=(mesh&&mesh.mesh&&mesh.mesh.length)||0;
-      var nodesLive=(mesh&&mesh.mesh&&mesh.mesh.filter)?mesh.mesh.filter(function(n){return n.live;}).length:0;
-      var meshUp=!!(mesh && ((engLive>0) || nodesLive>0));
-      var rcpt=ledger&&ledger.total_receipts, rcptAlg=(ledger&&ledger.chain_alg)||'sha3_256', rcptHead='';
-      if(ledger&&ledger.organs){ for(var k in ledger.organs){ var ch=ledger.organs[k]&&ledger.organs[k].chain_head; if(ch){ rcptHead=ch; break; } } }
+      var m=meshObservation(mesh), l=ledgerObservation(ledger);
+      var engLive=m.valid?m.enginesLive:null, engTot=m.valid?m.enginesTotal:null;
+      var nodes=m.valid?m.nodesTotal:0, nodesLive=m.valid?m.nodesUp:0;
+      var meshUp=m.valid && m.enginesLive>0;
+      var rcpt=l.valid?l.count:null, rcptAlg=l.valid?l.algorithm:'UNAVAILABLE', rcptHead='';
+      if(l.valid && ledger.organs && typeof ledger.organs==='object'){
+        for(var k in ledger.organs){
+          if(Object.prototype.hasOwnProperty.call(ledger.organs,k)){
+            var ch=ledger.organs[k]&&ledger.organs[k].chain_head;
+            if(typeof ch==='string' && ch.length<=128 && ch){rcptHead=ch;break;}
+          }
+        }
+      }
       var h='';
-      h+='<div class="v5-card"><div class="v5-h">'+esc(S.headline||'GPU-Sovereign Stack')+' <span class="v5-chip live">SUBSTRATE</span></div>';
+      h+='<div class="v5-card"><div class="v5-h">'+esc(S.headline||'GPU-Sovereign Stack')+' <span class="v5-chip partial">SCHEMATIC</span></div>';
       h+='<p>'+esc(S.thesis||'')+'</p></div>';
       (S.layers||[]).forEach(function(L){
         var chip=L.chip||'roadmap', posture=String(L.posture||''), extra='';
+        if(chip==='live'){chip='partial';posture='DECLARED · '+posture;}
         if(L.live_key){
-          if(mesh==null){ chip='down'; posture='UNREACHABLE'; }
-          else if(L.live_key==='mesh'){ chip=meshUp?'live':'down'; posture=meshUp?('LIVE · '+esc(nodesLive)+'/'+esc(nodes)+' nodes'):('DOWN · 0/'+esc(nodes)+' nodes'); }
-          else if(L.live_key==='engine'){ chip=(engLive>0)?'live':'down'; posture=(engLive>0)?('LIVE · '+esc(engLive)+'/'+esc(engTot)+' engines'):'DOWN'; }
+          if(!m.valid){ chip='down'; posture='UNAVAILABLE · '+m.reason; }
+          else if(L.live_key==='mesh'){ chip=meshUp?'partial':'down'; posture=meshUp?('SOURCE-REPORTED · '+esc(nodesLive)+'/'+esc(nodes)+' nodes'):('REPORTED DOWN · '+esc(nodesLive)+'/'+esc(nodes)+' nodes'); }
+          else if(L.live_key==='engine'){ chip=(engLive>0)?'partial':'down'; posture=(engLive>0)?('SOURCE-REPORTED · '+esc(engLive)+'/'+esc(engTot)+' engines'):'REPORTED DOWN'; }
         }
         if(L.receipt_key==='ledger'){
-          if(ledger && rcpt!=null){ chip='live'; posture='LIVE · '+esc(rcpt)+' receipts'; extra='ledger · '+esc(rcpt)+' receipts · '+esc(rcptAlg)+(rcptHead?' · head '+esc(rcptHead.slice(0,12))+'…':'')+' — verify any one below, offline'; }
-          else { extra='ledger unreachable — receipt count not shown; nothing fabricated'; }
+          if(l.valid){ chip='partial'; posture='SOURCE-REPORTED · '+esc(rcpt)+' entries (unverified)'; extra='ledger metadata · '+esc(rcpt)+' entries · '+esc(rcptAlg)+(rcptHead?' · reported head '+esc(rcptHead.slice(0,12))+'…':'')+' · NOT signature/chain verified; verify an individual receipt below'; }
+          else { chip='down'; posture='UNAVAILABLE'; extra='ledger source rejected or unreachable; no receipt proof inferred'; }
         }
         h+='<div class="v5-card"><div class="v5-h"><span><span style="opacity:.55;font-family:var(--font-m,monospace);font-size:11px">'+esc(L.tier)+'</span> '+esc(L.name)+'</span> <span class="v5-chip '+chip+'">'+posture+'</span></div>';
         h+='<div class="v5-sub">leaders: '+esc(L.leaders||'')+'</div>';
