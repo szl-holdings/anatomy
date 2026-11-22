@@ -33,7 +33,7 @@ test('a validated inventory is SOURCE-REPORTED, never verified model inference',
   assert.equal(r.modelVerified, undefined);
 });
 test('zero engines and zero up nodes report DOWN, not LIVE', () => {
-  const r = meshObservation(mesh({engines_live:0, mesh:[{live:false}]}));
+  const r = meshObservation(mesh({engines_live:0, engines_total:1, mesh:[{live:false}]}));
   assert.equal(r.valid,true);
   assert.equal(r.state,'SOURCE_REPORTED_DOWN');
   assert.equal(r.nodesUp,0);
@@ -44,7 +44,13 @@ test('HTTP 200 shapes alone cannot make a mesh green', () => {
     mesh({engines_live:-1}),mesh({engines_total:NaN}),
     mesh({mesh:[]}),mesh({mesh:[{live:'false'}]}),
     mesh({engines_live:0,mesh:[{live:true}]}),
-    mesh({engines_live:1,mesh:[{live:false}]})]) {
+    mesh({engines_live:1,mesh:[{live:false}]}),
+    mesh({engines_total:3}),
+    mesh({engines_total:1}),
+    mesh({engines_live:0}),
+    mesh({engines_live:2}),
+    mesh({engines_live:1,mesh:[{live:true},{live:true}]}),
+    mesh({engines_live:1,mesh:[{live:false},{live:false}]})]) {
     const r=meshObservation(p);
     assert.equal(r.valid,false, JSON.stringify(p));
     assert.equal(r.state,'UNAVAILABLE');
@@ -110,7 +116,7 @@ function rendererBody(startMarker, endMarker, reply) {
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 
 test('actual mesh view renders a zero-source node as REPORTED DOWN, never LIVE',async()=>{
-  const {sandbox,body}=rendererBody('function renderMesh(b){','/* ===================================================================\n     3a.',mesh({engines_live:0,mesh:[{name:'engine',live:false}]}));
+  const {sandbox,body}=rendererBody('function renderMesh(b){','/* ===================================================================\n     3a.',mesh({engines_live:0,engines_total:1,mesh:[{name:'engine',live:false}]}));
   sandbox.renderMesh(body);await settle();
   assert.match(body.innerHTML,/SOURCE-REPORTED DOWN/);
   assert.match(body.innerHTML,/REPORTED DOWN/);
@@ -121,6 +127,14 @@ test('actual mesh view discards contradictory upstream booleans',async()=>{
   sandbox.renderMesh(body);await settle();
   assert.match(body.innerHTML,/INVALID_MESH_REPORT/);
   assert.doesNotMatch(body.innerHTML,/REPORTED UP|class="v5-chip live"/);
+});
+test('actual mesh view rejects mismatched claimed live and total node counts',async()=>{
+  for (const contradictory of [mesh({engines_live:0}), mesh({engines_total:3})]) {
+    const {sandbox,body}=rendererBody('function renderMesh(b){','/* ===================================================================\n     3a.',contradictory);
+    sandbox.renderMesh(body);await settle();
+    assert.match(body.innerHTML,/INCONSISTENT_MESH_REPORT/);
+    assert.doesNotMatch(body.innerHTML,/SOURCE-REPORTED ACTIVE|REPORTED UP|class="v5-chip live"/);
+  }
 });
 test('actual ledger view distinguishes source count from a signer/chain verification',async()=>{
   const {sandbox,body}=rendererBody('function renderLedger(b){','function verifyCardHTML()',ledger({total_receipts:13}));
