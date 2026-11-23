@@ -12,8 +12,17 @@ on:
       - Dockerfile
       - scripts/materialize_second_brain.py
       - scripts/sync_hf_creator_profile.py
+      - scripts/holo_revision_identity.py
+      - tests/test_holographic_v7_revision_guard.py
       - .github/workflows/hf-sync.yml
       - .github/workflows/holographic-v7-live-witness.yml
+  pull_request:
+    paths:
+      - .github/workflows/holographic-v7-live-witness.yml
+      - scripts/holo_revision_identity.py
+      - tests/test_holographic_v7_revision_guard.py
+      - frontier_runtime.py
+      - holographic-v7.js
   schedule:
     - cron: "23 */6 * * *"
   workflow_dispatch: {}
@@ -60,7 +69,8 @@ jobs:
           node --check holographic-v7.js
           python -m pytest -q \
             tests/test_frontier_runtime.py \
-            tests/test_holographic_v7_contract.py
+            tests/test_holographic_v7_contract.py \
+            tests/test_holographic_v7_revision_guard.py
           git diff --check
 
   live:
@@ -125,6 +135,8 @@ jobs:
           import os
           from pathlib import Path
 
+          from scripts.holo_revision_identity import is_sha40, is_sha256
+
           expected = os.environ["EXPECTED_SOURCE_REVISION"]
           source = json.loads(Path("/tmp/anatomy-v7-live/source.json").read_text())
           v7 = json.loads(Path("/tmp/anatomy-v7-live/v7.json").read_text())
@@ -136,7 +148,7 @@ jobs:
           assert source["source"]["commit"] == expected
           assert source["alignment_state"] == "SOURCE_BOUND_DEPLOYMENT"
           hf_revision = source["deployment"]["hf_revision"]
-          assert isinstance(hf_revision, str) and len(hf_revision) == 40
+          assert is_sha40(hf_revision)
 
           assert v7["state"] == "SOURCE_BOUND_READ_ONLY"
           assert v7["ready"] is True
@@ -151,8 +163,8 @@ jobs:
           }
           assert status["state"] == "SOURCE_BOUND_REVIEW_MEMORY"
           assert status["second_brain_source_repository"] == "szl-holdings/szl-second-brain"
-          assert len(status["second_brain_source_revision"]) == 40
-          assert len(status["candidate_set_sha256"]) == 64
+          assert is_sha40(status["second_brain_source_revision"])
+          assert is_sha256(status["candidate_set_sha256"])
           atlas = status["formula_atlas"]
           assert atlas["attributed_formula_count"] == 30
           assert atlas["executable_formula_count"] == 21
