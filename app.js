@@ -1264,29 +1264,39 @@
     const _projV = new THREE.Vector3();
     function updateLabels(){
       if(!labelsOn){ return; }
-      const w=innerWidth, h=innerHeight;
+      const w=innerWidth, h=innerHeight, gap=3;
+      const placed=[];
       labels.forEach(L=>{
         _projV.copy(L.anchor).project(camera);
-        const behind = _projV.z>1;
-        let x=( _projV.x*0.5+0.5)*w, y=(-_projV.y*0.5+0.5)*h;
-        if(behind || x<-50 || x>w+50 || y<-50 || y>h+50){ L.div.classList.remove('show'); return; }
-        const lw = L.div.offsetWidth || 120, lh = L.div.offsetHeight || 18, m = 8;
-        // keep labels clear of the fixed side panels on wide screens: the title/
-        // dissection dock occupy the left gutter and the honesty panel the right.
-        const wide = w > 980;
-        const leftBound = wide ? 320 : m;                 // clear left dock
-        const rightBound = wide ? (w - 360) : (w - lw - m); // clear right honesty panel
-        // hide labels that would land under a side panel rather than clip them
-        if(wide && (x + lw > w - 360 || x < 320)){
-          // nudge inward if it still fits the center band, else hide
-          const nudged = Math.max(leftBound, Math.min(x, rightBound - lw));
-          if(nudged < leftBound || nudged + lw > w - 360){ L.div.classList.remove('show'); return; }
-          x = nudged;
-        } else {
-          x = Math.max(m, Math.min(x, w - lw - m));
+        const px=(_projV.x*0.5+0.5)*w, py=(-_projV.y*0.5+0.5)*h;
+        const lw=L.div.offsetWidth, lh=L.div.offsetHeight;
+        // CSS centers each label on its coordinates. Reserve its entire box.
+        const left=(w>980 ? 320 : 8)+lw/2;
+        const right=(w>980 ? w-360 : w-8)-lw/2;
+        const top=64+lh/2, bottom=h-88-lh/2;
+        const hide=()=>{ L.div.classList.remove('show'); L.div.style.visibility='hidden'; };
+        if(_projV.z>1 || px < -50 || px > w+50 || py < -50 || py > h+50 || left>right || top>bottom){
+          hide(); return;
         }
-        y = Math.max(64, Math.min(y, h - lh - 88)); // clear top eyebrow + bottom controls
-        L.div.style.left=x+'px'; L.div.style.top=y+'px'; L.div.classList.add('show');
+        const x=Math.max(left,Math.min(px,right)), preferred=Math.max(top,Math.min(py,bottom));
+        const neighbors=placed.filter(box=>x+lw/2+gap>box.left && x-lw/2-gap<box.right)
+                              .sort((a,b)=>a.top-b.top);
+        // Pick the closest free vertical interval among labels in this column.
+        let start=top, y=null;
+        const consider=end=>{
+          if(start>end) return;
+          const candidate=Math.max(start,Math.min(preferred,end));
+          if(y===null || Math.abs(candidate-preferred)<Math.abs(y-preferred)) y=candidate;
+        };
+        for(const box of neighbors){
+          consider(Math.min(bottom,box.top-gap-lh/2));
+          start=Math.max(start,box.bottom+gap+lh/2);
+        }
+        consider(bottom);
+        if(y===null){ hide(); return; }
+        placed.push({left:x-lw/2,right:x+lw/2,top:y-lh/2,bottom:y+lh/2});
+        L.div.style.left=x+'px'; L.div.style.top=y+'px';
+        L.div.style.visibility='visible'; L.div.classList.add('show');
       });
     }
     function setLabels(on){
